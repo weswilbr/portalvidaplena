@@ -1,12 +1,23 @@
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import pg from 'pg'
 
 const prismaClientSingleton = () => {
   const url = process.env.DATABASE_URL
+  
+  if (!url) {
+    return new PrismaClient()
+  }
+
   // If it's a prisma+postgres URL, we should use it as accelerateUrl for Prisma 7
-  if (url?.startsWith('prisma+postgres://')) {
+  if (url.startsWith('prisma+postgres://')) {
     return new PrismaClient({ accelerateUrl: url })
   }
-  return new PrismaClient()
+
+  // Use PrismaPg adapter for standard Postgres connections in Prisma 7
+  const pool = new pg.Pool({ connectionString: url })
+  const adapter = new PrismaPg(pool as any)
+  return new PrismaClient({ adapter })
 }
 
 declare global {
