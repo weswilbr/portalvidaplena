@@ -6,7 +6,8 @@ const prismaClientSingleton = () => {
   const url = process.env.DATABASE_URL
   
   if (!url) {
-    return new PrismaClient()
+    // Fallback for build time if the variable is not available during collation
+    return new PrismaClient({ accelerateUrl: "prisma://null" })
   }
 
   // If it's a prisma+postgres URL, we should use it as accelerateUrl for Prisma 7
