@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Lead {
+  id          String   @id @default(cuid())
+  name        String
+  phone       String?
+  email       String?
+  source      String?  // WhatsApp, Instagram, Landing Page
+  status      String   @default("NEW") // NEW, CONTACTED, PRESENTED, CLOSED, LOST
+  interest    String?  // Produto, Negócio
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Customer {
+  id          String   @id @default(cuid())
+  name        String
+  phone       String?
+  email       String?
+  id4Life     String?  // ID de cadastro na 4Life
+  level       String?  // Associate, Builder, Diamond, etc.
+  lpMonthly   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  title       String   @default("Ouro Elite")
+  targetLP    Int
+  targetSignups Int
+  currentLP   Int      @default(0)
+  currentSignups Int   @default(0)
+  deadline    DateTime?
+  createdAt   DateTime @default(now())
+}
+
+model AgendaItem {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  start       DateTime
+  end         DateTime?
+  allDay      Boolean  @default(false)
+  status      String   @default("PENDING") // PENDING, DONE, CANCELLED
+  category    String?  // Prospecção, Reunião, Treinamento, Gestão
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Metric {
+  id          String   @id @default(cuid())
+  date        DateTime @unique @default(now())
+  leadsCaught Int      @default(0)
+  presentations Int    @default(0)
+  signups     Int      @default(0)
+  lpGenerated Int      @default(0)
+}
