@@ -159,6 +159,10 @@ export default function VendasClient({ user }: { user: any }) {
       if (uploadRes.success) {
         mediaUrl = uploadRes.url;
         mediaType = uploadRes.type;
+      } else {
+        alert(uploadRes.error || "Erro ao subir arquivo");
+        setIsSending(false);
+        return;
       }
     }
 

@@ -181,18 +181,30 @@ export async function sendWhatsAppMessage(data: { leadId: string; content: strin
   }
 }
 
-// Simula upload - em produção deve-se usar S3/Cloudinary etc
+// Converte o arquivo em base64 e guarda no banco para o bot recolher
+// Em um sistema real, aqui você subiria para um S3 ou Cloudinary
 export async function uploadMedia(formData: FormData) {
   try {
     const file = formData.get("file") as File;
     if (!file) return { success: false, error: "Nenhum arquivo enviado" };
 
-    // Mock: em produção aqui salvaria o arquivo e retornaria o URL
-    // Para teste, apenas dizemos que o upload foi bem sucedido
-    // Como é um MVP, o ideal seria o bot baixar isso via URL
-    return { success: true, url: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=800", type: file.type.startsWith("image") ? "image" : "document" };
+    if (file.size > 5 * 1024 * 1024) { // Limite de 5MB por anexo no banco
+      return { success: false, error: "Arquivo muito grande (máximo 5MB)" };
+    }
+
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const base64 = buffer.toString('base64');
+    const dataUri = `data:${file.type};base64,${base64}`;
+
+    return { 
+      success: true, 
+      url: dataUri, 
+      type: file.type.startsWith("image") ? "image" : file.type.startsWith("video") ? "video" : "document" 
+    };
   } catch (error) {
-    return { success: false, error: "Erro no upload" };
+    console.error("Erro no upload:", error);
+    return { success: false, error: "Erro no processamento do arquivo" };
   }
 }
 
