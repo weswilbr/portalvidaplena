@@ -628,32 +628,33 @@ export default function VendasClient({ user }: { user: any }) {
         <div className="fixed inset-0 z-[60] flex justify-end">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsDetailsOpen(false)}></div>
           
-          <div className="relative w-full sm:max-w-2xl bg-[#f0f2f5] h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="relative w-full md:max-w-2xl bg-[#f0f2f5] h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
             {/* Cabeçalho do Chat */}
-            <header className="p-3 bg-[#f0f2f5] flex items-center justify-between border-b border-slate-200">
-              <div className="flex items-center gap-3">
-                <button onClick={() => setIsDetailsOpen(false)} className="md:hidden p-2 text-slate-500">
-                  <ChevronLeft size={24} />
+            <header className="p-3 px-4 bg-white flex items-center justify-between border-b border-slate-200 shadow-sm z-10">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <button onClick={() => setIsDetailsOpen(false)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-all shrink-0">
+                  <ChevronLeft size={22} />
                 </button>
                 {selectedLead.profilePic ? (
-                  <img src={selectedLead.profilePic} className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200" alt={selectedLead.name} />
+                  <img src={selectedLead.profilePic} className="w-9 h-9 rounded-full object-cover shadow-sm border border-slate-200 shrink-0" alt={selectedLead.name} />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-slate-300 flex items-center justify-center text-white"><User size={20}/></div>
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm shrink-0">{selectedLead.name?.charAt(0) || '?'}</div>
                 )}
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 leading-tight">{selectedLead.name}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-medium text-emerald-600">Online CRM Bolt</span>
-                    <span className="text-[10px] text-slate-400">|</span>
-                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-tighter cursor-pointer" onClick={() => setIsTransferring(!isTransferring)}>
-                      {isTransferring ? "Fechar Painel" : "Painel Lead"}
-                    </span>
-                  </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-bold text-slate-900 leading-tight truncate">{selectedLead.name}</h3>
+                  <span className="text-[10px] font-medium text-emerald-500">CRM Vida Plena</span>
                 </div>
               </div>
-              <div className="flex items-center gap-4 text-slate-500">
-                <button className="hover:text-indigo-600 transition-all"><Search size={20} /></button>
-                <button onClick={() => setIsDetailsOpen(false)} className="hover:text-red-500 transition-all"><X size={20} /></button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button 
+                  onClick={() => setIsTransferring(!isTransferring)}
+                  className={cn("p-2 rounded-xl transition-all text-xs font-bold", isTransferring ? "bg-indigo-600 text-white" : "text-indigo-600 hover:bg-indigo-50")}
+                >
+                  <Info size={20} />
+                </button>
+                <button onClick={() => setIsDetailsOpen(false)} className="p-2 hover:bg-red-50 hover:text-red-500 text-slate-400 rounded-xl transition-all">
+                  <X size={20} />
+                </button>
               </div>
             </header>
 
@@ -749,51 +750,36 @@ export default function VendasClient({ user }: { user: any }) {
                   }
 
                   return (
-                    <div key={msg.id} className={cn("flex flex-col gap-1 max-w-[85%] relative group", isMe ? "self-end" : "self-start")}>
+                    <div key={msg.id} className={cn("flex flex-col gap-0.5 relative group", isMe ? "items-end" : "items-start")} style={{maxWidth:'82%', alignSelf: isMe ? 'flex-end' : 'flex-start'}}>
                       {!isClient && !msg.isSystem && !isMe && msg.author && (
                         <span className="text-[10px] font-black text-slate-400 ml-2 mb-0.5 uppercase tracking-widest">{msg.author.name}</span>
                       )}
-                      
-                      <div className={cn(
-                        "px-3 py-2 rounded-xl text-sm font-medium shadow-sm leading-relaxed min-w-[80px]",
-                        isClient ? "bg-white text-slate-800 rounded-tl-none pr-12" : 
-                        msg.isNote ? "bg-[#fef3c7] border border-amber-200 text-amber-900 rounded-tr-none pb-5" : 
-                        isMe ? "bg-[#d9fdd3] text-[#111b21] rounded-tr-none pr-12" : 
-                        "bg-white text-[#111b21] rounded-tr-none pr-12"
-                      )}>
-                        {/* Autor no topo se for enviado por outro vendedor e sou eu quem estou vendo */}
-                        {isMe && (
-                           <span className="text-[9px] font-black text-emerald-600 block mb-1 uppercase opacity-40">Você ({user.name})</span>
-                        )}
 
+                      <div className={cn(
+                        "px-3 py-2 rounded-2xl text-sm font-medium shadow-sm leading-relaxed relative",
+                        isClient ? "bg-white text-slate-800 rounded-tl-none" : 
+                        msg.isNote ? "bg-[#fef3c7] border border-amber-200 text-amber-900 rounded-tr-none" : 
+                        isMe ? "bg-[#d9fdd3] text-[#111b21] rounded-tr-none" : 
+                        "bg-white text-[#111b21] rounded-tl-none"
+                      )}>
                         {/* Renderização de Mídia */}
                         {msg.mediaUrl && (
                           <div className="mb-2">
                             {msg.mediaType === 'image' || msg.mediaUrl.startsWith('data:image') ? (
-                              <img src={msg.mediaUrl} alt="imagem" className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-100 transition-all border border-black/5" onClick={() => window.open(msg.mediaUrl, '_blank')} />
+                              <img src={msg.mediaUrl} alt="imagem" className="rounded-xl max-w-full h-auto cursor-pointer border border-black/5" onClick={() => window.open(msg.mediaUrl, '_blank')} />
                             ) : msg.mediaType === 'video' || msg.mediaUrl.startsWith('data:video') ? (
-                              <video src={msg.mediaUrl} controls className="rounded-lg max-w-full h-auto border border-black/5" />
+                              <video src={msg.mediaUrl} controls className="rounded-xl max-w-full h-auto border border-black/5" />
                             ) : msg.mediaType === 'audio' || msg.mediaUrl.startsWith('data:audio') ? (
-                              <div className="flex flex-col gap-2 min-w-[200px]">
-                                <div className="flex items-center gap-3 p-2 bg-black/5 rounded-2xl border border-black/5">
-                                  <div className="p-2 bg-[#d9fdd3] text-[#111b21] rounded-full shadow-sm">
-                                    <Volume2 size={20} />
-                                  </div>
-                                  <audio src={msg.mediaUrl} controls className="h-8 max-w-[150px] md:max-w-full" />
-                                </div>
-                                {msg.transcription && (
-                                  <div className="bg-white/40 p-2 rounded-lg border border-black/5 text-[11px] font-medium italic text-[#54656f]">
-                                    <span className="font-black text-[9px] uppercase tracking-widest block mb-1">Transcrição:</span>
-                                    {msg.transcription}
-                                  </div>
-                                )}
+                              <div className="flex items-center gap-2 p-2 bg-black/5 rounded-xl border border-black/5 min-w-[180px]">
+                                <div className="p-1.5 bg-[#d9fdd3] rounded-full"><Volume2 size={16} /></div>
+                                <audio src={msg.mediaUrl} controls className="h-7 flex-1 min-w-0" />
                               </div>
                             ) : (
-                              <div className="flex items-center gap-3 p-3 bg-white/50 dark:bg-black/5 rounded-lg border border-black/5 min-w-[200px]">
-                                <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl"><FileText size={24} /></div>
+                              <div className="flex items-center gap-2 p-2.5 bg-white/50 rounded-xl border border-black/5 min-w-[160px]">
+                                <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><FileText size={18} /></div>
                                 <div className="truncate flex-1">
-                                  <p className="text-[11px] font-black truncate uppercase tracking-tighter text-slate-800">Visualizar Documento</p>
-                                  <a href={msg.mediaUrl} target="_blank" className="text-[10px] text-indigo-600 underline font-bold hover:text-indigo-800 transition-colors">Download</a>
+                                  <p className="text-[11px] font-bold truncate text-slate-800">Documento</p>
+                                  <a href={msg.mediaUrl} target="_blank" className="text-[10px] text-indigo-600 underline font-bold">Abrir / Download</a>
                                 </div>
                               </div>
                             )}
@@ -805,32 +791,30 @@ export default function VendasClient({ user }: { user: any }) {
                               <textarea 
                                 value={editContent} 
                                 onChange={(e) => setEditContent(e.target.value)}
-                                className="w-full p-2 text-xs border rounded bg-white font-medium outline-none focus:ring-1 focus:ring-indigo-300 h-16"
+                                className="w-full p-2 text-xs border rounded bg-white font-medium outline-none focus:ring-1 focus:ring-indigo-300 h-16 resize-none"
                               />
                               <div className="flex gap-2">
-                                 <button onClick={handleSaveEdit} className="text-[10px] font-bold bg-indigo-600 text-white px-2 py-1 rounded">Salvar</button>
-                                 <button onClick={() => setEditingMessageId(null)} className="text-[10px] font-bold bg-slate-200 px-2 py-1 rounded">Cancelar</button>
+                                 <button onClick={handleSaveEdit} className="text-[10px] font-bold bg-indigo-600 text-white px-3 py-1.5 rounded-lg">Salvar</button>
+                                 <button onClick={() => setEditingMessageId(null)} className="text-[10px] font-bold bg-slate-200 px-3 py-1.5 rounded-lg">Cancelar</button>
                               </div>
                            </div>
                         ) : (
-                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                          <p className="whitespace-pre-wrap text-sm pr-10">{msg.content}</p>
                         )}
 
-                        <div className="absolute bottom-1 right-2 flex items-center gap-1 opacity-60 text-[9px]">
-                          <span>{new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-                          {isMe && !msg.isNote && (
-                             <span className="text-blue-500 font-bold ml-1">✓✓</span>
-                          )}
+                        <div className="flex items-center gap-1 justify-end mt-1 opacity-60">
+                          <span className="text-[9px]">{new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                          {isMe && !msg.isNote && (<span className="text-blue-500 font-bold text-[10px]">✓✓</span>)}
                         </div>
-
-                        {/* Ações de Hover (Editar/Excluir) */}
-                        {isMe && !msg.isSystem && (
-                          <div className="absolute top-2 -left-12 opacity-0 group-hover:opacity-100 transition-all flex flex-col gap-2">
-                             <button onClick={() => handleStartEdit(msg)} className="p-2 bg-white shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 border border-slate-100 transition-all"><Pencil size={14}/></button>
-                             <button onClick={() => handleDeleteMessage(msg.id)} className="p-2 bg-white shadow-sm rounded-lg text-slate-400 hover:text-red-500 border border-slate-100 transition-all"><Trash2 size={14}/></button>
-                          </div>
-                        )}
                       </div>
+
+{/* Ações (visíveis no mobile ao tocar, desktop ao hover) */}
+                      {isMe && !msg.isSystem && (
+                        <div className={cn("flex gap-1 mt-0.5 transition-all", "opacity-0 group-hover:opacity-100 focus-within:opacity-100")}>
+                           <button onClick={() => handleStartEdit(msg)} className="p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 border border-slate-100 transition-all"><Pencil size={12}/></button>
+                           <button onClick={() => handleDeleteMessage(msg.id)} className="p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-red-500 border border-slate-100 transition-all"><Trash2 size={12}/></button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -838,62 +822,63 @@ export default function VendasClient({ user }: { user: any }) {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input e Controles */}
-            <div className="p-3 bg-[#f0f2f5] border-t border-slate-200">
-              {/* Preview de Arquivo antes do envio */}
+            {/* Barra de Input - Mobile-first sticky bottom */}
+            <div className="bg-[#f0f2f5] border-t border-slate-200" style={{paddingBottom: 'env(safe-area-inset-bottom, 0px)'}}>
+              {/* Preview de Arquivo */}
               {selectedFile && (
-                <div className="mb-3 bg-white p-3 rounded-2xl border border-slate-200 flex items-center justify-between shadow-xl animate-in slide-in-from-bottom duration-300">
-                  <div className="flex items-center gap-3">
+                <div className="mx-3 mt-3 bg-white p-3 rounded-2xl border border-slate-200 flex items-center justify-between shadow-sm animate-in slide-in-from-bottom duration-200">
+                  <div className="flex items-center gap-2 min-w-0">
                     {filePreview ? (
-                      <img src={filePreview} className="w-14 h-14 rounded-xl object-cover border border-slate-100 shadow-sm" alt="preview" />
+                      <img src={filePreview} className="w-12 h-12 rounded-lg object-cover border border-slate-100" alt="preview" />
                     ) : (
-                      <div className="p-4 bg-slate-100 rounded-xl text-slate-500 border border-slate-200"><FileText size={28}/></div>
+                      <div className="p-3 bg-slate-100 rounded-lg text-slate-500 border border-slate-200"><FileText size={22}/></div>
                     )}
-                    <div>
-                      <p className="text-xs font-bold text-slate-800 truncate max-w-[180px]">{selectedFile.name}</p>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-800 truncate max-w-[160px]">{selectedFile.name}</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
                     </div>
                   </div>
-                  <button onClick={() => { setSelectedFile(null); setFilePreview(null); }} className="p-3 hover:bg-red-50 text-red-500 rounded-2xl transition-all"><X size={20}/></button>
+                  <button onClick={() => { setSelectedFile(null); setFilePreview(null); }} className="p-2 hover:bg-red-50 text-red-400 rounded-xl transition-all shrink-0"><X size={18}/></button>
                 </div>
               )}
 
-              <div className="flex items-center gap-2">
+              {/* Toolbar de Ações */}
+              <div className="flex items-end gap-2 p-2 px-3">
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-                
-                <div className="flex items-center bg-white rounded-2xl shadow-sm border border-slate-200">
+
+                {/* Botões de Ação (Emoji, Arquivo, Gatilho) */}
+                <div className="flex items-center gap-1 shrink-0">
                   <button 
                     type="button" 
                     onClick={() => setIsEmojiOpen(!isEmojiOpen)}
-                    className={cn("p-3 text-slate-500 hover:text-indigo-600 transition-all", isEmojiOpen && "text-indigo-600")}
+                    className={cn("p-2.5 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-white transition-all", isEmojiOpen && "text-indigo-600 bg-white shadow-sm")}
                   >
-                    <Smile size={24} />
+                    <Smile size={22} />
                   </button>
                   <button 
                     type="button" 
                     onClick={() => fileInputRef.current?.click()}
-                    className="p-3 text-slate-500 hover:text-indigo-600 transition-all border-l border-slate-100"
+                    className="p-2.5 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-white transition-all"
                   >
-                    <Paperclip size={24} />
+                    <Paperclip size={22} />
                   </button>
                   <button 
                     type="button" 
                     onClick={() => setIsGatilhoOpen(!isGatilhoOpen)}
-                    className={cn("p-3 text-slate-500 hover:text-amber-500 transition-all border-l border-slate-100", isGatilhoOpen && "text-amber-500")}
-                    title="Gatilhos Rápidos"
+                    className={cn("p-2.5 rounded-xl text-slate-500 hover:text-amber-500 transition-all", isGatilhoOpen && "text-amber-500 bg-white shadow-sm")}
                   >
-                    <Zap size={24} />
+                    <Zap size={22} />
                   </button>
                 </div>
 
-                <form onSubmit={handleSendMessage} className="flex-1 flex flex-col gap-2">
-                  <div className="flex-1 relative">
+                <form onSubmit={handleSendMessage} className="flex-1 flex flex-col md:flex-row items-end gap-2 relative">
+                  <div className="flex-1 relative w-full">
                     {/* Menu de Gatilhos */}
                     {isGatilhoOpen && (
-                      <div className="absolute bottom-full mb-4 left-0 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-[2rem] p-3 flex flex-col gap-1 border border-slate-100 animate-in slide-in-from-bottom-2 duration-300 z-[70] w-64 md:w-80 max-h-[400px] overflow-y-auto">
-                        <div className="flex items-center justify-between p-2 mb-2 border-b border-slate-50">
-                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Gatilhos Rápidos</span>
-                           <button type="button" onClick={() => setIsGatilhoManagerOpen(true)} className="text-[10px] font-bold text-indigo-600 hover:underline">Gerenciar</button>
+                      <div className="absolute bottom-full mb-2 left-0 right-0 bg-white shadow-2xl rounded-2xl p-2 flex flex-col gap-1 border border-slate-100 animate-in slide-in-from-bottom duration-200 z-[70] max-h-[280px] overflow-y-auto">
+                        <div className="flex items-center justify-between p-2 border-b border-slate-50">
+                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gatilhos Rápidos</span>
+                           <button type="button" onClick={() => setIsGatilhoManagerOpen(true)} className="text-[10px] font-bold text-indigo-600">Gerenciar</button>
                         </div>
                         {quickReplies.length === 0 && (
                           <div className="p-4 text-center">
@@ -906,34 +891,35 @@ export default function VendasClient({ user }: { user: any }) {
                             key={qr.id} 
                             type="button" 
                             onClick={() => { setNewMessage(qr.content); setIsGatilhoOpen(false); }}
-                            className="text-left p-3 hover:bg-slate-50 rounded-xl transition-all border border-transparent hover:border-slate-100 group"
+                            className="text-left p-3 hover:bg-slate-50 rounded-xl transition-all"
                           >
-                             <div className="font-bold text-xs text-slate-900 group-hover:text-indigo-600 mb-1">{qr.title}</div>
-                             <div className="text-[10px] text-slate-400 line-clamp-1">{qr.content}</div>
+                             <div className="font-bold text-xs text-slate-900">{qr.title}</div>
+                             <div className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">{qr.content}</div>
                           </button>
                         ))}
                       </div>
                     )}
+
                     {isRecording ? (
-                      <div className="w-full h-12 px-4 rounded-2xl bg-[#ffeeee] flex items-center justify-between border border-red-100 shadow-sm animate-pulse">
-                         <div className="flex items-center gap-3">
-                           <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
-                           <span className="text-[12px] font-bold text-red-600 tracking-tighter uppercase">Gravando Voice: {formatTime(recordingTime)}</span>
+                      <div className="w-full h-11 px-4 rounded-2xl bg-red-50 flex items-center justify-between border border-red-100 animate-pulse">
+                         <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                            <span className="text-xs font-bold text-red-600">Gravando: {formatTime(recordingTime)}</span>
                          </div>
-                         <button type="button" onClick={stopRecording} className="p-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition-all"><Square size={16}/></button>
+                         <button type="button" onClick={stopRecording} className="p-1.5 bg-red-600 text-white rounded-full"><Square size={14}/></button>
                       </div>
                     ) : (
                       <textarea 
-                        placeholder={isNoteMode ? "Adicionar nota interna..." : "Enviar mensagem pelo CRM..."}
+                        placeholder={isNoteMode ? "Nota interna..." : "Mensagem..."}
                         className={cn(
-                          "w-full px-4 py-3 rounded-2xl text-sm font-semibold border-none outline-none transition-all shadow-sm min-h-[50px] max-h-[300px] resize-none overflow-y-auto pt-4",
-                          isNoteMode ? "bg-[#fef3c7] focus:ring-2 focus:ring-amber-300" : "bg-white focus:ring-2 focus:ring-indigo-300"
+                          "w-full px-4 py-3 rounded-2xl text-sm font-medium border-none outline-none focus:ring-2 focus:ring-indigo-200 transition-all resize-none min-h-[44px] max-h-[160px] overflow-y-auto pt-3",
+                          isNoteMode ? "bg-amber-50 focus:ring-amber-100" : "bg-white"
                         )}
                         value={newMessage}
                         onChange={(e) => {
                           setNewMessage(e.target.value);
                           e.target.style.height = 'auto';
-                          e.target.style.height = (e.target.scrollHeight) + 'px';
+                          e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px';
                         }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
@@ -944,47 +930,49 @@ export default function VendasClient({ user }: { user: any }) {
                         rows={1}
                       />
                     )}
+
+                    {/* Picker de Emojis */}
                     {isEmojiOpen && (
-                      <div className="absolute bottom-16 left-0 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-[2rem] p-5 grid grid-cols-6 gap-3 border border-slate-100 animate-in slide-in-from-bottom-2 duration-300 z-[70] w-64 md:w-80">
+                      <div className="absolute bottom-full mb-2 left-0 bg-white shadow-2xl rounded-[1.5rem] p-4 grid grid-cols-6 gap-2 border border-slate-100 animate-in slide-in-from-bottom duration-200 z-[70] w-64">
                         {["😀", "😂", "🚀", "🔥", "✅", "🙌", "🤝", "📦", "💰", "📞", "📝", "❓", "📌", "⚠️", "⏳", "🎉", "💙", "💊"].map(emoji => (
-                          <button key={emoji} type="button" onClick={() => addEmoji(emoji)} className="text-2xl hover:scale-125 transition-all active:scale-95">{emoji}</button>
+                          <button key={emoji} type="button" onClick={() => addEmoji(emoji)} className="text-xl hover:scale-125 transition-all active:scale-95">{emoji}</button>
                         ))}
-                        <button type="button" onClick={() => setIsEmojiOpen(false)} className="col-span-6 mt-2 py-1 text-[10px] font-black text-slate-400 uppercase tracking-widest border-t border-slate-100 pt-3">Fechar</button>
+                        <button type="button" onClick={() => setIsEmojiOpen(false)} className="col-span-6 mt-1 py-1 text-[9px] font-black text-slate-400 uppercase tracking-widest border-t border-slate-100 pt-2">Fechar</button>
                       </div>
                     )}
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 shrink-0">
                     <button
                       type="button"
                       onClick={() => setIsNoteMode(!isNoteMode)}
                       title={isNoteMode ? "Mudar para WhatsApp" : "Mudar para Nota Interna"}
                       className={cn(
-                        "w-12 h-12 flex items-center justify-center rounded-2xl transition-all border shadow-sm",
+                        "w-11 h-11 flex items-center justify-center rounded-2xl transition-all border shadow-sm",
                         isNoteMode ? "bg-amber-400 text-white border-amber-500" : "bg-white text-slate-400 border-slate-200 hover:bg-amber-50"
                       )}
                     >
-                      {isNoteMode ? <CalendarCheck size={24} /> : <FileText size={24} />}
+                      {isNoteMode ? <CalendarCheck size={22} /> : <FileText size={22} />}
                     </button>
 
                     {!isNoteMode && !newMessage && !selectedFile ? (
                       <button
                         type="button"
                         onClick={startRecording}
-                        className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#00a884] text-white shadow-xl shadow-emerald-200 hover:scale-110 active:scale-95 transition-all"
+                        className="w-11 h-11 flex items-center justify-center rounded-2xl bg-[#00a884] text-white shadow-lg hover:scale-105 active:scale-95 transition-all"
                       >
-                        <Mic size={24} />
+                        <Mic size={22} />
                       </button>
                     ) : (
                       <button
                         type="submit"
                         disabled={(!newMessage.trim() && !selectedFile) || isSending}
                         className={cn(
-                          "w-12 h-12 flex items-center justify-center rounded-2xl text-white shadow-xl transition-all active:scale-95",
-                          isNoteMode ? "bg-amber-600 shadow-amber-200" : "bg-[#00a884] shadow-emerald-200"
+                          "w-11 h-11 flex items-center justify-center rounded-2xl text-white shadow-lg transition-all active:scale-95",
+                          isNoteMode ? "bg-amber-600" : "bg-indigo-600"
                         )}
                       >
-                        {isSending ? <Loader2 size={24} className="animate-spin" /> : <Send size={24} className="ml-0.5" />}
+                        {isSending ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} className="ml-0.5" />}
                       </button>
                     )}
                   </div>
