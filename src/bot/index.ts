@@ -111,23 +111,26 @@ client.on('message', async (msg: any) => {
     const phoneOnly = contact.number; // ex: 5527999998888
     const participantName = contact.name || contact.pushname || 'Cliente WhatsApp';
     const textMessage = msg.body || '';
+    const isBusiness = (contact as any).isBusiness || false;
+    const source = isBusiness ? 'WhatsApp Business' : 'WhatsApp Bot';
 
-    console.log(`📩 Mensagem recebida de: ${participantName} (${phoneOnly})`);
+    console.log(`📩 Mensagem de: ${participantName} (${phoneOnly})${isBusiness ? ' 🏢 Empresa' : ''}`);
 
     const cfg = await (prisma as any).botConfig.findFirst();
+
+    // Busca foto de perfil (sempre tenta para manter atualizada)
+    let profilePic: string | null = null;
+    try {
+      profilePic = await contact.getProfilePicUrl() || null;
+    } catch {
+      // Contato não tem foto pública
+    }
 
     // Checa se já existe lead com esse número
     let lead = await (prisma as any).lead.findFirst({ where: { phone: phoneOnly } });
 
     if (!lead) {
-      console.log(`✨ Novo Lead detectado: ${phoneOnly}`);
-
-      let profilePic: string | null = null;
-      try {
-        profilePic = await contact.getProfilePicUrl() || null;
-      } catch {
-        console.log(`Sem foto de perfil para ${phoneOnly}`);
-      }
+      console.log(`✨ Novo Lead: ${participantName} (${phoneOnly})`);
 
       // Lógica Round Robin
       let assignedToId: string | null = null;
@@ -147,7 +150,7 @@ client.on('message', async (msg: any) => {
           name: participantName,
           phone: phoneOnly,
           profilePic,
-          source: 'WhatsApp Bot',
+          source,
           status: assignedToId ? 'CONTACTED' : 'NEW',
           assignedToId
         }
@@ -164,6 +167,28 @@ client.on('message', async (msg: any) => {
           isSystem: true
         }
       });
+
+    } else {
+      // Lead existente — atualiza foto e nome se mudaram
+      const updates: Record<string, any> = {};
+
+      if (profilePic && profilePic !== lead.profilePic) {
+        updates.profilePic = profilePic;
+        console.log(`📸 Foto atualizada para ${lead.name}`);
+      }
+      // Atualiza nome apenas se ainda está com o nome padrão
+      if (lead.name === 'Cliente WhatsApp' && participantName !== 'Cliente WhatsApp') {
+        updates.name = participantName;
+        console.log(`✏️ Nome atualizado para ${participantName}`);
+      }
+
+      if (Object.keys(updates).length > 0) {
+        lead = { ...lead, ...updates };
+        await (prisma as any).lead.update({
+          where: { id: lead.id },
+          data: updates
+        });
+      }
     }
 
     // Salva a mensagem do cliente
