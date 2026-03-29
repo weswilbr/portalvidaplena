@@ -30,12 +30,16 @@ function formatPhoneNumber(phone: string) {
   const basePhone = phone.split(':')[0];
   const cleaned = basePhone.replace(/\D/g, "");
   
-  if (cleaned.length === 13 && cleaned.startsWith("55")) { // +55 27 99999-9999
-    return `+55 (${cleaned.substring(2, 4)}) ${cleaned.substring(4, 9)}-${cleaned.substring(9)}`;
+  if (cleaned.length >= 12 && cleaned.startsWith("55")) {
+    if (cleaned.length === 13) { // +55 27 99999-9999
+      return `+55 (${cleaned.substring(2, 4)}) ${cleaned.substring(4, 9)}-${cleaned.substring(9)}`;
+    }
+    if (cleaned.length === 12) { // +55 27 9999-9999
+      return `+55 (${cleaned.substring(2, 4)}) ${cleaned.substring(4, 8)}-${cleaned.substring(8)}`;
+    }
   }
-  if (cleaned.length === 12 && cleaned.startsWith("55")) { // +55 27 9999-9999
-    return `+55 (${cleaned.substring(2, 4)}) ${cleaned.substring(4, 8)}-${cleaned.substring(8)}`;
-  }
+
+  // Se não começar com 55 ou tiver tamanho diferente, apenas garante o + na frente
   return basePhone.startsWith("+") ? basePhone : `+${cleaned || phone}`;
 }
 
