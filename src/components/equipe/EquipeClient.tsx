@@ -60,7 +60,7 @@ export default function EquipeClient({ user }: { user: any }) {
   };
 
   const copyLoginInfo = (seller: any) => {
-    const text = `*Portal Vida Plena - Seu Acesso*\n\nOlá, ${seller.name}! Seu acesso foi criado.\n\n🔗 *Link:* https://vidaplena.app/login\n👤 *Acesso:* ${seller.phone || seller.email}\n🔑 *Senha:* (a senha que configuramos)\n\nAcesse para começarmos!`;
+    const text = `*Portal Vida Plena - Seu Acesso*\n\nOlá, ${seller.name}! Seu acesso foi criado para atendimento da nossa equipe.\n\n🔗 *Acesse agora:* https://portalvidaplena.vercel.app/login\n👤 *Telefone:* ${seller.phone || seller.email}\n🔑 *Senha:* (sua senha cadastrada)\n\nFique online para começar as vendas!`;
     navigator.clipboard.writeText(text);
     alert("Mensagem de acesso copiada! Envie no WhatsApp do vendedor.");
   };
