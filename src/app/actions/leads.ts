@@ -2,6 +2,8 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import fs from "fs/promises";
+import path from "path";
 
 export async function getLeads(assignedToId?: string) {
   try {
@@ -193,14 +195,27 @@ export async function uploadMedia(formData: FormData) {
       return { success: false, error: "Arquivo muito grande (máximo 64MB)" };
     }
 
+    // Cria o diretório se não existir
+    const uploadDir = path.join(process.cwd(), "public", "uploads");
+    try {
+      await fs.access(uploadDir);
+    } catch {
+      await fs.mkdir(uploadDir, { recursive: true });
+    }
+
+    const fileName = `${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
+    const filePath = path.join(uploadDir, fileName);
+    
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const base64 = buffer.toString("base64");
-    const dataUri = `data:${file.type};base64,${base64}`;
+    await fs.writeFile(filePath, buffer);
+
+    // Retorna a URL pública (relativa ao public/)
+    const publicUrl = `/uploads/${fileName}`;
 
     return { 
       success: true, 
-      url: dataUri, 
+      url: publicUrl, 
       name: file.name,
       type: file.type.startsWith("image") ? "image" : 
             file.type.startsWith("video") ? "video" : 

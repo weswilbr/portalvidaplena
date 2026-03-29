@@ -673,32 +673,42 @@ export default function VendasClient({ user }: { user: any }) {
               </div>
             </header>
             {/* Barra de Status Rápida (Kanban) - Design Premium */}
-            <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 p-2 overflow-x-auto whitespace-nowrap flex gap-2 shrink-0 scrollbar-hide no-scrollbar">
-               <style dangerouslySetInnerHTML={{ __html: `
-                 .no-scrollbar::-webkit-scrollbar { display: none; }
-                 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-               `}} />
-               {Object.entries(statusLabels).map(([key, label]) => {
-                 const isActive = selectedLead.status === key;
-                 return (
-                   <button 
-                     key={key} 
-                     onClick={async () => {
-                        const fakeEvent = { target: { value: key } } as any;
-                        handleStatusChange(fakeEvent);
-                     }}
-                     className={cn(
-                       "px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.1em] transition-all border flex items-center gap-2 shrink-0 shadow-sm",
-                       isActive 
-                        ? cn(statusStyles[key as keyof typeof statusStyles], "border-transparent ring-2 ring-indigo-500/20 scale-105") 
-                        : "bg-slate-50 text-slate-400 border-slate-100 hover:bg-white hover:border-slate-300 hover:shadow-md"
-                     )}
-                   >
-                     <div className={cn("w-2 h-2 rounded-full animate-pulse", isActive ? "bg-current" : "bg-slate-300")}></div>
-                     {label}
-                   </button>
-                 );
-               })}
+            <div className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 p-2.5 flex flex-col gap-2 shrink-0">
+               <div className="px-1 flex items-center justify-between">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                     <LayoutGrid size={10} /> Mover no Funil (Kanban)
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[8px] font-bold text-indigo-400 uppercase">Toque para mudar</span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+                  </div>
+               </div>
+               <div className="overflow-x-auto whitespace-nowrap flex gap-2 scrollbar-hide no-scrollbar pb-0.5 ml-0.5">
+                  <style dangerouslySetInnerHTML={{ __html: `
+                    .no-scrollbar::-webkit-scrollbar { display: none; }
+                    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+                  `}} />
+                  {Object.entries(statusLabels).map(([key, label]) => {
+                    const isActive = selectedLead.status === key;
+                    return (
+                      <button 
+                        key={key} 
+                        onClick={async () => {
+                           const fakeEvent = { target: { value: key } } as any;
+                           handleStatusChange(fakeEvent);
+                        }}
+                        className={cn(
+                          "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm border whitespace-nowrap",
+                          isActive 
+                            ? "bg-indigo-600 text-white border-indigo-600 scale-105" 
+                            : "bg-white text-slate-400 border-slate-100 hover:border-indigo-200"
+                        )}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+               </div>
             </div>
 
             {/* Painel de Ações do Lead (Opcional, abre sob o header) */}
@@ -908,7 +918,13 @@ export default function VendasClient({ user }: { user: any }) {
 
               {/* Toolbar de Ações */}
               <div className="flex items-end gap-2 p-2 px-3">
-                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange} 
+                  className="hidden" 
+                  accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+                />
 
                 {/* Botões de Ação (Emoji, Arquivo, Gatilho) */}
                 <div className="flex items-center gap-1 shrink-0">

@@ -4,6 +4,8 @@ import qrcodeTerminal from 'qrcode-terminal';
 import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 import prisma from '../lib/prisma';
+import * as path from 'path';
+import * as fs from 'fs';
 
 console.log('🤖 Inicializando WhatsApp Web Bot (whatsapp-web.js)...');
 
@@ -315,6 +317,13 @@ setInterval(async () => {
              // WhatsApp nativamente usa ogg/opus, forçamos se for áudio para garantir que o celular entenda como voz
              const finalMime = om.mediaType === 'audio' ? 'audio/ogg; codecs=opus' : mimetype;
              media = new MessageMedia(finalMime, data, om.fileName || 'arquivo');
+          } else if (om.mediaUrl.startsWith('/uploads/')) {
+             const absPath = path.join(process.cwd(), 'public', om.mediaUrl);
+             if (fs.existsSync(absPath)) {
+                media = MessageMedia.fromFilePath(absPath);
+             } else {
+                console.error(`❌ Arquivo não encontrado na VPS: ${absPath}`);
+             }
           } else {
              media = await MessageMedia.fromUrl(om.mediaUrl).catch(() => null);
           }
