@@ -15,13 +15,27 @@ import {
   Send,
   UserPlus,
   ArrowRightLeft,
-  CheckCircle2
+  CheckCircle2,
+  User
 } from "lucide-react";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead } from "@/app/actions/leads";
 import { getSellers } from "@/app/actions/users";
 import KanbanView from "@/components/leads/KanbanView";
+
+// Helper para formatar celular do Brasil
+function formatPhoneNumber(phone: string) {
+  if (!phone) return "";
+  const cleaned = phone.replace(/\D/g, "");
+  if (cleaned.length === 13 && cleaned.startsWith("55")) { // +55 27 99999-9999
+    return `+55 (${cleaned.substring(2, 4)}) ${cleaned.substring(4, 9)}-${cleaned.substring(9)}`;
+  }
+  if (cleaned.length === 12 && cleaned.startsWith("55")) { // +55 27 9999-9999 (sem 9 dígito)
+    return `+55 (${cleaned.substring(2, 4)}) ${cleaned.substring(4, 8)}-${cleaned.substring(8)}`;
+  }
+  return phone;
+}
 
 const statusStyles = {
   NEW: "bg-emerald-100 text-emerald-700",
@@ -288,9 +302,18 @@ export default function VendasClient({ user }: { user: any }) {
                 <tbody className="divide-y divide-slate-50">
                   {filteredLeads.map(lead => (
                     <tr key={lead.id} className="hover:bg-indigo-50/30 transition-all group animate-in slide-in-from-bottom duration-300">
-                      <td className="px-6 md:px-8 py-4 md:py-5">
-                        <div className="font-bold text-slate-900 text-sm md:text-base">{lead.name}</div>
-                        <div className="text-xs font-medium text-slate-400 mt-0.5">{lead.phone}</div>
+                      <td className="px-6 md:px-8 py-4 md:py-5 flex items-center gap-4">
+                        {lead.profilePic ? (
+                          <img src={lead.profilePic} alt={lead.name} className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border border-slate-200 shadow-sm" />
+                        ) : (
+                          <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold border border-slate-200">
+                            <User size={20}/>
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-bold text-slate-900 text-sm md:text-base">{lead.name}</div>
+                          <div className="text-[10px] md:text-xs font-semibold text-slate-400 mt-0.5">{formatPhoneNumber(lead.phone)}</div>
+                        </div>
                       </td>
                       <td className="px-6 md:px-8 py-4 md:py-5">
                         {lead.assignedTo ? (
@@ -343,11 +366,22 @@ export default function VendasClient({ user }: { user: any }) {
           
           <div className="relative w-full sm:max-w-lg bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right md:slide-in-from-right duration-300">
             <header className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <div>
-                <h3 className="text-2xl font-black text-slate-900">{selectedLead.name}</h3>
-                <p className="text-sm font-medium text-slate-500 mt-1">{selectedLead.phone}</p>
+              <div className="flex items-center gap-4">
+                {selectedLead.profilePic ? (
+                  <img src={selectedLead.profilePic} alt={selectedLead.name} className="w-14 h-14 rounded-full object-cover border-2 border-slate-200 shadow-sm" />
+                ) : (
+                  <div className="w-14 h-14 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-400 font-bold border border-indigo-100">
+                    <User size={28}/>
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 leading-none mb-1">{selectedLead.name}</h3>
+                  <a href={`https://wa.me/${selectedLead.phone?.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:underline flex items-center gap-1 active:scale-95 transition-all w-fit">
+                    {formatPhoneNumber(selectedLead.phone)}
+                  </a>
+                </div>
               </div>
-              <button onClick={() => setIsDetailsOpen(false)} className="p-2 hover:bg-slate-200 rounded-xl transition-all">
+              <button onClick={() => setIsDetailsOpen(false)} className="p-3 hover:bg-slate-200 bg-slate-100 text-slate-500 rounded-2xl transition-all">
                 <X size={20} />
               </button>
             </header>

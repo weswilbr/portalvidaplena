@@ -32,6 +32,7 @@ model Lead {
   status      String   @default("NEW") // NEW, CONTACTED, PRESENTED, CLOSED, LOST
   interest    String?  // Produto, Negócio
   notes       String?
+  profilePic  String?  // URL da foto de perfil do WhatsApp
   assignedToId String?
   assignedTo   User?    @relation("UserLeads", fields: [assignedToId], references: [id])
   messages    Message[]

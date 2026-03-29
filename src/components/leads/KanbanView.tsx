@@ -10,6 +10,19 @@ interface Lead {
   status: string;
   phone?: string;
   interest?: string;
+  profilePic?: string;
+}
+
+function formatPhoneNumber(phone: string) {
+  if (!phone) return "";
+  const cleaned = phone.replace(/\D/g, "");
+  if (cleaned.length === 13 && cleaned.startsWith("55")) { // +55 27 99999-9999
+    return `+55 (${cleaned.substring(2, 4)}) ${cleaned.substring(4, 9)}-${cleaned.substring(9)}`;
+  }
+  if (cleaned.length === 12 && cleaned.startsWith("55")) { // +55 27 9999-9999
+    return `+55 (${cleaned.substring(2, 4)}) ${cleaned.substring(4, 8)}-${cleaned.substring(8)}`;
+  }
+  return phone;
 }
 
 interface KanbanViewProps {
@@ -55,7 +68,12 @@ export default function KanbanView({ leads, onEdit, onDelete, onSendMessage }: K
                 className="bg-card p-5 rounded-2xl border border-border/50 shadow-sm hover:shadow-md transition-all group"
               >
                 <div className="flex justify-between items-start mb-3">
-                  <h4 className="font-bold text-slate-900 dark:text-slate-100">{lead.name}</h4>
+                  <div className="flex items-center gap-2">
+                    {lead.profilePic && (
+                      <img src={lead.profilePic} alt={lead.name} className="w-8 h-8 rounded-full object-cover shadow-sm border border-slate-200" />
+                    )}
+                    <h4 className="font-bold text-slate-900 dark:text-slate-100 leading-tight">{lead.name}</h4>
+                  </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={() => onEdit(lead)} className="p-1 hover:text-blue-600 transition-colors">
                       <ExternalLink size={14} />
@@ -67,18 +85,18 @@ export default function KanbanView({ leads, onEdit, onDelete, onSendMessage }: K
                 </div>
                 
                 {lead.interest && (
-                   <span className="text-[10px] font-bold px-2 py-0.5 bg-secondary rounded-full uppercase tracking-wider mb-3 inline-block">
+                   <span className="text-[10px] font-bold px-2 py-0.5 bg-secondary rounded-full uppercase tracking-wider mb-2 inline-block">
                      {lead.interest}
                    </span>
                 )}
 
-                <div className="flex items-center justify-between mt-4">
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Phone size={12} /> {lead.phone || "N/A"}
-                  </span>
+                <div className="flex items-center justify-between mt-3">
+                  <a href={`https://wa.me/${lead.phone?.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground hover:text-green-600 flex items-center gap-1 font-semibold transition-colors">
+                    <Phone size={12} /> {formatPhoneNumber(lead.phone || "") || "N/A"}
+                  </a>
                   <button 
                     onClick={() => lead.phone && onSendMessage(lead.phone)}
-                    className="p-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors"
+                    className="p-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors shadow-sm"
                   >
                     <MessageSquare size={14} />
                   </button>

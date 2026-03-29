@@ -129,6 +129,13 @@ async function startBot() {
         isNewLead = true;
         console.log(`✨ Novo Lead detectado: ${phoneOnly}`);
         
+        let profilePic: string | null = null;
+        try {
+          profilePic = await sock.profilePictureUrl(remoteJid, 'image') || null;
+        } catch (err) {
+          console.log(`Sem foto de perfil pública para ${phoneOnly}`);
+        }
+
         // Logica Round Robin ou Pool
         let assignedToId: string | null = null;
         if (cfg?.isRoundRobin) {
@@ -148,6 +155,7 @@ async function startBot() {
           data: {
             name: participantName,
             phone: phoneOnly,
+            profilePic,
             source: 'WhatsApp Bot',
             status: assignedToId ? 'CONTACTED' : 'NEW',
             assignedToId
