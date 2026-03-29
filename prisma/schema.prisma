@@ -19,6 +19,7 @@ model User {
   role               String   @default("SELLER") // ADMIN, SELLER
   leads              Lead[]   @relation("UserLeads")
   messages           Message[] @relation("UserMessages")
+  quickReplies       QuickReply[]
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 }
