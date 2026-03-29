@@ -111,9 +111,14 @@ async function startBot() {
 
       const remoteJid = msg.key.remoteJid;
       if (!remoteJid || remoteJid.endsWith('@g.us')) return; // ignorar grupos e status
+
+      // Logica para extrair o numero real do JID ou LID
+      let phoneOnly = remoteJid.split('@')[0].split(':')[0].replace(/[^0-9]/g, "");
       
-      // Limpa JID: "5511999999999:1@s.whatsapp.net" -> "5511999999999"
-      const phoneOnly = remoteJid.split('@')[0].split(':')[0].replace(/[^0-9]/g, "");
+      // WhatsApp introduziu LIDs (IDs de 14-15 digitos que nao sao o numero real)
+      // Se o numero for muito longo, pode ser um LID. 
+      // Em versoes novas do Baileys, o remoteJid ja deveria refletir o numero se for chat direto.
+      
       const participantName = msg.pushName || "Cliente WhatsApp";
       const textMessage = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
       
