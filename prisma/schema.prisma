@@ -42,8 +42,8 @@ model Lead {
 model Message {
   id          String   @id @default(cuid())
   content     String
-  authorId    String
-  author      User     @relation("UserMessages", fields: [authorId], references: [id])
+  authorId    String?
+  author      User?    @relation("UserMessages", fields: [authorId], references: [id], onDelete: SetNull)
   leadId      String
   lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
   isSystem    Boolean  @default(false) // Define se é um registro automático do sistema ou um comentário do vendedor

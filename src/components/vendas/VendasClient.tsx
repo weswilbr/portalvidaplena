@@ -425,12 +425,12 @@ export default function VendasClient({ user }: { user: any }) {
                   <div key={msg.id} className={cn(
                     "p-4 rounded-2xl w-[90%] space-y-2 relative group",
                     msg.isSystem ? "bg-slate-200 text-slate-700 mx-auto w-[95%] text-xs text-center italic" : 
-                    msg.author.name === user.name ? "bg-indigo-600 text-white ml-auto rounded-br-sm" : 
+                    msg.author?.name === user.name ? "bg-indigo-600 text-white ml-auto rounded-br-sm" : 
                     "bg-white border border-slate-200 text-slate-800 rounded-bl-sm"
                   )}>
                     {!msg.isSystem && (
                       <div className="flex justify-between items-center text-[10px] font-bold opacity-70 mb-1">
-                        <span>{msg.author.name === user.name ? "Você" : msg.author.name}</span>
+                        <span>{msg.author?.name === user.name ? "Você" : msg.author?.name || "Usuário Removido"}</span>
                         <span>{new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
                     )}
