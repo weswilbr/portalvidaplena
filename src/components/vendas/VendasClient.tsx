@@ -162,10 +162,6 @@ export default function VendasClient({ user }: { user: any }) {
     });
   }, [searchTerm, statusFilter, leads]);
 
-  const handleSendMessageWhatsApp = (phone: string) => {
-    if (!phone) return;
-    openWhatsApp(phone, "Olá! Sou consultor 4Life, vi seu interesse em nossos produtos. Como posso te auxiliar?");
-  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -550,7 +546,6 @@ export default function VendasClient({ user }: { user: any }) {
           leads={filteredLeads}
           onEdit={(l) => { setSelectedLead(l); setIsDetailsOpen(true); }}
           onDelete={async (id) => { if (user.role === "ADMIN" && confirm("Excluir totalmente?")) { await deleteLead(id); refreshData(); } }}
-          onSendMessage={handleSendMessageWhatsApp}
           onStatusChange={handleKanbanStatusChange}
         />
       ) : (

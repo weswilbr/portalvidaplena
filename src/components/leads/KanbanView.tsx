@@ -31,7 +31,6 @@ interface KanbanViewProps {
   leads: Lead[];
   onEdit: (lead: Lead) => void;
   onDelete: (id: string) => void;
-  onSendMessage: (phone: string) => void;
   onStatusChange?: (leadId: string, newStatus: string) => Promise<void> | void;
 }
 
@@ -42,7 +41,7 @@ const statusColumns = [
   { id: "CLOSED", label: "Fechados", color: "bg-emerald-500" },
 ];
 
-export default function KanbanView({ leads, onEdit, onDelete, onSendMessage, onStatusChange }: KanbanViewProps) {
+export default function KanbanView({ leads, onEdit, onDelete, onStatusChange }: KanbanViewProps) {
   const [draggedLead, setDraggedLead] = React.useState<Lead | null>(null);
 
   const groupedLeads = useMemo(() => {
@@ -53,13 +52,12 @@ export default function KanbanView({ leads, onEdit, onDelete, onSendMessage, onS
   }, [leads]);
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // Necessário para permitir o drop nativo
+    e.preventDefault(); 
   };
 
   const handleDrop = (e: React.DragEvent, statusId: string) => {
     e.preventDefault();
     if (draggedLead && draggedLead.status !== statusId && onStatusChange) {
-      // Chama o callback externo para atualizar no Banco Prisma/estado React
       onStatusChange(draggedLead.id, statusId);
     }
     setDraggedLead(null);
@@ -104,9 +102,6 @@ export default function KanbanView({ leads, onEdit, onDelete, onSendMessage, onS
                     <h4 className="font-bold text-slate-900 dark:text-slate-100 leading-tight">{lead.name}</h4>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => onEdit(lead)} className="p-1 hover:text-blue-600 transition-colors">
-                      <ExternalLink size={14} />
-                    </button>
                     <button onClick={() => onDelete(lead.id)} className="p-1 hover:text-red-500 transition-colors">
                       <X size={14} />
                     </button>
@@ -119,15 +114,13 @@ export default function KanbanView({ leads, onEdit, onDelete, onSendMessage, onS
                    </span>
                 )}
 
-                <div className="flex items-center justify-between mt-3">
-                  <a href={getWhatsAppHref(lead.phone?.split(':')[0] || '')} target="_blank" rel="noreferrer" className="text-xs text-slate-500 hover:text-green-600 flex items-center gap-1 font-bold transition-colors">
-                    <Phone size={12} /> {formatPhoneNumber(lead.phone || "") || "Sem Contato"}
-                  </a>
+                <div className="mt-3">
                   <button 
-                    onClick={() => lead.phone && onSendMessage(lead.phone)}
-                    className="p-2 bg-slate-100 text-slate-400 rounded-xl hover:bg-green-500 hover:text-white transition-all shadow-sm"
+                    onClick={() => onEdit(lead)}
+                    className="w-full py-2.5 bg-indigo-50 text-indigo-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2"
                   >
                     <MessageSquare size={14} />
+                    Abrir Atendimento
                   </button>
                 </div>
               </div>
