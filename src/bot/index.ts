@@ -211,13 +211,27 @@ client.on('message', async (msg: any) => {
       }
     }
 
+    // Transcrição de áudio se disponível
+    let transcription = null;
+    if (savedMediaType === 'audio' && savedMediaUrl && process.env.OPENAI_API_KEY) {
+      console.log("🎙️ Áudio detectado. Iniciando transcrição...");
+      try {
+        // Placeholder para chamada de transcrição (Whisper)
+        // transcription = await transcribeAudio(savedMediaUrl);
+        transcription = "[Transcrição automática em processamento...]"; 
+      } catch (err) {
+        console.error("Erro na transcrição:", err);
+      }
+    }
+
     await (prisma as any).message.create({
       data: {
         content: finalContent || '[Mensagem]',
         leadId: lead.id,
         isSystem: false,
         mediaUrl: savedMediaUrl,
-        mediaType: savedMediaType
+        mediaType: savedMediaType,
+        transcription: transcription
       }
     });
 
@@ -255,7 +269,12 @@ setInterval(async () => {
           }
           
           if (media) {
-            await client.sendMessage(`${om.to}@c.us`, media, { caption: om.body });
+            const isAudio = om.mediaType === 'audio' || (media && media.mimetype.startsWith('audio/'));
+            // Se for áudio, envia como PTT (mensagem de voz nativa)
+            await client.sendMessage(`${om.to}@c.us`, media, { 
+              caption: om.body || undefined,
+              sendAudioAsVoice: isAudio // Isso habilita o modo mensagem de voz
+            });
           } else {
             await client.sendMessage(`${om.to}@c.us`, om.body);
           }

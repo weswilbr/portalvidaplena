@@ -200,7 +200,9 @@ export async function uploadMedia(formData: FormData) {
     return { 
       success: true, 
       url: dataUri, 
-      type: file.type.startsWith("image") ? "image" : file.type.startsWith("video") ? "video" : "document" 
+      type: file.type.startsWith("image") ? "image" : 
+            file.type.startsWith("video") ? "video" : 
+            file.type.startsWith("audio") ? "audio" : "document" 
     };
   } catch (error) {
     console.error("Erro no upload:", error);

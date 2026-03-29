@@ -23,7 +23,12 @@ import {
   FileText,
   MoreVertical,
   ChevronLeft,
-  CalendarCheck
+  CalendarCheck,
+  Mic,
+  Square,
+  Volume2,
+  Play,
+  Pause
 } from "lucide-react";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { cn, openWhatsApp, getWhatsAppHref } from "@/lib/utils";
@@ -85,9 +90,14 @@ export default function VendasClient({ user }: { user: any }) {
   const [isEmojiOpen, setIsEmojiOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     refreshData();
@@ -205,6 +215,48 @@ export default function VendasClient({ user }: { user: any }) {
   const addEmoji = (emoji: string) => {
     setNewMessage(prev => prev + emoji);
     setIsEmojiOpen(false);
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm; codecs=opus' });
+        const file = new File([audioBlob], "voice_message.webm", { type: 'audio/webm; codecs=opus' });
+        setSelectedFile(file);
+        setFilePreview(null);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      recorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      timerRef.current = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
+    } catch (err) {
+      alert("Permissão de áudio negada ou erro no gravador.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleTransfer = async () => {
@@ -589,6 +641,25 @@ export default function VendasClient({ user }: { user: any }) {
                                 controls 
                                 className="rounded-lg max-w-full h-auto border border-black/5"
                               />
+                            ) : msg.mediaType === 'audio' || msg.mediaUrl.startsWith('data:audio') ? (
+                              <div className="flex flex-col gap-2 min-w-[200px]">
+                                <div className="flex items-center gap-3 p-2 bg-black/5 rounded-2xl border border-black/5">
+                                  <div className="p-2 bg-[#d9fdd3] text-[#111b21] rounded-full shadow-sm">
+                                    <Volume2 size={20} />
+                                  </div>
+                                  <audio 
+                                    src={msg.mediaUrl} 
+                                    controls 
+                                    className="h-8 max-w-[150px] md:max-w-full"
+                                  />
+                                </div>
+                                {msg.transcription && (
+                                  <div className="bg-white/40 p-2 rounded-lg border border-black/5 text-[11px] font-medium italic text-[#54656f]">
+                                    <span className="font-black text-[9px] uppercase tracking-widest block mb-1">Transcrição:</span>
+                                    {msg.transcription}
+                                  </div>
+                                )}
+                              </div>
                             ) : (
                               <div className="flex items-center gap-3 p-3 bg-white/50 dark:bg-black/5 rounded-lg border border-black/5 min-w-[200px]">
                                 <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
@@ -661,16 +732,26 @@ export default function VendasClient({ user }: { user: any }) {
 
                 <form onSubmit={handleSendMessage} className="flex-1 flex gap-2">
                   <div className="flex-1 relative">
-                    <input
-                      type="text"
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder={isNoteMode ? "Adicionar nota interna..." : "Enviar mensagem pelo CRM..."}
-                      className={cn(
-                        "w-full h-12 px-4 rounded-2xl text-sm font-semibold border-none outline-none transition-all shadow-sm",
-                        isNoteMode ? "bg-[#fef3c7] focus:ring-2 focus:ring-amber-300" : "bg-white focus:ring-2 focus:ring-indigo-300"
-                      )}
-                    />
+                    {isRecording ? (
+                      <div className="w-full h-12 px-4 rounded-2xl bg-[#ffeeee] flex items-center justify-between border border-red-100 shadow-sm animate-pulse">
+                         <div className="flex items-center gap-3">
+                           <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
+                           <span className="text-[12px] font-bold text-red-600 tracking-tighter uppercase">Gravando Voice: {formatTime(recordingTime)}</span>
+                         </div>
+                         <button type="button" onClick={stopRecording} className="p-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition-all"><Square size={16}/></button>
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder={isNoteMode ? "Adicionar nota interna..." : "Enviar mensagem pelo CRM..."}
+                        className={cn(
+                          "w-full h-12 px-4 rounded-2xl text-sm font-semibold border-none outline-none transition-all shadow-sm",
+                          isNoteMode ? "bg-[#fef3c7] focus:ring-2 focus:ring-amber-300" : "bg-white focus:ring-2 focus:ring-indigo-300"
+                        )}
+                      />
+                    )}
                     {isEmojiOpen && (
                       <div className="absolute bottom-16 left-0 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-[2rem] p-5 grid grid-cols-6 gap-3 border border-slate-100 animate-in slide-in-from-bottom-2 duration-300 z-[70] w-64 md:w-80">
                         {["😀", "😂", "🚀", "🔥", "✅", "🙌", "🤝", "📦", "💰", "📞", "📝", "❓", "📌", "⚠️", "⏳", "🎉", "💙", "💊"].map(emoji => (
@@ -694,16 +775,26 @@ export default function VendasClient({ user }: { user: any }) {
                       {isNoteMode ? <CalendarCheck size={24} /> : <FileText size={24} />}
                     </button>
 
-                    <button
-                      type="submit"
-                      disabled={(!newMessage.trim() && !selectedFile) || isSending}
-                      className={cn(
-                        "w-12 h-12 flex items-center justify-center rounded-2xl text-white shadow-xl transition-all active:scale-95",
-                        isNoteMode ? "bg-amber-600 shadow-amber-200" : "bg-[#00a884] shadow-emerald-200"
-                      )}
-                    >
-                      {isSending ? <Loader2 size={24} className="animate-spin" /> : <Send size={24} className="ml-0.5" />}
-                    </button>
+                    {!isNoteMode && !newMessage && !selectedFile ? (
+                      <button
+                        type="button"
+                        onClick={startRecording}
+                        className="w-12 h-12 flex items-center justify-center rounded-2xl bg-[#00a884] text-white shadow-xl shadow-emerald-200 hover:scale-110 active:scale-95 transition-all"
+                      >
+                        <Mic size={24} />
+                      </button>
+                    ) : (
+                      <button
+                        type="submit"
+                        disabled={(!newMessage.trim() && !selectedFile) || isSending}
+                        className={cn(
+                          "w-12 h-12 flex items-center justify-center rounded-2xl text-white shadow-xl transition-all active:scale-95",
+                          isNoteMode ? "bg-amber-600 shadow-amber-200" : "bg-[#00a884] shadow-emerald-200"
+                        )}
+                      >
+                        {isSending ? <Loader2 size={24} className="animate-spin" /> : <Send size={24} className="ml-0.5" />}
+                      </button>
+                    )}
                   </div>
                 </form>
               </div>
