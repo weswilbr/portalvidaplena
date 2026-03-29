@@ -3,9 +3,21 @@
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-export async function getLeads() {
+export async function getLeads(assignedToId?: string) {
   try {
-    return await prisma.lead.findMany({
+    return await (prisma as any).lead.findMany({
+      where: assignedToId ? { assignedToId } : {},
+      include: {
+        assignedTo: {
+          select: { name: true, id: true }
+        },
+        messages: {
+          include: {
+            author: { select: { name: true } }
+          },
+          orderBy: { createdAt: "asc" }
+        }
+      },
       orderBy: { createdAt: "desc" },
     });
   } catch (error) {
@@ -21,19 +33,56 @@ export async function createLead(data: {
   source?: string;
   interest?: string;
   status?: string;
+  assignedToId?: string;
 }) {
   try {
-    const lead = await prisma.lead.create({
+    let assignedUserId = data.assignedToId;
+
+    // Lógica de Atribuição Automática (Round Robin Simplificado)
+    if (!assignedUserId) {
+      const sellers = await (prisma as any).user.findMany({
+        where: { role: "SELLER" },
+        select: { id: true },
+      });
+
+      if (sellers.length > 0) {
+        // Atribui ao vendedor que tem menos leads no momento
+        const leadCounts = await Promise.all(
+          sellers.map(async (s: any) => ({
+            id: s.id,
+            count: await (prisma as any).lead.count({ where: { assignedToId: s.id } }),
+          }))
+        );
+        
+        assignedUserId = leadCounts.sort((a, b) => a.count - b.count)[0].id;
+      }
+    }
+
+    const lead = await (prisma as any).lead.create({
       data: {
         name: data.name,
         phone: data.phone,
         email: data.email,
         source: data.source || "Manual",
-        interest: data.interest,
+        interest: data.interest || "Negócio",
         status: data.status || "NEW",
+        assignedToId: assignedUserId,
       },
     });
+
+    if (assignedUserId) {
+      await (prisma as any).message.create({
+        data: {
+          content: "Atendimento iniciado.",
+          authorId: assignedUserId,
+          leadId: lead.id,
+          isSystem: true
+        }
+      });
+    }
+
     revalidatePath("/dashboard/leads");
+    revalidatePath("/dashboard/vendas");
     revalidatePath("/dashboard");
     return { success: true, lead };
   } catch (error) {
@@ -44,11 +93,12 @@ export async function createLead(data: {
 
 export async function updateLead(id: string, data: any) {
   try {
-    const lead = await prisma.lead.update({
+    const lead = await (prisma as any).lead.update({
       where: { id },
       data,
     });
     revalidatePath("/dashboard/leads");
+    revalidatePath("/dashboard/vendas");
     revalidatePath("/dashboard");
     return { success: true, lead };
   } catch (error) {
@@ -59,14 +109,86 @@ export async function updateLead(id: string, data: any) {
 
 export async function deleteLead(id: string) {
   try {
-    await prisma.lead.delete({
+    await (prisma as any).lead.delete({
       where: { id },
     });
     revalidatePath("/dashboard/leads");
+    revalidatePath("/dashboard/vendas");
     revalidatePath("/dashboard");
     return { success: true };
   } catch (error) {
     console.error("Error deleting lead:", error);
     return { success: false, error: "Failed to delete lead" };
+  }
+}
+
+export async function addMessage(data: { leadId: string; content: string; authorId: string; isSystem?: boolean }) {
+  try {
+    const message = await (prisma as any).message.create({
+      data: {
+        content: data.content,
+        authorId: data.authorId,
+        leadId: data.leadId,
+        isSystem: data.isSystem || false
+      }
+    });
+    revalidatePath("/dashboard/leads");
+    revalidatePath("/dashboard/vendas");
+    return { success: true, message };
+  } catch (error) {
+    console.error("Error adding message:", error);
+    return { success: false, error: "Falha ao adicionar nota" };
+  }
+}
+
+export async function transferLead(leadId: string, newAssignedToId: string, currentUserId: string, motive?: string) {
+  try {
+    const lead = await (prisma as any).lead.update({
+      where: { id: leadId },
+      data: { assignedToId: newAssignedToId }
+    });
+
+    const newSeller = await (prisma as any).user.findUnique({ where: { id: newAssignedToId } });
+
+    await (prisma as any).message.create({
+      data: {
+        content: `Atendimento transferido para ${newSeller?.name || 'outro vendedor'}. ${motive ? 'Motivo: ' + motive : ''}`,
+        authorId: currentUserId,
+        leadId: lead.id,
+        isSystem: true
+      }
+    });
+
+    revalidatePath("/dashboard/leads");
+    revalidatePath("/dashboard/vendas");
+    return { success: true, lead };
+  } catch (error) {
+    console.error("Error transferring lead:", error);
+    return { success: false, error: "Falha ao transferir atendimento" };
+  }
+}
+
+export async function pullLead(leadId: string, currentUserId: string) {
+  try {
+    const lead = await (prisma as any).lead.update({
+      where: { id: leadId },
+      data: { assignedToId: currentUserId, status: "CONTACTED" }
+    });
+
+    await (prisma as any).message.create({
+      data: {
+        content: `Vendedor puxou o atendimento para sua fila. Status atualizado para em atendimento.`,
+        authorId: currentUserId,
+        leadId: lead.id,
+        isSystem: true
+      }
+    });
+
+    revalidatePath("/dashboard/leads");
+    revalidatePath("/dashboard/vendas");
+    return { success: true, lead };
+  } catch (error) {
+    console.error("Error pulling lead:", error);
+    return { success: false, error: "Falha ao puxar atendimento" };
   }
 }

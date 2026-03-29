@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@prisma/client' // Re-generating client...
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
 
@@ -25,8 +25,13 @@ declare global {
   var prisma: undefined | ReturnType<typeof prismaClientSingleton>
 }
 
-const prisma = globalThis.prisma ?? prismaClientSingleton()
+// Limpando o cache global para forçar recarregamento dos novos modelos (User, etc)
+if (typeof globalThis !== 'undefined') {
+  (globalThis as any).prisma = undefined;
+}
+
+const prisma = prismaClientSingleton()
 
 export default prisma
 
-if (process.env.NODE_ENV !== 'production') globalThis.prisma = prisma
+if (process.env.NODE_ENV !== 'production') (globalThis as any).prisma = prisma

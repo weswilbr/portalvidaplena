@@ -9,6 +9,19 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  phone       String?  @unique
+  password    String
+  role        String   @default("SELLER") // ADMIN, SELLER
+  leads       Lead[]   @relation("UserLeads")
+  messages    Message[] @relation("UserMessages")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model Lead {
   id          String   @id @default(cuid())
   name        String
@@ -18,8 +31,22 @@ model Lead {
   status      String   @default("NEW") // NEW, CONTACTED, PRESENTED, CLOSED, LOST
   interest    String?  // Produto, Negócio
   notes       String?
+  assignedToId String?
+  assignedTo   User?    @relation("UserLeads", fields: [assignedToId], references: [id])
+  messages    Message[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  content     String
+  authorId    String
+  author      User     @relation("UserMessages", fields: [authorId], references: [id])
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  isSystem    Boolean  @default(false) // Define se é um registro automático do sistema ou um comentário do vendedor
+  createdAt   DateTime @default(now())
 }
 
 model Customer {
@@ -65,4 +92,14 @@ model Metric {
   presentations Int    @default(0)
   signups     Int      @default(0)
   lpGenerated Int      @default(0)
+}
+
+model BotConfig {
+  id              String   @id @default(cuid())
+  status          String   @default("DISCONNECTED") // DISCONNECTED, CONNECTING, CONNECTED, QR_READY
+  qrCode          String?  @db.Text
+  welcomeMessage  String?  @db.Text
+  transferMessage String?  @db.Text
+  isRoundRobin    Boolean  @default(true) // Se ativo, distribui leads automaticamente; se falso, envia para a fila geral
+  updatedAt       DateTime @updatedAt
 }
