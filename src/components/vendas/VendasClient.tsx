@@ -380,9 +380,9 @@ export default function VendasClient({ user }: { user: any }) {
                          {(!lead.assignedTo || lead.assignedTo.id !== user.id) && (
                            <button 
                             onClick={() => handlePullLead(lead.id)}
-                            className="px-3 py-1.5 md:px-4 md:py-2 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-xs hover:bg-indigo-600 hover:text-white transition-all shadow-sm flex items-center gap-1"
+                            className="px-3 py-1.5 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 active:scale-95 transition-all shadow-sm flex items-center gap-1.5"
                            >
-                             <ArrowRightLeft size={14} /> <span className="hidden md:inline">Puxar</span>
+                             <ArrowRightLeft size={14} /> Puxar
                            </button>
                          )}
                          <button 

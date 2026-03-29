@@ -25,7 +25,7 @@ import { logout } from "@/app/actions/auth";
 const ALL_MENU_ITEMS = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", roles: ["ADMIN"] },
   { icon: Users, label: "Equipe", href: "/dashboard/equipe", roles: ["ADMIN"] },
-  { icon: UserPlus, label: "Leads (Negócio)", href: "/dashboard/leads", roles: ["ADMIN"] },
+  { icon: UserPlus, label: "Leads (Negócio)", href: "/dashboard/leads", roles: ["ADMIN", "SELLER"] },
   { icon: ShoppingBag, label: "Vendas (Produtos)", href: "/dashboard/vendas", roles: ["ADMIN", "SELLER"] },
   { icon: Bot, label: "Bot WhatsApp", href: "/dashboard/bot", roles: ["ADMIN"] },
   { icon: BarChart3, label: "Metas Ouro Elite", href: "/dashboard/goals", roles: ["ADMIN"] },
