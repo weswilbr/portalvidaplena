@@ -2,6 +2,7 @@ import { makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } from 
 import { Boom } from '@hapi/boom';
 import pino from 'pino';
 import * as QRCode from 'qrcode';
+import qrcodeTerminal from 'qrcode-terminal';
 import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 import prisma from '../lib/prisma';
@@ -30,7 +31,6 @@ async function startBot() {
 
   const sock = makeWASocket({
     auth: state,
-    printQRInTerminal: true,
     logger,
     browser: Browsers.macOS('Desktop')
   });
@@ -42,6 +42,7 @@ async function startBot() {
 
     if (qr) {
       console.log('✅ Novo QR Code gerado.');
+      qrcodeTerminal.generate(qr, { small: true });
       try {
         const qrBase64 = await QRCode.toDataURL(qr);
         const cfg = await getOrCreateBotConfig();
