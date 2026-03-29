@@ -71,6 +71,46 @@ client.on('qr', async (qr: string) => {
   }
 });
 
+async function scanProfilePhotos() {
+  try {
+    console.log('🔍 Iniciando varredura de fotos de perfil faltantes...');
+    const leadsWithoutPic = await (prisma as any).lead.findMany({
+      where: { profilePic: null },
+      take: 40
+    });
+    
+    if (leadsWithoutPic.length === 0) {
+      console.log('✅ Todos os leads já possuem foto ou fila vazia.');
+      return;
+    }
+
+    for (const lead of leadsWithoutPic) {
+      try {
+        // Formata o ID do WhatsApp (remove : e cuida de LIDs se necessário)
+        const jid = lead.phone.includes('@') ? lead.phone : `${lead.phone.split(':')[0]}@c.us`;
+        const contact = await client.getContactById(jid);
+        const picUrl = await contact.getProfilePicUrl();
+        
+        if (picUrl) {
+           await (prisma as any).lead.update({
+             where: { id: lead.id },
+             data: { profilePic: picUrl }
+           });
+           console.log(`📸 Foto capturada com sucesso para: ${lead.name}`);
+        }
+        
+        // Delay de 3 segundos entre cada consulta por segurança
+        await new Promise(r => setTimeout(r, 3000));
+      } catch (e) {
+        // Avança silenciosamente se o contato for privado ou inválido
+      }
+    }
+    console.log('✨ Varredura de fotos concluída.');
+  } catch (err) {
+    console.error('Erro na varredura de fotos:', err);
+  }
+}
+
 client.on('ready', async () => {
   console.log('🚀 WhatsApp conectado com sucesso!');
   const cfg = await getOrCreateBotConfig();
@@ -78,6 +118,9 @@ client.on('ready', async () => {
     where: { id: cfg.id },
     data: { status: 'CONNECTED', qrCode: null }
   });
+
+  // Dispara a varredura em background após 10 segundos da conexão
+  setTimeout(() => scanProfilePhotos(), 10000);
 });
 
 client.on('auth_failure', async (msg: string) => {
