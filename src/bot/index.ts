@@ -90,6 +90,22 @@ async function startBot() {
 
   sock.ev.on('creds.update', saveCreds);
 
+  // Estratégia 1: History Sync - dispara na conexão inicial com TODOS os contatos
+  sock.ev.on('messaging-history.set' as any, ({ contacts = [] }: any) => {
+    console.log(`📋 History Sync: ${contacts.length} contatos recebidos`);
+    for (const contact of contacts) {
+      if (contact.id && contact.phoneNumber) {
+        const lid = contact.id.split('@')[0].split(':')[0];
+        const pn = contact.phoneNumber.replace(/[^0-9]/g, '');
+        if (lid.length > 13 && pn.length <= 13) {
+          lidPnMap[lid] = pn;
+          saveLidMap();
+          console.log(`🔗 Mapeamento via History Sync: LID ${lid} -> PN ${pn}`);
+        }
+      }
+    }
+  });
+
   // Listener para capturar mapeamento de LID -> Phone Number
   sock.ev.on('contacts.upsert', (contacts) => {
     for (const contact of contacts) {
@@ -187,24 +203,49 @@ async function startBot() {
       let rawId = remoteJid.split('@')[0].split(':')[0];
       let phoneOnly = rawId.replace(/[^0-9]/g, "");
 
-      // 1. Tenta buscar no Mapa Manual (LID resolved)
+      // 1. Tenta buscar no Mapa Manual (LID persistido)
       if (lidPnMap[phoneOnly]) {
           console.log(`🎯 Resolvido via Mapa: ${phoneOnly} -> ${lidPnMap[phoneOnly]}`);
           phoneOnly = lidPnMap[phoneOnly];
       }
-      
-      // 2. Fallback: Se ainda for LID (ID gigante), tenta metadados da mensagem
+
+      // 2. Fallback: tenta metadados da mensagem (participant)
       if (phoneOnly.length > 13) {
           const realContactJid = msg.key.participant || remoteJid;
           const extractedPN = realContactJid.split('@')[0].split(':')[0].replace(/[^0-9]/g, "");
-          
           if (extractedPN.length <= 13 && (extractedPN.startsWith("55") || extractedPN.length >= 10)) {
-              console.log(`✅ LID ${phoneOnly} resolvido via Participant/Meta: ${extractedPN}`);
+              lidPnMap[phoneOnly] = extractedPN;
+              saveLidMap();
+              console.log(`✅ LID ${phoneOnly} resolvido via Participant: ${extractedPN}`);
               phoneOnly = extractedPN;
           }
       }
 
-      // 3. Fallback Final: Se for grupo (embora já filtramos), ou se virmos um ID de dispositivo, limpamos
+      // 3. Fallback: contatos internos do Baileys (sock.contacts)
+      if (phoneOnly.length > 13) {
+          const internalContacts = (sock as any).contacts as Record<string, any> | undefined;
+          if (internalContacts) {
+              const contact = internalContacts[remoteJid]
+                  || internalContacts[`${phoneOnly}@lid`]
+                  || internalContacts[`${phoneOnly}@s.whatsapp.net`];
+              if (contact?.phoneNumber) {
+                  const pn = contact.phoneNumber.replace(/[^0-9]/g, "");
+                  if (pn.length <= 13) {
+                      lidPnMap[phoneOnly] = pn;
+                      saveLidMap();
+                      console.log(`✅ Resolvido via sock.contacts: ${phoneOnly} -> ${pn}`);
+                      phoneOnly = pn;
+                  }
+              }
+          }
+      }
+
+      // Debug: loga dados brutos quando LID ainda não foi resolvido
+      if (phoneOnly.length > 13) {
+          console.log(`⚠️ LID não resolvido: ${phoneOnly}`);
+          console.log(`   remoteJid: ${remoteJid} | pushName: ${msg.pushName || 'sem nome'}`);
+      }
+
       if (phoneOnly.includes(':')) phoneOnly = phoneOnly.split(':')[0];
       
       const participantName = msg.pushName || "Cliente WhatsApp";
