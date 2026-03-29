@@ -202,14 +202,22 @@ export default function VendasClient({ user }: { user: any }) {
       });
     }
 
-    if (res.success) {
-      setNewMessage("");
-      setSelectedFile(null);
-      setFilePreview(null);
-      setIsEmojiOpen(false);
-      refreshData();
+    try {
+      if (res.success) {
+        setNewMessage("");
+        setSelectedFile(null);
+        setFilePreview(null);
+        setIsEmojiOpen(false);
+        refreshData();
+      } else {
+        alert(res.error || "Ocorreu um erro ao enviar.");
+      }
+    } catch (err) {
+      console.error("Error in send response logic:", err);
+      alert("Erro inesperado no sistema. Tente novamente.");
+    } finally {
+      setIsSending(false);
     }
-    setIsSending(false);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
