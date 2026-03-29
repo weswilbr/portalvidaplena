@@ -33,11 +33,12 @@ import {
   Zap,
   Tag,
   History,
-  Info
+  Info,
+  Edit2
 } from "lucide-react";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { cn, openWhatsApp, getWhatsAppHref } from "@/lib/utils";
-import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead, sendWhatsAppMessage, addInternalNote, uploadMedia, deleteMessage, updateMessage, getQuickReplies, createQuickReply, deleteQuickReply } from "@/app/actions/leads";
+import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead, sendWhatsAppMessage, addInternalNote, uploadMedia, deleteMessage, updateMessage, getQuickReplies, createQuickReply, deleteQuickReply, updateQuickReply } from "@/app/actions/leads";
 import { getSellers } from "@/app/actions/users";
 import KanbanView from "@/components/leads/KanbanView";
 
@@ -102,6 +103,7 @@ export default function VendasClient({ user }: { user: any }) {
   const [quickReplies, setQuickReplies] = useState<any[]>([]);
   const [isGatilhoOpen, setIsGatilhoOpen] = useState(false);
   const [isGatilhoManagerOpen, setIsGatilhoManagerOpen] = useState(false);
+  const [editingQR, setEditingQR] = useState<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -317,12 +319,35 @@ export default function VendasClient({ user }: { user: any }) {
 
   const handleAddGatilho = async () => {
     if (!newQRTitle || !newQRContent) return;
-    const res = await createQuickReply({ title: newQRTitle, content: newQRContent, userId: user.id });
-    if (res.success) {
-      setNewQRTitle("");
-      setNewQRContent("");
-      refreshData();
+    
+    if (editingQR) {
+      const res = await updateQuickReply(editingQR.id, { title: newQRTitle, content: newQRContent });
+      if (res.success) {
+        setNewQRTitle("");
+        setNewQRContent("");
+        setEditingQR(null);
+        refreshData();
+      }
+    } else {
+      const res = await createQuickReply({ title: newQRTitle, content: newQRContent, userId: user.id });
+      if (res.success) {
+        setNewQRTitle("");
+        setNewQRContent("");
+        refreshData();
+      }
     }
+  };
+
+  const handleEditQR = (qr: any) => {
+    setEditingQR(qr);
+    setNewQRTitle(qr.title);
+    setNewQRContent(qr.content);
+  };
+
+  const cancelEditQR = () => {
+     setEditingQR(null);
+     setNewQRTitle("");
+     setNewQRContent("");
   };
 
   const handleCreateInitialGatilhos = async () => {
@@ -1002,54 +1027,94 @@ export default function VendasClient({ user }: { user: any }) {
 
       {/* Modal Gerenciador de Gatilhos */}
       {isGatilhoManagerOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl p-10 animate-in zoom-in duration-300 flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-black">Gerenciar Gatilhos</h2>
-              <button onClick={() => setIsGatilhoManagerOpen(false)} className="p-3 hover:bg-slate-100 rounded-2xl transition-all text-slate-400">
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-xl z-[100] flex items-center justify-center p-0 md:p-6 overflow-hidden">
+          <div className="bg-white w-full h-full md:h-auto md:max-h-[90vh] md:max-w-4xl md:rounded-[3rem] shadow-2xl flex flex-col animate-in zoom-in duration-300">
+            <div className="flex items-center justify-between p-6 md:p-10 border-b border-slate-50">
+              <div>
+                <h2 className="text-xl md:text-2xl font-black text-slate-900">Gerenciador de Gatilhos</h2>
+                <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Personalize suas respostas rápidas</p>
+              </div>
+              <button 
+                onClick={() => { setIsGatilhoManagerOpen(false); cancelEditQR(); }} 
+                className="p-3 hover:bg-slate-100 rounded-2xl transition-all text-slate-400"
+              >
                 <X size={24} />
               </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-1 overflow-hidden">
-               <div className="space-y-5 flex flex-col">
-                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-400">Novo Gatilho</h4>
-                  <div className="space-y-4">
-                    <input 
-                      placeholder="Título (ex: Preços)" 
-                      className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none font-bold text-sm"
-                      value={newQRTitle}
-                      onChange={(e) => setNewQRTitle(e.target.value)}
-                    />
-                    <textarea 
-                      placeholder="Conteúdo da mensagem..." 
-                      className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none font-medium text-sm h-48 md:h-64"
-                      value={newQRContent}
-                      onChange={(e) => setNewQRContent(e.target.value)}
-                    />
-                    <button 
-                      onClick={handleAddGatilho}
-                      className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg hover:bg-indigo-700 transition-all"
-                    >
-                      CRIAR GATILHO
-                    </button>
-                  </div>
-               </div>
+            <div className="flex-1 overflow-y-auto p-6 md:p-10">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                {/* Coluna de Cadastro/Edição */}
+                <div className="space-y-6">
+                   <div className="flex items-center justify-between">
+                     <h4 className="text-xs font-black uppercase tracking-[0.2em] text-indigo-500">
+                       {editingQR ? "Editando Gatilho" : "Criar Novo Gatilho"}
+                     </h4>
+                     {editingQR && (
+                       <button onClick={cancelEditQR} className="text-[10px] font-bold text-red-500 hover:underline">Cancelar Edição</button>
+                     )}
+                   </div>
+                   <div className="space-y-4">
+                     <div>
+                       <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Título do Botão</label>
+                       <input 
+                         placeholder="Ex: Preços, Boas-vindas..." 
+                         className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-4 focus:ring-indigo-100 transition-all font-bold text-slate-900 text-sm"
+                         value={newQRTitle}
+                         onChange={(e) => setNewQRTitle(e.target.value)}
+                       />
+                     </div>
+                     <div>
+                       <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Mensagem do Gatilho</label>
+                       <textarea 
+                         placeholder="Escreva o texto que será enviado..." 
+                         className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-4 focus:ring-indigo-100 transition-all font-medium text-slate-700 text-sm h-48 md:h-64 resize-none"
+                         value={newQRContent}
+                         onChange={(e) => setNewQRContent(e.target.value)}
+                       />
+                     </div>
+                     <button 
+                       onClick={handleAddGatilho}
+                       className={cn(
+                        "w-full py-5 rounded-2xl font-black shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2",
+                        editingQR ? "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200" : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200"
+                       )}
+                     >
+                       {editingQR ? "ATUALIZAR GATILHO" : "CRIAR GATILHO AGORA"}
+                       <Zap size={20} className={editingQR ? "animate-pulse" : ""} />
+                     </button>
+                   </div>
+                </div>
 
-               <div className="space-y-5 flex flex-col overflow-hidden">
-                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-400">Meus Gatilhos ({quickReplies.length})</h4>
-                  <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-                    {quickReplies.map(qr => (
-                      <div key={qr.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
-                         <div className="flex items-start justify-between mb-2">
-                            <span className="font-bold text-sm text-slate-900">{qr.title}</span>
-                            <button onClick={() => handleDeleteGatilho(qr.id)} className="text-red-400 hover:text-red-600 transition-all"><Trash2 size={16}/></button>
+                {/* Coluna da Lista */}
+                <div className="space-y-6 flex flex-col">
+                   <h4 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Meus Gatilhos ({quickReplies.length})</h4>
+                   <div className="space-y-4">
+                     {quickReplies.length === 0 ? (
+                       <div className="p-10 text-center border-2 border-dashed border-slate-100 rounded-[2.5rem]">
+                          <Zap size={32} className="mx-auto text-slate-200 mb-4" />
+                          <p className="text-sm font-bold text-slate-400">Nenhum gatilho para exibir.</p>
+                       </div>
+                     ) : (
+                       quickReplies.map(qr => (
+                         <div key={qr.id} className={cn(
+                           "p-5 rounded-2xl border transition-all group relative",
+                           editingQR?.id === qr.id ? "bg-amber-50 border-amber-200 ring-2 ring-amber-100 shadow-sm" : "bg-slate-50 border-slate-100 hover:bg-white hover:shadow-xl hover:border-slate-200"
+                         )}>
+                            <div className="flex items-center justify-between mb-2">
+                               <span className="font-bold text-sm text-slate-900">{qr.title}</span>
+                               <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-all">
+                                  <button onClick={() => handleEditQR(qr)} className="text-slate-400 hover:text-indigo-600 transition-all" title="Editar"><Edit2 size={16}/></button>
+                                  <button onClick={() => handleDeleteGatilho(qr.id)} className="text-slate-400 hover:text-red-600 transition-all" title="Excluir"><Trash2 size={16}/></button>
+                               </div>
+                            </div>
+                            <p className="text-[10px] text-slate-500 leading-relaxed line-clamp-2">{qr.content}</p>
                          </div>
-                         <p className="text-[10px] text-slate-500 line-clamp-3">{qr.content}</p>
-                      </div>
-                    ))}
-                  </div>
-               </div>
+                       ))
+                     )}
+                   </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

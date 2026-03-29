@@ -357,3 +357,16 @@ export async function deleteQuickReply(id: string) {
     return { success: false, error: "Falha ao excluir gatilho" };
   }
 }
+
+export async function updateQuickReply(id: string, data: { title?: string; content?: string }) {
+  try {
+    const qr = await (prisma as any).quickReply.update({
+      where: { id },
+      data
+    });
+    revalidatePath("/dashboard/vendas");
+    return { success: true, quickReply: qr };
+  } catch (error) {
+    return { success: false, error: "Falha ao atualizar gatilho" };
+  }
+}
