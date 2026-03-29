@@ -6,12 +6,12 @@ import { revalidatePath } from "next/cache";
 export async function getSellersWithStats() {
   try {
     const sellers = await (prisma as any).user.findMany({
-      where: { role: "SELLER" },
       select: {
         id: true,
         name: true,
         email: true,
         phone: true,
+        role: true,
         createdAt: true,
         leads: {
           select: { status: true }
@@ -53,6 +53,7 @@ export async function createSeller(data: any) {
         email: data.email,
         phone: data.phone,
         password: data.password, // Em prod: usar hash
+        mustChangePassword: true, // Força a pessoa a mudar a primeira vez
         role: "SELLER"
       }
     });
@@ -67,7 +68,6 @@ export async function createSeller(data: any) {
 
 export async function deleteSeller(id: string) {
   try {
-    // Para simplificar, desvincular leads (passar pra general pool) antes de deletar
     await (prisma as any).lead.updateMany({
       where: { assignedToId: id },
       data: { assignedToId: null }
@@ -80,7 +80,39 @@ export async function deleteSeller(id: string) {
     revalidatePath("/dashboard/equipe");
     return { success: true };
   } catch (error) {
-    console.error("Error deleting seller:", error);
     return { success: false, error: "Failed to delete seller" };
+  }
+}
+
+export async function updateUserProfile(id: string, data: any) {
+  try {
+    await (prisma as any).user.update({
+      where: { id },
+      data: {
+        name: data.name,
+        email: data.email,
+        phone: data.phone
+      }
+    });
+    revalidatePath("/dashboard/equipe");
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: "Falha ao editar dados. Verifique se o e-mail/whatsapp já estão em uso." };
+  }
+}
+
+export async function forcePasswordReset(id: string, tempPassword: string) {
+  try {
+    await (prisma as any).user.update({
+      where: { id },
+      data: {
+        password: tempPassword,
+        mustChangePassword: true
+      }
+    });
+    revalidatePath("/dashboard/equipe");
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: "Erro gerando senha provisória" };
   }
 }

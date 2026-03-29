@@ -32,9 +32,11 @@ export default function LoginPage() {
     const res = await login(formData);
 
     if (res.success) {
-      // Usamos window.location.href em vez de router.push para garantir 
-      // que o RootLayout (Server Component) revalide a sessão e mostre a Sidebar
-      window.location.href = "/dashboard";
+      if ((res.user as any)?.mustChangePassword) {
+        window.location.href = "/nova-senha";
+      } else {
+        window.location.href = "/dashboard";
+      }
     } else {
       setError(res.error || "Erro ao fazer login");
       setLoading(false);

@@ -10,16 +10,17 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  name        String
-  email       String   @unique
-  phone       String?  @unique
-  password    String
-  role        String   @default("SELLER") // ADMIN, SELLER
-  leads       Lead[]   @relation("UserLeads")
-  messages    Message[] @relation("UserMessages")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  name               String
+  email              String   @unique
+  phone              String?  @unique
+  password           String
+  mustChangePassword Boolean  @default(false)
+  role               String   @default("SELLER") // ADMIN, SELLER
+  leads              Lead[]   @relation("UserLeads")
+  messages           Message[] @relation("UserMessages")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }
 
 model Lead {

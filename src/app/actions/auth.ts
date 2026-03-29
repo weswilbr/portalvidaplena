@@ -41,7 +41,10 @@ export async function login(formData: FormData) {
       path: "/",
     });
 
-    return { success: true, user: { id: user.id, name: user.name, role: user.role } };
+    return { 
+      success: true, 
+      user: { id: user.id, name: user.name, role: user.role, mustChangePassword: user.mustChangePassword } 
+    };
   } catch (error) {
     console.error("Login error:", error);
     return { success: false, error: "Erro interno no servidor ao tentar logar." };
@@ -63,10 +66,36 @@ export async function getSession() {
   try {
     const user = await (prisma as any).user.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, email: true, role: true },
+      select: { id: true, name: true, email: true, role: true, mustChangePassword: true },
     });
     return user;
   } catch (e) {
     return null;
+  }
+}
+
+export async function updateUserPassword(formData: FormData) {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("auth_token")?.value;
+
+  if (!userId) return { success: false, error: "Usuário não autenticado." };
+
+  const currentPassword = formData.get("currentPassword") as string;
+  const newPassword = formData.get("newPassword") as string;
+
+  try {
+    const user = await (prisma as any).user.findUnique({ where: { id: userId } });
+    if (!user || user.password !== currentPassword) {
+      return { success: false, error: "Senha atual incorreta." };
+    }
+
+    await (prisma as any).user.update({
+      where: { id: userId },
+      data: { password: newPassword, mustChangePassword: false }
+    });
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: "Falha ao atualizar a senha." };
   }
 }
