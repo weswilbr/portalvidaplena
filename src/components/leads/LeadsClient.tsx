@@ -65,11 +65,6 @@ export default function LeadsClient({ user }: { user: any }) {
     });
   }, [searchTerm, statusFilter, leads]);
 
-  const handleSendMessage = (phone: string) => {
-    if (!phone) return;
-    const message = encodeURIComponent("Olá! Sou do Projeto Vida Plena, como posso te ajudar?");
-    openWhatsApp(phone, "Olá! Sou do Projeto Vida Plena, como posso te ajudar?");
-  };
 
   const handleDeleteLead = async (id: string) => {
     if (confirm("Tem certeza que deseja excluir este lead?")) {
@@ -243,19 +238,12 @@ export default function LeadsClient({ user }: { user: any }) {
                             <span>Puxar</span>
                           </button>
                         )}
-                        <button 
-                          onClick={() => handleSendMessage(lead.phone)}
-                          className="p-2.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition-all"
-                          title="WhatsApp"
-                        >
-                          <MessageSquare size={18} />
-                        </button>
-                        <button 
+                         <button 
                           onClick={() => handleOpenEditModal(lead)}
                           className="p-2.5 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all" 
-                          title="Editar"
+                          title="Detalhes"
                         >
-                          <ExternalLink size={18} />
+                          <MessageSquare size={18} />
                         </button>
                         <button 
                           onClick={() => handleDeleteLead(lead.id)}
@@ -277,7 +265,6 @@ export default function LeadsClient({ user }: { user: any }) {
           leads={filteredLeads}
           onEdit={handleOpenEditModal}
           onDelete={handleDeleteLead}
-          onSendMessage={handleSendMessage}
           onStatusChange={handleKanbanStatusChange}
         />
       )}
