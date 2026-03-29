@@ -657,6 +657,30 @@ export default function VendasClient({ user }: { user: any }) {
                 </button>
               </div>
             </header>
+            {/* Barra de Status Rápida (Kanban) */}
+            <div className="bg-white border-b border-slate-200 p-2 overflow-x-auto whitespace-nowrap scrollbar-hide flex gap-2 shrink-0">
+               {Object.entries(statusLabels).map(([key, label]) => {
+                 const isActive = selectedLead.status === key;
+                 return (
+                   <button 
+                     key={key} 
+                     onClick={async () => {
+                        const fakeEvent = { target: { value: key } } as any;
+                        handleStatusChange(fakeEvent);
+                     }}
+                     className={cn(
+                       "px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all border flex items-center gap-1.5",
+                       isActive 
+                        ? cn(statusStyles[key as keyof typeof statusStyles], "border-transparent ring-2 ring-offset-1 ring-indigo-200") 
+                        : "bg-slate-50 text-slate-400 border-slate-100 hover:bg-white hover:border-slate-300"
+                     )}
+                   >
+                     <div className={cn("w-1.5 h-1.5 rounded-full", isActive ? "bg-current" : "bg-slate-300")}></div>
+                     {label}
+                   </button>
+                 );
+               })}
+            </div>
 
             {/* Painel de Ações do Lead (Opcional, abre sob o header) */}
             {isTransferring && (
