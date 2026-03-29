@@ -108,10 +108,15 @@ async function startBot() {
 
   // Listener para capturar mapeamento de LID -> Phone Number
   sock.ev.on('contacts.upsert', (contacts) => {
+    // Debug: mostra o que o Baileys envia
+    console.log(`👥 contacts.upsert: ${contacts.length} contato(s)`);
+    for (const c of contacts.slice(0, 3)) {
+      console.log(`   - id=${c.id} | phoneNumber=${(c as any).phoneNumber || 'N/A'} | name=${c.name || 'N/A'}`);
+    }
     for (const contact of contacts) {
-      if (contact.id && contact.phoneNumber) {
+      if (contact.id && (contact as any).phoneNumber) {
         const lid = contact.id.split('@')[0].split(':')[0];
-        const pn = contact.phoneNumber.replace(/[^0-9]/g, "");
+        const pn = (contact as any).phoneNumber.replace(/[^0-9]/g, "");
         if (lid.length > 13 && pn.length <= 13) {
           lidPnMap[lid] = pn;
           saveLidMap();
@@ -240,9 +245,29 @@ async function startBot() {
           }
       }
 
-      // Debug: loga dados brutos quando LID ainda não foi resolvido
+      // 4. Última tentativa: query direta ao servidor do WhatsApp via onWhatsApp
       if (phoneOnly.length > 13) {
-          console.log(`⚠️ LID não resolvido: ${phoneOnly}`);
+          try {
+              const results = await sock.onWhatsApp(remoteJid);
+              console.log(`🔍 onWhatsApp result:`, JSON.stringify(results));
+              if (results && results[0]?.jid) {
+                  const resolvedJid = results[0].jid;
+                  const resolvedPN = resolvedJid.split('@')[0].replace(/[^0-9]/g, '');
+                  if (resolvedPN.length <= 13) {
+                      lidPnMap[phoneOnly] = resolvedPN;
+                      saveLidMap();
+                      console.log(`✅ Resolvido via onWhatsApp: ${phoneOnly} -> ${resolvedPN}`);
+                      phoneOnly = resolvedPN;
+                  }
+              }
+          } catch (e: any) {
+              console.log(`🔍 onWhatsApp falhou: ${e.message}`);
+          }
+      }
+
+      // Debug final: loga dados brutos quando LID ainda não foi resolvido
+      if (phoneOnly.length > 13) {
+          console.log(`⚠️ LID não resolvido por nenhuma estratégia: ${phoneOnly}`);
           console.log(`   remoteJid: ${remoteJid} | pushName: ${msg.pushName || 'sem nome'}`);
       }
 
