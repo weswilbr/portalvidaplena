@@ -112,24 +112,26 @@ async function startBot() {
       const remoteJid = msg.key.remoteJid;
       if (!remoteJid || remoteJid.endsWith('@g.us')) return; // ignorar grupos e status
 
+      // Logica robusta para resolver LID vs PN (Phone Number)
       let phoneOnly = remoteJid.split('@')[0].split(':')[0].replace(/[^0-9]/g, "");
       
-      // WhatsApp LID Resolution: 
-      // Se termina com @lid ou tem mais de 13 digitos e nao comeca com 55 (que seria o normal)
-      // O Baileys emite um evento de 'messaging-history.set' ou 'contacts.update' para mapear isso.
-      // Como solução robusta aqui, vamos tentar extrair o PN (Phone Number) do JID se o Baileys o traduzir.
+      // Se for LID (ID gigante de 14+ dígitos), tentamos extrair o número real dos metadados
+      if (phoneOnly.length > 13) {
+          // Em novos LIDs, o Baileys costuma colocar o número real no participant se estiver disponível
+          // ou em instâncias onde o contato já foi resolvido.
+          const realContactJid = msg.key.participant || remoteJid;
+          const extractedPN = realContactJid.split('@')[0].split(':')[0].replace(/[^0-9]/g, "");
+          
+          if (extractedPN.length <= 13 && (extractedPN.startsWith("55") || extractedPN.length >= 10)) {
+              console.log(`✅ LID ${phoneOnly} resolvido para PN Real: ${extractedPN}`);
+              phoneOnly = extractedPN;
+          } else {
+              console.log(`⚠️ Não foi possível resolver o LID ${phoneOnly} para um número normal ainda.`);
+          }
+      }
       
       const participantName = msg.pushName || "Cliente WhatsApp";
       const textMessage = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
-      
-      if (!textMessage.trim()) return;
-
-      // Se for um LID detectado (numero gigante sem 55 no inicio ou id de sistema)
-      if (phoneOnly.length > 13 && !phoneOnly.startsWith("55")) {
-          console.log(`📡 Detector de LID: ${phoneOnly}. Tentando resolver numero real...`);
-          // No Baileys, o remoteJid de um chat 1-para-1 deveria ser o numero
-          // Se for LID, o Baileys as vezes o mantem ate que o contato seja syncado.
-      }
       
       // Pegar config mais atualizada
       const cfg = await (prisma as any).botConfig.findFirst();
