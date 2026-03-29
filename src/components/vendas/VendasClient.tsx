@@ -205,6 +205,13 @@ export default function VendasClient({ user }: { user: any }) {
     }
   };
 
+  const handleKanbanStatusChange = async (leadId: string, newStatus: string) => {
+    // Quick optimistic visual feedback then real refresh
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
+    await updateLead(leadId, { status: newStatus });
+    refreshData();
+  };
+
   return (
     <div className="p-4 md:p-8 md:pt-8 pt-20 space-y-6 bg-slate-50/50 min-h-screen animate-in fade-in duration-500 w-full overflow-x-hidden">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -299,6 +306,7 @@ export default function VendasClient({ user }: { user: any }) {
           onEdit={(l) => { setSelectedLead(l); setIsDetailsOpen(true); }}
           onDelete={async (id) => { if (user.role === "ADMIN" && confirm("Excluir totalmente?")) { await deleteLead(id); refreshData(); } }}
           onSendMessage={handleSendMessageWhatsApp}
+          onStatusChange={handleKanbanStatusChange}
         />
       ) : (
         <div className="bg-white rounded-3xl md:rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden w-full">

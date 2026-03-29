@@ -112,6 +112,12 @@ export default function LeadsClient() {
     }
   };
 
+  const handleKanbanStatusChange = async (leadId: string, newStatus: string) => {
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus } : l));
+    await updateLead(leadId, { status: newStatus });
+    refreshLeads();
+  };
+
   return (
     <div className="p-8 space-y-6">
       <header className="flex items-center justify-between">
@@ -255,6 +261,7 @@ export default function LeadsClient() {
           onEdit={handleOpenEditModal}
           onDelete={handleDeleteLead}
           onSendMessage={handleSendMessage}
+          onStatusChange={handleKanbanStatusChange}
         />
       )}
 
