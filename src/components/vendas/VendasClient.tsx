@@ -729,8 +729,7 @@ export default function VendasClient({ user }: { user: any }) {
                         {/* Renderização de Mídia */}
                         {msg.mediaUrl && (
                           <div className="mb-2">
-                             {/* ... (mídia rendering unchanged) ... */}
-                             {msg.mediaType === 'image' || msg.mediaUrl.startsWith('data:image') ? (
+                            {msg.mediaType === 'image' || msg.mediaUrl.startsWith('data:image') ? (
                               <img src={msg.mediaUrl} alt="imagem" className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-100 transition-all border border-black/5" onClick={() => window.open(msg.mediaUrl, '_blank')} />
                             ) : msg.mediaType === 'video' || msg.mediaUrl.startsWith('data:video') ? (
                               <video src={msg.mediaUrl} controls className="rounded-lg max-w-full h-auto border border-black/5" />
@@ -847,11 +846,11 @@ export default function VendasClient({ user }: { user: any }) {
                   </button>
                 </div>
 
-                <form onSubmit={handleSendMessage} className="flex-1 flex gap-2">
+                <form onSubmit={handleSendMessage} className="flex-1 flex flex-col gap-2">
                   <div className="flex-1 relative">
                     {/* Menu de Gatilhos */}
                     {isGatilhoOpen && (
-                      <div className="absolute bottom-16 left-0 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-[2rem] p-3 flex flex-col gap-1 border border-slate-100 animate-in slide-in-from-bottom-2 duration-300 z-[70] w-64 md:w-80 max-h-[400px] overflow-y-auto">
+                      <div className="absolute bottom-full mb-4 left-0 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-[2rem] p-3 flex flex-col gap-1 border border-slate-100 animate-in slide-in-from-bottom-2 duration-300 z-[70] w-64 md:w-80 max-h-[400px] overflow-y-auto">
                         <div className="flex items-center justify-between p-2 mb-2 border-b border-slate-50">
                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Gatilhos Rápidos</span>
                            <button type="button" onClick={() => setIsGatilhoManagerOpen(true)} className="text-[10px] font-bold text-indigo-600 hover:underline">Gerenciar</button>
@@ -884,15 +883,25 @@ export default function VendasClient({ user }: { user: any }) {
                          <button type="button" onClick={stopRecording} className="p-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition-all"><Square size={16}/></button>
                       </div>
                     ) : (
-                      <input
-                        type="text"
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
+                      <textarea 
                         placeholder={isNoteMode ? "Adicionar nota interna..." : "Enviar mensagem pelo CRM..."}
                         className={cn(
-                          "w-full h-12 px-4 rounded-2xl text-sm font-semibold border-none outline-none transition-all shadow-sm",
+                          "w-full px-4 py-3 rounded-2xl text-sm font-semibold border-none outline-none transition-all shadow-sm min-h-[50px] max-h-[300px] resize-none overflow-y-auto pt-4",
                           isNoteMode ? "bg-[#fef3c7] focus:ring-2 focus:ring-amber-300" : "bg-white focus:ring-2 focus:ring-indigo-300"
                         )}
+                        value={newMessage}
+                        onChange={(e) => {
+                          setNewMessage(e.target.value);
+                          e.target.style.height = 'auto';
+                          e.target.style.height = (e.target.scrollHeight) + 'px';
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSendMessage(e);
+                          }
+                        }}
+                        rows={1}
                       />
                     )}
                     {isEmojiOpen && (

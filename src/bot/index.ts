@@ -272,10 +272,13 @@ setInterval(async () => {
           
           if (media) {
             const isAudio = om.mediaType === 'audio' || (media && media.mimetype.startsWith('audio/'));
+            const isDocument = om.mediaType === 'document' || (!isAudio && !media.mimetype.startsWith('image/') && !media.mimetype.startsWith('video/'));
+
             // Se for áudio, envia como PTT (mensagem de voz nativa)
             await client.sendMessage(`${om.to}@c.us`, media, { 
               caption: om.body || undefined,
-              sendAudioAsVoice: isAudio // Isso habilita o modo mensagem de voz
+              sendAudioAsVoice: isAudio, // Isso habilita o modo mensagem de voz
+              sendMediaAsDocument: isDocument // Garante que PDFs e arquivos pesados cheguem como documentos
             });
           } else {
             await client.sendMessage(`${om.to}@c.us`, om.body);
