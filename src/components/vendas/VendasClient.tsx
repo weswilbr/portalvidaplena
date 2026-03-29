@@ -89,7 +89,8 @@ export default function VendasClient({ user }: { user: any }) {
       getSellers()
     ]);
     
-    setLeads(leadsData.filter((l: any) => l.interest === "Produto"));
+    // Lista os de produto, mas também puxa os leads virgens (sem interesse listado do bot)
+    setLeads(leadsData.filter((l: any) => l.interest === "Produto" || !l.interest));
     setSellers(sellersData);
     
     // Atualiza o lead selecionado se o modal de detalhes estiver aberto
@@ -168,6 +169,18 @@ export default function VendasClient({ user }: { user: any }) {
     }
 
     await updateLead(selectedLead.id, { status: newStatus });
+    refreshData();
+  };
+
+  const handleInterestChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newInterest = e.target.value;
+    if (!selectedLead) return;
+    
+    await updateLead(selectedLead.id, { interest: newInterest });
+    await addMessage({ leadId: selectedLead.id, content: `Foco trocado para ${newInterest}. O Lead foi movido/focado com sucesso.`, authorId: user.id, isSystem: true });
+    
+    alert(`Foco atualizado! Se movido para Afiliados, ele aparecerá na aba Negócios.`);
+    setIsDetailsOpen(false);
     refreshData();
   };
 
@@ -387,6 +400,19 @@ export default function VendasClient({ user }: { user: any }) {
             </header>
 
             <div className="p-6 border-b border-slate-100 flex flex-wrap gap-4 items-center justify-between">
+              
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Área de Foco</label>
+                <select 
+                  className={cn("text-xs font-bold px-3 py-2 rounded-lg outline-none cursor-pointer appearance-none bg-slate-100 border border-slate-200 text-slate-700")}
+                  value={selectedLead.interest || "Produto"}
+                  onChange={handleInterestChange}
+                >
+                  <option value="Produto">Venda Produto</option>
+                  <option value="Negócio">Negócio/Afiliado</option>
+                </select>
+              </div>
+
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Atendente Atual</label>
                 <div className="text-sm font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">

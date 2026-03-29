@@ -92,7 +92,7 @@ export default function LeadsClient() {
       name: formData.get("name") as string,
       phone: formData.get("phone") as string,
       email: formData.get("email") as string,
-      interest: "Negócio",
+      interest: formData.get("interest") as string || "Negócio",
       status: formData.get("status") as string,
     };
 
@@ -293,6 +293,18 @@ export default function LeadsClient() {
                 />
               </div>
               <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Área / Foco</label>
+                <select 
+                  name="interest"
+                  defaultValue={selectedLead?.interest || "Negócio"}
+                  className="w-full p-5 rounded-2xl bg-slate-50 border-none focus:ring-4 focus:ring-indigo-100 outline-none font-black text-slate-700"
+                >
+                  <option value="Negócio">Projeto/Afiliado (Esta aba)</option>
+                  <option value="Produto">Venda de Produto (Aba Vendas)</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
                 <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Origem / Status</label>
                 <select 
                   name="status"
@@ -302,7 +314,7 @@ export default function LeadsClient() {
                   <option value="NEW">Novo</option>
                   <option value="CONTACTED">Contatado</option>
                   <option value="PRESENTED">Apresentado</option>
-                  <option value="CLOSED">Fechado</option>
+                  <option value="CLOSED">Fechado/Finalizado</option>
                   <option value="LOST">Perdido</option>
                 </select>
               </div>
