@@ -277,6 +277,33 @@ export async function pullLead(leadId: string, currentUserId: string) {
     return { success: true, lead };
   } catch (error) {
     console.error("Error pulling lead:", error);
-    return { success: false, error: "Falha ao puxar atendimento" };
+    return { success: false, error: "Falha ao puxar lead" };
+  }
+}
+
+export async function deleteMessage(messageId: string) {
+  try {
+    await (prisma as any).message.delete({
+      where: { id: messageId }
+    });
+    revalidatePath("/dashboard/vendas");
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting message:", error);
+    return { success: false, error: "Falha ao excluir mensagem" };
+  }
+}
+
+export async function updateMessage(messageId: string, content: string) {
+  try {
+    await (prisma as any).message.update({
+      where: { id: messageId },
+      data: { content }
+    });
+    revalidatePath("/dashboard/vendas");
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating message:", error);
+    return { success: false, error: "Falha ao editar mensagem" };
   }
 }

@@ -21,18 +21,19 @@ import {
   Smile,
   ImageIcon,
   FileText,
-  MoreVertical,
-  ChevronLeft,
-  CalendarCheck,
-  Mic,
   Square,
   Volume2,
   Play,
-  Pause
+  Pause,
+  Pencil,
+  Trash2,
+  ChevronLeft,
+  CalendarCheck,
+  Mic
 } from "lucide-react";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { cn, openWhatsApp, getWhatsAppHref } from "@/lib/utils";
-import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead, sendWhatsAppMessage, addInternalNote, uploadMedia } from "@/app/actions/leads";
+import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead, sendWhatsAppMessage, addInternalNote, uploadMedia, deleteMessage, updateMessage } from "@/app/actions/leads";
 import { getSellers } from "@/app/actions/users";
 import KanbanView from "@/components/leads/KanbanView";
 
@@ -92,6 +93,8 @@ export default function VendasClient({ user }: { user: any }) {
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -262,6 +265,32 @@ export default function VendasClient({ user }: { user: any }) {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!confirm("Tem certeza que deseja apagar esta mensagem?")) return;
+    const res = await deleteMessage(messageId);
+    if (res.success) {
+      refreshData();
+    } else {
+      alert(res.error);
+    }
+  };
+
+  const handleStartEdit = (message: any) => {
+    setEditingMessageId(message.id);
+    setEditContent(message.content);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingMessageId || !editContent.trim()) return;
+    const res = await updateMessage(editingMessageId, editContent);
+    if (res.success) {
+      setEditingMessageId(null);
+      refreshData();
+    } else {
+      alert(res.error);
+    }
   };
 
   const handleTransfer = async () => {
@@ -622,7 +651,11 @@ export default function VendasClient({ user }: { user: any }) {
                   }
 
                   return (
-                    <div key={msg.id} className={cn("flex flex-col gap-1 max-w-[85%] relative", isMe ? "self-end" : "self-start")}>
+                    <div key={msg.id} className={cn("flex flex-col gap-1 max-w-[85%] relative group", isMe ? "self-end" : "self-start")}>
+                      {!isClient && !msg.isSystem && !isMe && msg.author && (
+                        <span className="text-[10px] font-black text-slate-400 ml-2 mb-0.5 uppercase tracking-widest">{msg.author.name}</span>
+                      )}
+                      
                       <div className={cn(
                         "px-3 py-2 rounded-xl text-sm font-medium shadow-sm leading-relaxed min-w-[80px]",
                         isClient ? "bg-white text-slate-800 rounded-tl-none pr-12" : 
@@ -630,33 +663,26 @@ export default function VendasClient({ user }: { user: any }) {
                         isMe ? "bg-[#d9fdd3] text-[#111b21] rounded-tr-none pr-12" : 
                         "bg-white text-[#111b21] rounded-tr-none pr-12"
                       )}>
+                        {/* Autor no topo se for enviado por outro vendedor e sou eu quem estou vendo */}
+                        {isMe && (
+                           <span className="text-[9px] font-black text-emerald-600 block mb-1 uppercase opacity-40">Você ({user.name})</span>
+                        )}
+
                         {/* Renderização de Mídia */}
                         {msg.mediaUrl && (
                           <div className="mb-2">
-                            {msg.mediaType === 'image' || msg.mediaUrl.startsWith('data:image') ? (
-                              <img 
-                                src={msg.mediaUrl} 
-                                alt="imagem" 
-                                className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-100 transition-all border border-black/5" 
-                                onClick={() => window.open(msg.mediaUrl, '_blank')} 
-                              />
+                             {/* ... (mídia rendering unchanged) ... */}
+                             {msg.mediaType === 'image' || msg.mediaUrl.startsWith('data:image') ? (
+                              <img src={msg.mediaUrl} alt="imagem" className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-100 transition-all border border-black/5" onClick={() => window.open(msg.mediaUrl, '_blank')} />
                             ) : msg.mediaType === 'video' || msg.mediaUrl.startsWith('data:video') ? (
-                              <video 
-                                src={msg.mediaUrl} 
-                                controls 
-                                className="rounded-lg max-w-full h-auto border border-black/5"
-                              />
+                              <video src={msg.mediaUrl} controls className="rounded-lg max-w-full h-auto border border-black/5" />
                             ) : msg.mediaType === 'audio' || msg.mediaUrl.startsWith('data:audio') ? (
                               <div className="flex flex-col gap-2 min-w-[200px]">
                                 <div className="flex items-center gap-3 p-2 bg-black/5 rounded-2xl border border-black/5">
                                   <div className="p-2 bg-[#d9fdd3] text-[#111b21] rounded-full shadow-sm">
                                     <Volume2 size={20} />
                                   </div>
-                                  <audio 
-                                    src={msg.mediaUrl} 
-                                    controls 
-                                    className="h-8 max-w-[150px] md:max-w-full"
-                                  />
+                                  <audio src={msg.mediaUrl} controls className="h-8 max-w-[150px] md:max-w-full" />
                                 </div>
                                 {msg.transcription && (
                                   <div className="bg-white/40 p-2 rounded-lg border border-black/5 text-[11px] font-medium italic text-[#54656f]">
@@ -667,19 +693,31 @@ export default function VendasClient({ user }: { user: any }) {
                               </div>
                             ) : (
                               <div className="flex items-center gap-3 p-3 bg-white/50 dark:bg-black/5 rounded-lg border border-black/5 min-w-[200px]">
-                                <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
-                                  <FileText size={24} />
-                                </div>
+                                <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl"><FileText size={24} /></div>
                                 <div className="truncate flex-1">
                                   <p className="text-[11px] font-black truncate uppercase tracking-tighter text-slate-800">Visualizar Documento</p>
-                                  <a href={msg.mediaUrl} target="_blank" className="text-[10px] text-indigo-600 underline font-bold hover:text-indigo-800 transition-colors">Download / Abrir</a>
+                                  <a href={msg.mediaUrl} target="_blank" className="text-[10px] text-indigo-600 underline font-bold hover:text-indigo-800 transition-colors">Download</a>
                                 </div>
                               </div>
                             )}
                           </div>
                         )}
 
-                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                        {editingMessageId === msg.id ? (
+                           <div className="flex flex-col gap-2 mt-1">
+                              <textarea 
+                                value={editContent} 
+                                onChange={(e) => setEditContent(e.target.value)}
+                                className="w-full p-2 text-xs border rounded bg-white font-medium outline-none focus:ring-1 focus:ring-indigo-300 h-16"
+                              />
+                              <div className="flex gap-2">
+                                 <button onClick={handleSaveEdit} className="text-[10px] font-bold bg-indigo-600 text-white px-2 py-1 rounded">Salvar</button>
+                                 <button onClick={() => setEditingMessageId(null)} className="text-[10px] font-bold bg-slate-200 px-2 py-1 rounded">Cancelar</button>
+                              </div>
+                           </div>
+                        ) : (
+                          <p className="whitespace-pre-wrap">{msg.content}</p>
+                        )}
 
                         <div className="absolute bottom-1 right-2 flex items-center gap-1 opacity-60 text-[9px]">
                           <span>{new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
@@ -687,6 +725,14 @@ export default function VendasClient({ user }: { user: any }) {
                              <span className="text-blue-500 font-bold ml-1">✓✓</span>
                           )}
                         </div>
+
+                        {/* Ações de Hover (Editar/Excluir) */}
+                        {isMe && !msg.isSystem && (
+                          <div className="absolute top-2 -left-12 opacity-0 group-hover:opacity-100 transition-all flex flex-col gap-2">
+                             <button onClick={() => handleStartEdit(msg)} className="p-2 bg-white shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 border border-slate-100 transition-all"><Pencil size={14}/></button>
+                             <button onClick={() => handleDeleteMessage(msg.id)} className="p-2 bg-white shadow-sm rounded-lg text-slate-400 hover:text-red-500 border border-slate-100 transition-all"><Trash2 size={14}/></button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
