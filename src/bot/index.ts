@@ -112,7 +112,7 @@ async function startBot() {
       const remoteJid = msg.key.remoteJid;
       if (!remoteJid || remoteJid.endsWith('@g.us')) return; // ignorar grupos e status
       
-      const phoneOnly = remoteJid.split('@')[0];
+      const phoneOnly = remoteJid.split('@')[0].split(':')[0];
       const participantName = msg.pushName || "Cliente WhatsApp";
       const textMessage = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
       

@@ -15,14 +15,16 @@ interface Lead {
 
 function formatPhoneNumber(phone: string) {
   if (!phone) return "";
-  const cleaned = phone.replace(/\D/g, "");
+  const basePhone = phone.split(':')[0];
+  const cleaned = basePhone.replace(/\D/g, "");
+  
   if (cleaned.length === 13 && cleaned.startsWith("55")) { // +55 27 99999-9999
     return `+55 (${cleaned.substring(2, 4)}) ${cleaned.substring(4, 9)}-${cleaned.substring(9)}`;
   }
   if (cleaned.length === 12 && cleaned.startsWith("55")) { // +55 27 9999-9999
     return `+55 (${cleaned.substring(2, 4)}) ${cleaned.substring(4, 8)}-${cleaned.substring(8)}`;
   }
-  return phone;
+  return basePhone.startsWith("+") ? basePhone : `+${cleaned || phone}`;
 }
 
 interface KanbanViewProps {
@@ -118,7 +120,7 @@ export default function KanbanView({ leads, onEdit, onDelete, onSendMessage, onS
                 )}
 
                 <div className="flex items-center justify-between mt-3">
-                  <a href={`https://wa.me/${lead.phone?.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="text-xs text-slate-500 hover:text-green-600 flex items-center gap-1 font-bold transition-colors">
+                  <a href={`https://wa.me/${lead.phone?.split(':')[0].replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="text-xs text-slate-500 hover:text-green-600 flex items-center gap-1 font-bold transition-colors">
                     <Phone size={12} /> {formatPhoneNumber(lead.phone || "") || "Sem Contato"}
                   </a>
                   <button 

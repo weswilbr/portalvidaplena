@@ -27,14 +27,16 @@ import KanbanView from "@/components/leads/KanbanView";
 // Helper para formatar celular do Brasil
 function formatPhoneNumber(phone: string) {
   if (!phone) return "";
-  const cleaned = phone.replace(/\D/g, "");
+  const basePhone = phone.split(':')[0];
+  const cleaned = basePhone.replace(/\D/g, "");
+  
   if (cleaned.length === 13 && cleaned.startsWith("55")) { // +55 27 99999-9999
     return `+55 (${cleaned.substring(2, 4)}) ${cleaned.substring(4, 9)}-${cleaned.substring(9)}`;
   }
-  if (cleaned.length === 12 && cleaned.startsWith("55")) { // +55 27 9999-9999 (sem 9 dígito)
+  if (cleaned.length === 12 && cleaned.startsWith("55")) { // +55 27 9999-9999
     return `+55 (${cleaned.substring(2, 4)}) ${cleaned.substring(4, 8)}-${cleaned.substring(8)}`;
   }
-  return phone;
+  return basePhone.startsWith("+") ? basePhone : `+${cleaned || phone}`;
 }
 
 const statusStyles = {
@@ -114,8 +116,9 @@ export default function VendasClient({ user }: { user: any }) {
 
   const handleSendMessageWhatsApp = (phone: string) => {
     if (!phone) return;
+    const cleanPhone = phone.split(':')[0].replace(/\D/g, "");
     const message = encodeURIComponent("Olá! Sou consultor 4Life, vi seu interesse em nossos produtos. Como posso te auxiliar?");
-    window.open(`https://wa.me/${phone.replace(/\D/g, "")}?text=${message}`, "_blank");
+    window.open(`https://wa.me/${cleanPhone}?text=${message}`, "_blank");
   };
 
   const handleAddInternalMessage = async (e: React.FormEvent) => {
@@ -397,7 +400,7 @@ export default function VendasClient({ user }: { user: any }) {
                 )}
                 <div>
                   <h3 className="text-2xl font-black text-slate-900 leading-none mb-1">{selectedLead.name}</h3>
-                  <a href={`https://wa.me/${selectedLead.phone?.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:underline flex items-center gap-1 active:scale-95 transition-all w-fit">
+                  <a href={`https://wa.me/${selectedLead.phone?.split(':')[0].replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:underline flex items-center gap-1 active:scale-95 transition-all w-fit">
                     {formatPhoneNumber(selectedLead.phone)}
                   </a>
                 </div>
