@@ -220,7 +220,11 @@ export default function VendasClient({ user }: { user: any }) {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
+      const mimeType = MediaRecorder.isTypeSupported('audio/ogg; codecs=opus') 
+        ? 'audio/ogg; codecs=opus' 
+        : 'audio/webm; codecs=opus';
+        
+      const recorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = recorder;
       audioChunksRef.current = [];
 
@@ -229,8 +233,9 @@ export default function VendasClient({ user }: { user: any }) {
       };
 
       recorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm; codecs=opus' });
-        const file = new File([audioBlob], "voice_message.webm", { type: 'audio/webm; codecs=opus' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        const extension = mimeType.includes('ogg') ? 'ogg' : 'webm';
+        const file = new File([audioBlob], `voice_message.${extension}`, { type: mimeType });
         setSelectedFile(file);
         setFilePreview(null);
         stream.getTracks().forEach(track => track.stop());
