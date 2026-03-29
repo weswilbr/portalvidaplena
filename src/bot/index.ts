@@ -146,7 +146,7 @@ async function startBot() {
           
           if (sellers.length > 0) {
             // Pega o com menos leads ativos
-            const sortedSellers = sellers.sort((a, b) => a.leads.length - b.leads.length);
+            const sortedSellers = sellers.sort((a: any, b: any) => a.leads.length - b.leads.length);
             assignedToId = sortedSellers[0].id;
           }
         }
