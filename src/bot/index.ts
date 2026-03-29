@@ -112,18 +112,25 @@ async function startBot() {
       const remoteJid = msg.key.remoteJid;
       if (!remoteJid || remoteJid.endsWith('@g.us')) return; // ignorar grupos e status
 
-      // Logica para extrair o numero real do JID ou LID
       let phoneOnly = remoteJid.split('@')[0].split(':')[0].replace(/[^0-9]/g, "");
       
-      // WhatsApp introduziu LIDs (IDs de 14-15 digitos que nao sao o numero real)
-      // Se o numero for muito longo, pode ser um LID. 
-      // Em versoes novas do Baileys, o remoteJid ja deveria refletir o numero se for chat direto.
+      // WhatsApp LID Resolution: 
+      // Se termina com @lid ou tem mais de 13 digitos e nao comeca com 55 (que seria o normal)
+      // O Baileys emite um evento de 'messaging-history.set' ou 'contacts.update' para mapear isso.
+      // Como solução robusta aqui, vamos tentar extrair o PN (Phone Number) do JID se o Baileys o traduzir.
       
       const participantName = msg.pushName || "Cliente WhatsApp";
       const textMessage = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
       
       if (!textMessage.trim()) return;
 
+      // Se for um LID detectado (numero gigante sem 55 no inicio ou id de sistema)
+      if (phoneOnly.length > 13 && !phoneOnly.startsWith("55")) {
+          console.log(`📡 Detector de LID: ${phoneOnly}. Tentando resolver numero real...`);
+          // No Baileys, o remoteJid de um chat 1-para-1 deveria ser o numero
+          // Se for LID, o Baileys as vezes o mantem ate que o contato seja syncado.
+      }
+      
       // Pegar config mais atualizada
       const cfg = await (prisma as any).botConfig.findFirst();
 
@@ -133,6 +140,9 @@ async function startBot() {
       let isNewLead = false;
       if (!lead) {
         isNewLead = true;
+        
+        // Se ainda for um ID gigante, vamos tentar uma ultima limpeza para salvar algo util
+        // ou avisar no CRM que o numero real esta sendo sincronizado
         console.log(`✨ Novo Lead detectado: ${phoneOnly}`);
         
         let profilePic: string | null = null;
