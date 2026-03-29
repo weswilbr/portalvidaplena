@@ -1,4 +1,4 @@
-import { makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } from '@whiskeysockets/baileys';
+import { makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import pino from 'pino';
 import * as QRCode from 'qrcode';
@@ -7,7 +7,7 @@ import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 import prisma from '../lib/prisma';
 
-const logger = pino({ level: 'silent' });
+const logger = pino({ level: 'info' });
 
 async function getOrCreateBotConfig() {
   let config = await (prisma as any).botConfig.findFirst();
@@ -26,10 +26,14 @@ async function getOrCreateBotConfig() {
 async function startBot() {
   console.log('🤖 Inicializando Instância Baileys VPS...');
   
+  const { version, isLatest } = await fetchLatestBaileysVersion();
+  console.log(`📡 Versão do WhatsApp sincronizada: v${version.join('.')} (Última: ${isLatest})`);
+
   const { state, saveCreds } = await useMultiFileAuthState('./bot_auth_info');
   const botConfig = await getOrCreateBotConfig();
 
   const sock = makeWASocket({
+    version,
     auth: state,
     logger,
     browser: Browsers.macOS('Desktop')
