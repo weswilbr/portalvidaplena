@@ -16,6 +16,7 @@ import {
   UserPlus
 } from "lucide-react";
 import { createLead } from "@/app/actions/leads";
+import { openWhatsApp } from "@/lib/utils";
 
 export default function LandingClient() {
   const [formData, setFormData] = useState({ name: "", phone: "", interest: "Negócio" });
@@ -51,15 +52,13 @@ export default function LandingClient() {
           const msg = interest === "Negócio" 
             ? `Olá! Sou ${formData.name}. Acabei de me cadastrar no Projeto Vida Plena e quero saber mais sobre o negócio.`
             : `Olá! Sou ${formData.name}. Gostaria de saber mais sobre os produtos 4Life para minha saúde.`;
-          const message = encodeURIComponent(msg);
-          window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank");
+          openWhatsApp(WHATSAPP_NUMBER, msg);
         }, 1500);
       } else {
         const msg = interest === "Negócio"
           ? "Olá! Vim da sua Landing Page e gostaria de saber mais sobre a oportunidade de negócio 4Life."
           : "Olá! Vim da sua Landing Page e gostaria de saber mais sobre os produtos 4Life.";
-        const message = encodeURIComponent(msg);
-        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank");
+        openWhatsApp(WHATSAPP_NUMBER, msg);
         setLoading(false);
       }
     } else {

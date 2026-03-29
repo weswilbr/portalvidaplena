@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn, getWhatsAppHref } from "@/lib/utils";
 import { MessageSquare, ExternalLink, X, Phone } from "lucide-react";
 
 interface Lead {
@@ -120,7 +120,7 @@ export default function KanbanView({ leads, onEdit, onDelete, onSendMessage, onS
                 )}
 
                 <div className="flex items-center justify-between mt-3">
-                  <a href={`https://wa.me/${lead.phone?.split(':')[0].replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="text-xs text-slate-500 hover:text-green-600 flex items-center gap-1 font-bold transition-colors">
+                  <a href={getWhatsAppHref(lead.phone?.split(':')[0] || '')} target="_blank" rel="noreferrer" className="text-xs text-slate-500 hover:text-green-600 flex items-center gap-1 font-bold transition-colors">
                     <Phone size={12} /> {formatPhoneNumber(lead.phone || "") || "Sem Contato"}
                   </a>
                   <button 

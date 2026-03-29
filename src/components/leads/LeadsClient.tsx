@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import React, { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { openWhatsApp } from "@/lib/utils";
 import { getLeads, createLead, updateLead, deleteLead, pullLead } from "@/app/actions/leads";
 import KanbanView from "@/components/leads/KanbanView";
 
@@ -67,7 +68,7 @@ export default function LeadsClient({ user }: { user: any }) {
   const handleSendMessage = (phone: string) => {
     if (!phone) return;
     const message = encodeURIComponent("Olá! Sou do Projeto Vida Plena, como posso te ajudar?");
-    window.open(`https://wa.me/${phone.replace(/\D/g, "")}?text=${message}`, "_blank");
+    openWhatsApp(phone, "Olá! Sou do Projeto Vida Plena, como posso te ajudar?");
   };
 
   const handleDeleteLead = async (id: string) => {
