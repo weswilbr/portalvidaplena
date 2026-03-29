@@ -1,4 +1,4 @@
-import { makeWASocket, useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys';
+import { makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import pino from 'pino';
 import * as QRCode from 'qrcode';
@@ -32,7 +32,7 @@ async function startBot() {
     auth: state,
     printQRInTerminal: true,
     logger,
-    browser: ["Gestão Vida Plena", "Chrome", "1.0.0"]
+    browser: Browsers.macOS('Desktop')
   });
 
   sock.ev.on('creds.update', saveCreds);
@@ -55,8 +55,13 @@ async function startBot() {
     }
 
     if (connection === 'close') {
-      const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
-      console.log('❌ Conexão fechada. Reconectando:', shouldReconnect);
+      const error = (lastDisconnect?.error as Boom);
+      const statusCode = error?.output?.statusCode;
+      const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+      
+      console.log('❌ Conexão Baileys fechou. Detalhes: ', error?.message, ' | Status Code:', statusCode);
+      console.log('Reconectando:', shouldReconnect);
+      
       const cfg = await getOrCreateBotConfig();
       await (prisma as any).botConfig.update({ where: { id: cfg.id }, data: { status: 'DISCONNECTED' } });
       
