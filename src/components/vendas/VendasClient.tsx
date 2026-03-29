@@ -657,8 +657,12 @@ export default function VendasClient({ user }: { user: any }) {
                 </button>
               </div>
             </header>
-            {/* Barra de Status Rápida (Kanban) */}
-            <div className="bg-white border-b border-slate-200 p-2 overflow-x-auto whitespace-nowrap scrollbar-hide flex gap-2 shrink-0">
+            {/* Barra de Status Rápida (Kanban) - Design Premium */}
+            <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 p-2 overflow-x-auto whitespace-nowrap flex gap-2 shrink-0 scrollbar-hide no-scrollbar">
+               <style dangerouslySetInnerHTML={{ __html: `
+                 .no-scrollbar::-webkit-scrollbar { display: none; }
+                 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+               `}} />
                {Object.entries(statusLabels).map(([key, label]) => {
                  const isActive = selectedLead.status === key;
                  return (
@@ -669,13 +673,13 @@ export default function VendasClient({ user }: { user: any }) {
                         handleStatusChange(fakeEvent);
                      }}
                      className={cn(
-                       "px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all border flex items-center gap-1.5",
+                       "px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.1em] transition-all border flex items-center gap-2 shrink-0 shadow-sm",
                        isActive 
-                        ? cn(statusStyles[key as keyof typeof statusStyles], "border-transparent ring-2 ring-offset-1 ring-indigo-200") 
-                        : "bg-slate-50 text-slate-400 border-slate-100 hover:bg-white hover:border-slate-300"
+                        ? cn(statusStyles[key as keyof typeof statusStyles], "border-transparent ring-2 ring-indigo-500/20 scale-105") 
+                        : "bg-slate-50 text-slate-400 border-slate-100 hover:bg-white hover:border-slate-300 hover:shadow-md"
                      )}
                    >
-                     <div className={cn("w-1.5 h-1.5 rounded-full", isActive ? "bg-current" : "bg-slate-300")}></div>
+                     <div className={cn("w-2 h-2 rounded-full animate-pulse", isActive ? "bg-current" : "bg-slate-300")}></div>
                      {label}
                    </button>
                  );
