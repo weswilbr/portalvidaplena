@@ -383,10 +383,15 @@ export default function VendasClient({ user }: { user: any }) {
      ];
 
      for (const qr of defaultQR) {
-        await createQuickReply({ ...qr, userId: user.id });
+        // Evita duplicatas pelo título
+        const exists = quickReplies.some(existing => existing.title === qr.title);
+        if (!exists) {
+          await createQuickReply({ ...qr, userId: user.id });
+        }
      }
      refreshData();
   };
+
 
   const handleDeleteGatilho = async (id: string) => {
     if (!confirm("Excluir este gatilho?")) return;

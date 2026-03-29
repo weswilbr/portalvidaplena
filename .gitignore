@@ -47,3 +47,8 @@ next-env.d.ts
 /bot/*.log
 .env
 .env.local
+
+# WhatsApp Sessions & Media (Crucial Security)
+/bot_auth_info
+/wwebjs_auth
+/public/uploads/

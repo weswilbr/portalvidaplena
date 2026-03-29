@@ -210,8 +210,8 @@ export async function uploadMedia(formData: FormData) {
     const buffer = Buffer.from(arrayBuffer);
     await fs.writeFile(filePath, buffer);
 
-    // Retorna a URL pública (relativa ao public/)
-    const publicUrl = `/uploads/${fileName}`;
+    // Retorna a URL via API Segura
+    const publicUrl = `/api/media/${fileName}`;
 
     return { 
       success: true, 

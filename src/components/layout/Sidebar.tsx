@@ -105,6 +105,7 @@ export function Sidebar({ role }: { role?: string }) {
               <Link
                 key={item.href}
                 href={item.href}
+                prefetch={false}
                 className={cn(
                   "flex items-center gap-3 p-4 md:p-3.5 rounded-2xl transition-all duration-300 group font-bold relative overflow-hidden",
                   isActive 

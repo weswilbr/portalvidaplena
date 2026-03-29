@@ -243,16 +243,33 @@ client.on('message', async (msg: any) => {
 
     if (msg.hasMedia) {
       try {
+        console.log(`📥 Baixando mídia de ${participantName}...`);
         const media = await msg.downloadMedia();
         if (media) {
           savedMediaType = media.mimetype.split('/')[0]; // image, video, etc
-          // Em produção: aqui faria upload para S3 e salvaria o URL real
-          // Por enquanto salvamos o base64 ou um indicador para o CRM
-          savedMediaUrl = `data:${media.mimetype};base64,${media.data}`;
+          
+          // Geramos um nome de arquivo seguro e único
+          const extension = media.mimetype.split('/')[1]?.split(';')[0] || 'bin';
+          const filename = `incoming-${Date.now()}-${Math.random().toString(36).substring(7)}.${extension}`;
+          
+          const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+          if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+          }
+          
+          const filePath = path.join(uploadDir, filename);
+          fs.writeFileSync(filePath, Buffer.from(media.data, 'base64'));
+          
+          // Salva a URL da nossa API interna
+          savedMediaUrl = `/api/media/${filename}`;
+          
+          console.log(`✅ Mídia (${savedMediaType}) salva em: ${filename}`);
           if (!finalContent) finalContent = `[Arquivo ${savedMediaType}]`;
+        } else {
+          console.error("❌ Falha ao processar downloadMedia: Retornou nulo.");
         }
       } catch (e) {
-        console.error("Erro ao baixar mídia do WhatsApp:", e);
+        console.error("❌ Erro ao baixar/salvar mídia do WhatsApp:", e);
       }
     }
 
@@ -309,20 +326,26 @@ setInterval(async () => {
       try {
         if (om.mediaUrl) {
           // Se tiver URL de mídia, envia como mídia
-          // Em produção, primeiro baixa do S3/URL
           let media;
+          
           if (om.mediaUrl.startsWith('data:')) {
              const [header, data] = om.mediaUrl.split(';base64,');
              const mimetype = header.split(':')[1];
-             // WhatsApp nativamente usa ogg/opus, forçamos se for áudio para garantir que o celular entenda como voz
              const finalMime = om.mediaType === 'audio' ? 'audio/ogg; codecs=opus' : mimetype;
              media = new MessageMedia(finalMime, data, om.fileName || 'arquivo');
-          } else if (om.mediaUrl.startsWith('/uploads/')) {
-             const absPath = path.join(process.cwd(), 'public', om.mediaUrl);
+             
+             // Auto-limpeza: Se for base64 vindo do CRM, vamos salvar em arquivo na próxima vez pra poupar DB
+             // Mas agora apenas enviamos.
+          } else if (om.mediaUrl.startsWith('/api/media/') || om.mediaUrl.startsWith('/uploads/')) {
+             const filename = om.mediaUrl.split('/').pop();
+             const absPath = path.join(process.cwd(), 'public', 'uploads', filename || '');
+             
              if (fs.existsSync(absPath)) {
                 media = MessageMedia.fromFilePath(absPath);
              } else {
-                console.error(`❌ Arquivo não encontrado na VPS: ${absPath}`);
+                console.error(`❌ Arquivo não encontrado fisicamente: ${absPath}`);
+                // Tentativa de buscar via URL absoluta se falhar o path relativo
+                media = await MessageMedia.fromUrl(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${om.mediaUrl}`).catch(() => null);
              }
           } else {
              media = await MessageMedia.fromUrl(om.mediaUrl).catch(() => null);
@@ -332,40 +355,50 @@ setInterval(async () => {
             const isAudio = om.mediaType === 'audio' || (media && media.mimetype.startsWith('audio/'));
             const isDocument = om.mediaType === 'document' || (!isAudio && !media.mimetype.startsWith('image/') && !media.mimetype.startsWith('video/'));
 
-            // Se for áudio, envia como PTT (mensagem de voz nativa)
             await client.sendMessage(`${om.to}@c.us`, media, { 
               caption: om.body || undefined,
-              sendAudioAsVoice: isAudio, // Isso habilita o modo mensagem de voz
-              sendMediaAsDocument: isDocument // Garante que PDFs e arquivos pesados cheguem como documentos
+              sendAudioAsVoice: isAudio,
+              sendMediaAsDocument: isDocument
             });
           } else {
+            console.log(`⚠️ Enviando apenas texto para ${om.to} (mídia não carregada)`);
             await client.sendMessage(`${om.to}@c.us`, om.body);
           }
         } else {
           await client.sendMessage(`${om.to}@c.us`, om.body);
         }
 
-        await (prisma as any).outgoingMessage.update({
-          where: { id: om.id },
-          data: { status: 'SENT' }
-        });
-        console.log(`📤 WhatsApp ${om.mediaUrl ? 'com mídia ' : ''}enviado para ${om.to}`);
+        // Tenta atualizar o status no banco. Se falhar (ex: cota), apenas logamos e seguimos.
+        try {
+          await (prisma as any).outgoingMessage.update({
+            where: { id: om.id },
+            data: { status: 'SENT' }
+          });
+        } catch (dbErr) {
+          console.error(`⚠️ Erro ao atualizar status no DB (Cota?):`, (dbErr as any).message);
+        }
         
-        // Pequena pausa entre mensagens
-        await new Promise(r => setTimeout(r, 1000));
+        console.log(`📤 [OK] WhatsApp enviado para ${om.to}`);
+        await new Promise(r => setTimeout(r, 1500));
+        
       } catch (err: any) {
-        await (prisma as any).outgoingMessage.update({
-          where: { id: om.id },
-          data: { status: 'FAILED', errorMsg: err.message }
-        });
-        console.error(`❌ Falha ao enviar para ${om.to}:`, err.message);
+        console.error(`❌ Falha crítica ao enviar para ${om.to}:`, err.message);
+        try {
+          await (prisma as any).outgoingMessage.update({
+            where: { id: om.id },
+            data: { status: 'FAILED', errorMsg: err.message?.substring(0, 100) }
+          });
+        } catch (dbErr) {
+          // Se nem o update de falha funcionar, o banco está travado.
+        }
       }
     }
-  } catch {
-    // Erro de conexão
+  } catch (globalErr: any) {
+    console.error('🔥 Erro no loop de polling de mensagens:', globalErr.message);
   } finally {
     isProcessingOutgoing = false;
   }
-}, 3500);
+}, 4000);
+
 
 client.initialize();
