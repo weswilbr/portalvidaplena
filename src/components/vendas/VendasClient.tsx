@@ -122,10 +122,10 @@ export default function VendasClient({ user }: { user: any }) {
     }
   }, [selectedLead?.messages, isDetailsOpen]);
 
-  // Auto-refresh quando o chat está aberto (mensagens em tempo real)
+  // Auto-refresh quando o chat está aberto (mensagens em tempo real) - Reduzido para 1.5s p/ máxima velocidade
   useEffect(() => {
     if (!isDetailsOpen) return;
-    const interval = setInterval(() => refreshData(true), 4000);
+    const interval = setInterval(() => refreshData(true), 1500);
     return () => clearInterval(interval);
   }, [isDetailsOpen, selectedLead?.id]);
 
