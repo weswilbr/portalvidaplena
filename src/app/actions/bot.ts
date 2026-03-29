@@ -37,8 +37,19 @@ export async function updateBotConfig(id: string, data: any) {
 }
 
 export async function restartBotCommand() {
-  // Aqui, futuramente, chamaremos via HTTP POST a API rodando na sua VPS
-  // para reiniciar a conexão do Baileys/Evolution API
-  console.log("Comando de reinício do bot disparado para VPS.");
-  return { success: true, message: "Comando enviado para a VPS." };
+  try {
+    const config = await (prisma as any).botConfig.findFirst();
+    if (config) {
+      await (prisma as any).botConfig.update({
+        where: { id: config.id },
+        data: { status: 'RESTART_REQUESTED' }
+      });
+      revalidatePath("/dashboard/bot");
+      return { success: true, message: "Comando enviado! O QR Code aparecerá limpo em alguns segundos." };
+    }
+    return { success: false, message: "Configuração não encontrada." };
+  } catch (error) {
+    console.error("Erro reiniciando app:", error);
+    return { success: false, message: "Falha ao enviar comando." };
+  }
 }

@@ -3,6 +3,7 @@ import { Boom } from '@hapi/boom';
 import pino from 'pino';
 import * as QRCode from 'qrcode';
 import qrcodeTerminal from 'qrcode-terminal';
+import * as fs from 'fs';
 import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 import prisma from '../lib/prisma';
@@ -25,6 +26,30 @@ async function getOrCreateBotConfig() {
 
 async function startBot() {
   console.log('🤖 Inicializando Instância Baileys VPS...');
+  
+  // Vigilante do Painel (Restart automático caso o Administrador aperte o botão)
+  setInterval(async () => {
+    try {
+      const dbConfig = await (prisma as any).botConfig.findFirst();
+      if (dbConfig?.status === 'RESTART_REQUESTED') {
+        console.log('🔄 ALERTA: Pedido de Restart / Hard Reset recebido do Painel...');
+        await (prisma as any).botConfig.update({
+          where: { id: dbConfig.id },
+          data: { status: 'DISCONNECTED', qrCode: null }
+        });
+        
+        console.log('🗑️ Apagando cache do Baileys para varrer corrupções...');
+        if (fs.existsSync('./bot_auth_info')) {
+          fs.rmSync('./bot_auth_info', { recursive: true, force: true });
+        }
+        
+        console.log('💥 Forçando o fechamento para o PM2 reabastecer a instância limpa.');
+        process.exit(1);
+      }
+    } catch(e) {
+      console.error('Erro no vigilante:', e);
+    }
+  }, 5000);
   
   const { version, isLatest } = await fetchLatestBaileysVersion();
   console.log(`📡 Versão do WhatsApp sincronizada: v${version.join('.')} (Última: ${isLatest})`);
