@@ -242,8 +242,12 @@ client.on('message', async (msg: any) => {
   }
 });
 
+// Prevenção de duplicidade: trava de envio
+let isProcessingOutgoing = false;
+
 // Polling de mensagens de saída — vendedor envia via CRM, bot entrega no WhatsApp
 setInterval(async () => {
+  if (isProcessingOutgoing) return;
   try {
     const state = await client.getState().catch(() => null);
     if (state !== 'CONNECTED') return;
@@ -253,6 +257,8 @@ setInterval(async () => {
       take: 5,
       orderBy: { createdAt: 'asc' }
     });
+    if (pending.length === 0) return;
+    isProcessingOutgoing = true;
 
     for (const om of pending) {
       try {
@@ -292,6 +298,9 @@ setInterval(async () => {
           data: { status: 'SENT' }
         });
         console.log(`📤 WhatsApp ${om.mediaUrl ? 'com mídia ' : ''}enviado para ${om.to}`);
+        
+        // Pequena pausa entre mensagens
+        await new Promise(r => setTimeout(r, 1000));
       } catch (err: any) {
         await (prisma as any).outgoingMessage.update({
           where: { id: om.id },
@@ -301,8 +310,10 @@ setInterval(async () => {
       }
     }
   } catch {
-    // Bot pode não estar conectado ainda
+    // Erro de conexão
+  } finally {
+    isProcessingOutgoing = false;
   }
-}, 3000);
+}, 3500);
 
 client.initialize();
