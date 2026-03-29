@@ -142,7 +142,7 @@ export async function addMessage(data: { leadId: string; content: string; author
   }
 }
 
-export async function sendWhatsAppMessage(data: { leadId: string; content: string; authorId: string; mediaUrl?: string; mediaType?: string }) {
+export async function sendWhatsAppMessage(data: { leadId: string; content: string; authorId: string; mediaUrl?: string; mediaType?: string; fileName?: string }) {
   try {
     const lead = await (prisma as any).lead.findUnique({ where: { id: data.leadId } });
     if (!lead?.phone) return { success: false, error: "Lead sem número de telefone" };
@@ -167,6 +167,7 @@ export async function sendWhatsAppMessage(data: { leadId: string; content: strin
         body: data.content,
         mediaUrl: data.mediaUrl,
         mediaType: data.mediaType,
+        fileName: data.fileName,
         leadId: data.leadId,
         authorId: data.authorId,
         status: "PENDING"
@@ -188,18 +189,19 @@ export async function uploadMedia(formData: FormData) {
     const file = formData.get("file") as File;
     if (!file) return { success: false, error: "Nenhum arquivo enviado" };
 
-    if (file.size > 5 * 1024 * 1024) { // Limite de 5MB por anexo no banco
-      return { success: false, error: "Arquivo muito grande (máximo 5MB)" };
+    if (file.size > 64 * 1024 * 1024) { // Limite de 64MB
+      return { success: false, error: "Arquivo muito grande (máximo 64MB)" };
     }
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const base64 = buffer.toString('base64');
+    const base64 = buffer.toString("base64");
     const dataUri = `data:${file.type};base64,${base64}`;
 
     return { 
       success: true, 
       url: dataUri, 
+      name: file.name,
       type: file.type.startsWith("image") ? "image" : 
             file.type.startsWith("video") ? "video" : 
             file.type.startsWith("audio") ? "audio" : "document" 

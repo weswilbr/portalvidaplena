@@ -172,6 +172,7 @@ export default function VendasClient({ user }: { user: any }) {
     let res;
     let mediaUrl = undefined;
     let mediaType = undefined;
+    let fileName = undefined;
 
     if (selectedFile) {
       const formData = new FormData();
@@ -180,6 +181,7 @@ export default function VendasClient({ user }: { user: any }) {
       if (uploadRes.success) {
         mediaUrl = uploadRes.url;
         mediaType = uploadRes.type;
+        fileName = uploadRes.name;
       } else {
         alert(uploadRes.error || "Erro ao subir arquivo");
         setIsSending(false);
@@ -195,7 +197,8 @@ export default function VendasClient({ user }: { user: any }) {
         content: newMessage, 
         authorId: user.id,
         mediaUrl,
-        mediaType
+        mediaType,
+        fileName
       });
     }
 

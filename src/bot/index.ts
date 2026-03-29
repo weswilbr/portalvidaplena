@@ -265,7 +265,7 @@ setInterval(async () => {
              const mimetype = header.split(':')[1];
              // WhatsApp nativamente usa ogg/opus, forçamos se for áudio para garantir que o celular entenda como voz
              const finalMime = om.mediaType === 'audio' ? 'audio/ogg; codecs=opus' : mimetype;
-             media = new MessageMedia(finalMime, data);
+             media = new MessageMedia(finalMime, data, om.fileName || 'arquivo');
           } else {
              media = await MessageMedia.fromUrl(om.mediaUrl).catch(() => null);
           }

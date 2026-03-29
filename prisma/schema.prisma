@@ -71,6 +71,7 @@ model OutgoingMessage {
   body      String
   mediaUrl  String?
   mediaType String?
+  fileName  String?
   status    String   @default("PENDING") // PENDING, SENT, FAILED
   errorMsg  String?
   leadId    String?
