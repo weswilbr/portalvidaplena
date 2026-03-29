@@ -516,7 +516,7 @@ export default function VendasClient({ user }: { user: any }) {
                         </span>
                       </td>
                       <td className="px-6 md:px-8 py-4 md:py-5 text-right flex justify-end gap-2">
-                         {(!lead.assignedTo || lead.assignedTo.id !== user.id) && (
+                         {(!lead.assignedTo || (lead.assignedTo.id !== user.id && user.role === 'ADMIN')) && (
                            <button 
                             onClick={() => handlePullLead(lead.id)}
                             className="px-3 py-1.5 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 active:scale-95 transition-all shadow-sm flex items-center gap-1.5"

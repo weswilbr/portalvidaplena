@@ -233,7 +233,7 @@ export default function LeadsClient({ user }: { user: any }) {
                     </td>
                     <td className="px-8 py-5 text-right">
                       <div className="flex items-center justify-end gap-2 text-slate-400">
-                        {lead.assignedTo?.id !== user?.id && (
+                        {(!lead.assignedTo || (lead.assignedTo.id !== user?.id && user?.role === 'ADMIN')) && (
                           <button
                             onClick={() => handlePullLead(lead.id)}
                             title="Puxar Atendimento"

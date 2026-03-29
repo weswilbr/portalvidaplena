@@ -258,7 +258,22 @@ export async function transferLead(leadId: string, newAssignedToId: string, curr
 
 export async function pullLead(leadId: string, currentUserId: string) {
   try {
-    const lead = await (prisma as any).lead.update({
+    const lead = await (prisma as any).lead.findUnique({
+      where: { id: leadId },
+      include: { assignedTo: true }
+    });
+
+    if (!lead) return { success: false, error: "Lead não encontrado" };
+
+    // Se já estiver atribuído a outra pessoa, só admin pode puxar
+    if (lead.assignedToId && lead.assignedToId !== currentUserId) {
+      const user = await (prisma as any).user.findUnique({ where: { id: currentUserId } });
+      if (user?.role !== "ADMIN") {
+        return { success: false, error: "Apenas administradores podem puxar um lead que já tem dono." };
+      }
+    }
+
+    const updatedLead = await (prisma as any).lead.update({
       where: { id: leadId },
       data: { assignedToId: currentUserId, status: "CONTACTED" }
     });
@@ -274,7 +289,7 @@ export async function pullLead(leadId: string, currentUserId: string) {
 
     revalidatePath("/dashboard/leads");
     revalidatePath("/dashboard/vendas");
-    return { success: true, lead };
+    return { success: true, lead: updatedLead };
   } catch (error) {
     console.error("Error pulling lead:", error);
     return { success: false, error: "Falha ao puxar lead" };
