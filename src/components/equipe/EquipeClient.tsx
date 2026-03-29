@@ -102,7 +102,7 @@ export default function EquipeClient({ user }: { user: any }) {
   };
 
   const copyLoginInfo = (seller: any) => {
-    const text = `*Portal Vida Plena - Seu Acesso*\n\nOlá, ${seller.name}!\n\n🔗 *Acesse agora:* https://portalvidaplena.vercel.app/login\n👤 *Acesso:* ${seller.phone || seller.email}\n🔑 *Sua Senha Inicial:* (a senha que você definiu)\n\nAcesse para começarmos!`;
+    const text = `*Portal Vida Plena - Seu Acesso*\n\nOlá, ${seller.name}!\n\n🔗 *Acesse agora:* https://portalfvp.duckdns.org/login\n👤 *Acesso:* ${seller.phone || seller.email}\n🔑 *Sua Senha Inicial:* (a senha que você definiu)\n\nAcesse para começarmos!`;
     navigator.clipboard.writeText(text);
     alert("Mensagem modelo copiada! Cole no WhatsApp do membro.");
   };
