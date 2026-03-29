@@ -212,11 +212,18 @@ export default function VendasClient({ user }: { user: any }) {
         setIsEmojiOpen(false);
         refreshData();
       } else {
-        alert(res.error || "Ocorreu um erro ao enviar.");
+        // Trata erro de limite do Vercel (4.5MB) especificamente se possível, ou exibe o erro retornado
+        const errorMsg = res.error || "Ocorreu um erro ao enviar.";
+        if (errorMsg.includes("413") || errorMsg.includes("Large")) {
+          alert("⚠️ Limite do Vercel atingido (4.5MB). \n\nPara enviar arquivos maiores (até 32MB), você deve acessar o sistema pelo endereço da sua VPS ou usar um serviço de armazenamento externo (S3/Cloudinary).");
+        } else {
+          alert(errorMsg);
+        }
       }
     } catch (err) {
       console.error("Error in send response logic:", err);
-      alert("Erro inesperado no sistema. Tente novamente.");
+      // Fallback para o usuário se o Vercel retornar erro de body size (413) que quebra a ação
+      alert("⚠️ Erro de limite de tamanho! O Vercel suporta no máximo 4.5MB. Para arquivos maiores, use o endereço da sua VPS.");
     } finally {
       setIsSending(false);
     }
