@@ -142,7 +142,7 @@ export async function addMessage(data: { leadId: string; content: string; author
   }
 }
 
-export async function sendWhatsAppMessage(data: { leadId: string; content: string; authorId: string }) {
+export async function sendWhatsAppMessage(data: { leadId: string; content: string; authorId: string; mediaUrl?: string; mediaType?: string }) {
   try {
     const lead = await (prisma as any).lead.findUnique({ where: { id: data.leadId } });
     if (!lead?.phone) return { success: false, error: "Lead sem número de telefone" };
@@ -154,7 +154,9 @@ export async function sendWhatsAppMessage(data: { leadId: string; content: strin
         authorId: data.authorId,
         leadId: data.leadId,
         isSystem: false,
-        isNote: false
+        isNote: false,
+        mediaUrl: data.mediaUrl,
+        mediaType: data.mediaType
       }
     });
 
@@ -163,6 +165,8 @@ export async function sendWhatsAppMessage(data: { leadId: string; content: strin
       data: {
         to: lead.phone,
         body: data.content,
+        mediaUrl: data.mediaUrl,
+        mediaType: data.mediaType,
         leadId: data.leadId,
         authorId: data.authorId,
         status: "PENDING"
@@ -174,6 +178,21 @@ export async function sendWhatsAppMessage(data: { leadId: string; content: strin
   } catch (error) {
     console.error("Error sending WhatsApp message:", error);
     return { success: false, error: "Falha ao enviar mensagem" };
+  }
+}
+
+// Simula upload - em produção deve-se usar S3/Cloudinary etc
+export async function uploadMedia(formData: FormData) {
+  try {
+    const file = formData.get("file") as File;
+    if (!file) return { success: false, error: "Nenhum arquivo enviado" };
+
+    // Mock: em produção aqui salvaria o arquivo e retornaria o URL
+    // Para teste, apenas dizemos que o upload foi bem sucedido
+    // Como é um MVP, o ideal seria o bot baixar isso via URL
+    return { success: true, url: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=800", type: file.type.startsWith("image") ? "image" : "document" };
+  } catch (error) {
+    return { success: false, error: "Erro no upload" };
   }
 }
 

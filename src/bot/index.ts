@@ -1,4 +1,4 @@
-import { Client, LocalAuth } from 'whatsapp-web.js';
+import { Client, LocalAuth, MessageMedia } from 'whatsapp-web.js';
 import * as QRCode from 'qrcode';
 import qrcodeTerminal from 'qrcode-terminal';
 import { loadEnvConfig } from '@next/env';
@@ -191,16 +191,37 @@ client.on('message', async (msg: any) => {
       }
     }
 
-    // Salva a mensagem do cliente
+    // Salva a mensagem do cliente (texto e mídia se houver)
+    let finalContent = textMessage;
+    let savedMediaUrl = null;
+    let savedMediaType = null;
+
+    if (msg.hasMedia) {
+      try {
+        const media = await msg.downloadMedia();
+        if (media) {
+          savedMediaType = media.mimetype.split('/')[0]; // image, video, etc
+          // Em produção: aqui faria upload para S3 e salvaria o URL real
+          // Por enquanto salvamos o base64 ou um indicador para o CRM
+          savedMediaUrl = `data:${media.mimetype};base64,${media.data}`;
+          if (!finalContent) finalContent = `[Arquivo ${savedMediaType}]`;
+        }
+      } catch (e) {
+        console.error("Erro ao baixar mídia do WhatsApp:", e);
+      }
+    }
+
     await (prisma as any).message.create({
       data: {
-        content: textMessage,
+        content: finalContent || '[Mensagem]',
         leadId: lead.id,
-        isSystem: false
+        isSystem: false,
+        mediaUrl: savedMediaUrl,
+        mediaType: savedMediaType
       }
     });
 
-    console.log(`📩 Mensagem arquivada no CRM para Lead ${lead.name}`);
+    console.log(`📩 Mensagem ${msg.hasMedia ? 'com mídia ' : ''}arquivada no CRM para Lead ${lead.name}`);
 
   } catch (err) {
     console.error('Erro processando mensagem:', err);
@@ -221,12 +242,32 @@ setInterval(async () => {
 
     for (const om of pending) {
       try {
-        await client.sendMessage(`${om.to}@c.us`, om.body);
+        if (om.mediaUrl) {
+          // Se tiver URL de mídia, envia como mídia
+          // Em produção, primeiro baixa do S3/URL
+          let media;
+          if (om.mediaUrl.startsWith('data:')) {
+             const [header, data] = om.mediaUrl.split(';base64,');
+             const mimetype = header.split(':')[1];
+             media = new MessageMedia(mimetype, data);
+          } else {
+             media = await MessageMedia.fromUrl(om.mediaUrl).catch(() => null);
+          }
+          
+          if (media) {
+            await client.sendMessage(`${om.to}@c.us`, media, { caption: om.body });
+          } else {
+            await client.sendMessage(`${om.to}@c.us`, om.body);
+          }
+        } else {
+          await client.sendMessage(`${om.to}@c.us`, om.body);
+        }
+
         await (prisma as any).outgoingMessage.update({
           where: { id: om.id },
           data: { status: 'SENT' }
         });
-        console.log(`📤 WhatsApp enviado para ${om.to}: "${om.body.substring(0, 60)}..."`);
+        console.log(`📤 WhatsApp ${om.mediaUrl ? 'com mídia ' : ''}enviado para ${om.to}`);
       } catch (err: any) {
         await (prisma as any).outgoingMessage.update({
           where: { id: om.id },

@@ -16,11 +16,18 @@ import {
   UserPlus,
   ArrowRightLeft,
   CheckCircle2,
-  User
+  User,
+  Paperclip,
+  Smile,
+  ImageIcon,
+  FileText,
+  MoreVertical,
+  ChevronLeft,
+  CalendarCheck
 } from "lucide-react";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { cn, openWhatsApp, getWhatsAppHref } from "@/lib/utils";
-import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead, sendWhatsAppMessage, addInternalNote } from "@/app/actions/leads";
+import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead, sendWhatsAppMessage, addInternalNote, uploadMedia } from "@/app/actions/leads";
 import { getSellers } from "@/app/actions/users";
 import KanbanView from "@/components/leads/KanbanView";
 
@@ -75,7 +82,11 @@ export default function VendasClient({ user }: { user: any }) {
   const [isSending, setIsSending] = useState(false);
   const [transferUserId, setTransferUserId] = useState("");
   const [isTransferring, setIsTransferring] = useState(false);
+  const [isEmojiOpen, setIsEmojiOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -134,22 +145,62 @@ export default function VendasClient({ user }: { user: any }) {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedLead || isSending) return;
+    if ((!newMessage.trim() && !selectedFile) || !selectedLead || isSending) return;
 
     setIsSending(true);
     let res;
+    let mediaUrl = undefined;
+    let mediaType = undefined;
+
+    if (selectedFile) {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      const uploadRes = await uploadMedia(formData);
+      if (uploadRes.success) {
+        mediaUrl = uploadRes.url;
+        mediaType = uploadRes.type;
+      }
+    }
 
     if (isNoteMode) {
       res = await addInternalNote({ leadId: selectedLead.id, content: newMessage, authorId: user.id });
     } else {
-      res = await sendWhatsAppMessage({ leadId: selectedLead.id, content: newMessage, authorId: user.id });
+      res = await sendWhatsAppMessage({ 
+        leadId: selectedLead.id, 
+        content: newMessage, 
+        authorId: user.id,
+        mediaUrl,
+        mediaType
+      });
     }
 
     if (res.success) {
       setNewMessage("");
+      setSelectedFile(null);
+      setFilePreview(null);
+      setIsEmojiOpen(false);
       refreshData();
     }
     setIsSending(false);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (e) => setFilePreview(e.target?.result as string);
+        reader.readAsDataURL(file);
+      } else {
+        setFilePreview(null);
+      }
+    }
+  };
+
+  const addEmoji = (emoji: string) => {
+    setNewMessage(prev => prev + emoji);
+    setIsEmojiOpen(false);
   };
 
   const handleTransfer = async () => {
@@ -398,238 +449,290 @@ export default function VendasClient({ user }: { user: any }) {
         </div>
       )}
 
-      {/* Modal Lateral (Slide-over) */}
       {isDetailsOpen && selectedLead && (
-        <div className="fixed inset-0 z-50 flex justify-end">
+        <div className="fixed inset-0 z-[60] flex justify-end">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsDetailsOpen(false)}></div>
           
-          <div className="relative w-full sm:max-w-lg bg-white h-full shadow-2xl flex flex-col animate-in slide-in-from-right md:slide-in-from-right duration-300">
-            <header className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <div className="flex items-center gap-4">
+          <div className="relative w-full sm:max-w-2xl bg-[#f0f2f5] h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            {/* Cabeçalho do Chat */}
+            <header className="p-3 bg-[#f0f2f5] flex items-center justify-between border-b border-slate-200">
+              <div className="flex items-center gap-3">
+                <button onClick={() => setIsDetailsOpen(false)} className="md:hidden p-2 text-slate-500">
+                  <ChevronLeft size={24} />
+                </button>
                 {selectedLead.profilePic ? (
-                  <img src={selectedLead.profilePic} alt={selectedLead.name} className="w-14 h-14 rounded-full object-cover border-2 border-slate-200 shadow-sm" />
+                  <img src={selectedLead.profilePic} className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200" alt={selectedLead.name} />
                 ) : (
-                  <div className="w-14 h-14 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-400 font-bold border border-indigo-100">
-                    <User size={28}/>
-                  </div>
+                  <div className="w-10 h-10 rounded-full bg-slate-300 flex items-center justify-center text-white"><User size={20}/></div>
                 )}
                 <div>
-                  <h3 className="text-2xl font-black text-slate-900 leading-none mb-1">{selectedLead.name}</h3>
-                  <a href={getWhatsAppHref(selectedLead.phone?.split(':')[0] || '')} target="_blank" rel="noreferrer" className="text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:underline flex items-center gap-1 active:scale-95 transition-all w-fit">
-                    {formatPhoneNumber(selectedLead.phone)}
-                  </a>
+                  <h3 className="text-base font-bold text-slate-900 leading-tight">{selectedLead.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-medium text-emerald-600">Online CRM Bolt</span>
+                    <span className="text-[10px] text-slate-400">|</span>
+                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-tighter cursor-pointer" onClick={() => setIsTransferring(!isTransferring)}>
+                      {isTransferring ? "Fechar Painel" : "Painel Lead"}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <button onClick={() => setIsDetailsOpen(false)} className="p-3 hover:bg-slate-200 bg-slate-100 text-slate-500 rounded-2xl transition-all">
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-4 text-slate-500">
+                <button className="hover:text-indigo-600 transition-all"><Search size={20} /></button>
+                <button onClick={() => setIsDetailsOpen(false)} className="hover:text-red-500 transition-all"><X size={20} /></button>
+              </div>
             </header>
 
-            <div className="p-6 border-b border-slate-100 flex flex-wrap gap-4 items-center justify-between">
-              
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Área de Foco</label>
-                <select 
-                  className={cn("text-xs font-bold px-3 py-2 rounded-lg outline-none cursor-pointer appearance-none bg-slate-100 border border-slate-200 text-slate-700")}
-                  value={selectedLead.interest || "Produto"}
-                  onChange={handleInterestChange}
-                >
-                  <option value="Produto">Venda Produto</option>
-                  <option value="Negócio">Negócio/Afiliado</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Atendente Atual</label>
-                <div className="text-sm font-bold text-slate-700 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
-                  {selectedLead.assignedTo ? selectedLead.assignedTo.name : "Fila Geral (Sem Dono)"}
+            {/* Painel de Ações do Lead (Opcional, abre sob o header) */}
+            {isTransferring && (
+              <div className="p-4 bg-white border-b border-slate-200 animate-in slide-in-from-top duration-300 space-y-4 shadow-sm z-20">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Foco</label>
+                    <select 
+                      className="w-full text-xs font-bold px-3 py-2 rounded-lg bg-slate-100 border border-slate-200"
+                      value={selectedLead.interest || "Produto"}
+                      onChange={handleInterestChange}
+                    >
+                      <option value="Produto">Produto</option>
+                      <option value="Negócio">Negócio</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</label>
+                    <select 
+                      className={cn("w-full text-xs font-bold px-3 py-2 rounded-lg border border-slate-200", statusStyles[selectedLead.status as keyof typeof statusStyles])}
+                      value={selectedLead.status}
+                      onChange={handleStatusChange}
+                    >
+                      {Object.entries(statusLabels).map(([key, label]) => (
+                        <option key={key} value={key} className="bg-white text-slate-900">{label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="space-y-2 border-t pt-2 border-slate-100">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Transferir Atendimento</label>
+                  <div className="flex gap-2">
+                    <select 
+                      className="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium"
+                      value={transferUserId}
+                      onChange={(e) => setTransferUserId(e.target.value)}
+                    >
+                      <option value="">Selecione outro atendente...</option>
+                      {sellers.filter(s => s.id !== selectedLead.assignedTo?.id).map(seller => (
+                        <option key={seller.id} value={seller.id}>{seller.name}</option>
+                      ))}
+                    </select>
+                    <button 
+                      onClick={handleTransfer}
+                      disabled={!transferUserId}
+                      className="px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-all shrink-0"
+                    >
+                      OK
+                    </button>
+                  </div>
                 </div>
               </div>
+            )}
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Alterar Status</label>
-                <select 
-                  className={cn("text-xs font-bold px-3 py-2 rounded-lg outline-none cursor-pointer appearance-none", statusStyles[selectedLead.status as keyof typeof statusStyles])}
-                  value={selectedLead.status}
-                  onChange={handleStatusChange}
-                >
-                  {Object.entries(statusLabels).map(([key, label]) => (
-                    <option key={key} value={key} className="bg-white text-slate-900">{label}</option>
-                  ))}
-                </select>
-              </div>
+            {/* Mensagens (Fundo WhatsApp) */}
+            <div 
+              className="flex-1 overflow-y-auto p-4 md:px-12 md:py-8 space-y-4 relative scroll-smooth"
+              style={{ 
+                backgroundImage: `url('https://w0.peakpx.com/wallpaper/722/716/OHR-whatsapp-pattern-abstract-flat-style-light-green.jpg')`,
+                backgroundSize: '400px',
+                backgroundBlendMode: 'soft-light'
+              }}
+            >
+              <div className="flex flex-col gap-2">
+                {selectedLead.messages?.map((msg: any) => {
+                  const isMe = msg.author?.id === user.id;
+                  const isClient = !msg.author && !msg.isSystem;
 
-              <div className="flex gap-2 w-full mt-2">
-                <button 
-                  onClick={() => setIsTransferring(!isTransferring)}
-                  className="flex-1 py-2.5 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-xl hover:bg-indigo-100 transition-all flex items-center justify-center gap-2"
-                >
-                  <ArrowRightLeft size={16} /> {isTransferring ? "Cancelar Transferência" : "Transferir Lead"}
-                </button>
-                <button 
-                  onClick={() => handleSendMessageWhatsApp(selectedLead.phone)}
-                  className="flex-1 py-2.5 bg-emerald-500 text-white font-bold text-xs rounded-xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
-                >
-                  <MessageSquare size={16} /> Chamar WhatsApp
-                </button>
-              </div>
-
-              {isTransferring && (
-                <div className="w-full flex items-center gap-2 animate-in fade-in duration-300 pt-2 border-t border-slate-100 mt-2">
-                  <select 
-                    className="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium outline-none"
-                    value={transferUserId}
-                    onChange={(e) => setTransferUserId(e.target.value)}
-                  >
-                    <option value="">Selecione outro atendente...</option>
-                    {sellers.filter(s => s.id !== selectedLead.assignedTo?.id).map(seller => (
-                      <option key={seller.id} value={seller.id}>{seller.name}</option>
-                    ))}
-                  </select>
-                  <button 
-                    onClick={handleTransfer}
-                    disabled={!transferUserId}
-                    className="p-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-all"
-                  >
-                    Confirmar
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50">
-              <div className="text-center pb-4">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-slate-400">Histórico de Atendimento</span>
-              </div>
-              
-              {selectedLead.messages?.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                  <MessageSquare size={32} className="mb-3 opacity-30" />
-                  <p className="text-sm font-medium">Nenhuma mensagem ainda.</p>
-                  <p className="text-xs mt-1">Envie uma mensagem WhatsApp para iniciar o atendimento.</p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {selectedLead.messages?.map((msg: any) => {
-                    const isMe = msg.author?.id === user.id;
-                    const isClient = !msg.author && !msg.isSystem;
-
-                    if (msg.isSystem) {
-                      return (
-                        <div key={msg.id} className="flex items-center gap-2 my-1">
-                          <div className="flex-1 h-px bg-slate-200" />
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap px-2">{msg.content}</span>
-                          <div className="flex-1 h-px bg-slate-200" />
-                        </div>
-                      );
-                    }
-
+                  if (msg.isSystem) {
                     return (
-                      <div key={msg.id} className={cn("flex flex-col gap-1 max-w-[82%]", isMe ? "self-end items-end" : "self-start items-start")}>
-                        <span className="text-[10px] font-bold text-slate-400 px-1">
-                          {isClient ? "👤 Cliente" : isMe ? "Você" : msg.author?.name || "Atendente"}
-                          {msg.isNote && " · 📝 Nota"}
-                        </span>
-                        <div className={cn(
-                          "px-4 py-3 rounded-2xl text-sm font-medium shadow-sm leading-relaxed",
-                          isClient
-                            ? "bg-white border border-slate-200 text-slate-800 rounded-tl-sm"
-                            : msg.isNote
-                            ? "bg-amber-50 border border-amber-200 text-amber-900 rounded-tr-sm"
-                            : isMe
-                            ? "bg-indigo-600 text-white rounded-tr-sm"
-                            : "bg-slate-200 text-slate-700 rounded-tr-sm"
-                        )}>
+                      <div key={msg.id} className="flex justify-center my-3">
+                        <span className="bg-[#e1f3fb] text-[#54656f] text-[10px] font-bold px-3 py-1 rounded-lg uppercase tracking-wide shadow-sm border border-[#c6e5f1]">
                           {msg.content}
-                        </div>
-                        <span className="text-[9px] text-slate-400 px-1">
-                          {new Date(msg.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                     );
-                  })}
-                </div>
-              )}
+                  }
+
+                  return (
+                    <div key={msg.id} className={cn("flex flex-col gap-1 max-w-[85%] relative", isMe ? "self-end" : "self-start")}>
+                      <div className={cn(
+                        "px-3 py-2 rounded-xl text-sm font-medium shadow-sm leading-relaxed min-w-[80px]",
+                        isClient ? "bg-white text-slate-800 rounded-tl-none pr-12" : 
+                        msg.isNote ? "bg-[#fef3c7] border border-amber-200 text-amber-900 rounded-tr-none pb-5" : 
+                        isMe ? "bg-[#d9fdd3] text-[#111b21] rounded-tr-none pr-12" : 
+                        "bg-white text-[#111b21] rounded-tr-none pr-12"
+                      )}>
+                        {/* Renderização de Mídia */}
+                        {msg.mediaUrl && (
+                          <div className="mb-2">
+                            {msg.mediaType === 'image' || msg.mediaUrl.startsWith('data:image') ? (
+                              <img 
+                                src={msg.mediaUrl} 
+                                alt="anexo" 
+                                className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-90 transition-all border border-black/5" 
+                                onClick={() => window.open(msg.mediaUrl, '_blank')} 
+                              />
+                            ) : (
+                              <div className="flex items-center gap-3 p-3 bg-black/5 rounded-lg border border-black/5 min-w-[150px]">
+                                <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
+                                  <FileText size={20} />
+                                </div>
+                                <div className="truncate flex-1">
+                                  <p className="text-[12px] font-bold truncate">Arquivo Recebido</p>
+                                  <a href={msg.mediaUrl} target="_blank" className="text-[10px] text-indigo-600 underline font-bold">Ver Anexo</a>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+
+                        <div className="absolute bottom-1 right-2 flex items-center gap-1 opacity-60 text-[9px]">
+                          <span>{new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                          {isMe && !msg.isNote && (
+                             <span className="text-blue-500 font-bold ml-1">✓✓</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
               <div ref={messagesEndRef} />
             </div>
 
-            <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-slate-100 space-y-2">
-              <textarea
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e as any); }
-                }}
-                placeholder={isNoteMode ? "Escreva uma nota interna... (Enter para salvar)" : "Mensagem para enviar via WhatsApp... (Enter para enviar)"}
-                rows={2}
-                className={cn(
-                  "w-full rounded-2xl px-4 py-3 text-sm font-medium resize-none outline-none transition-all",
-                  isNoteMode
-                    ? "bg-amber-50 border border-amber-200 focus:ring-2 focus:ring-amber-300"
-                    : "bg-slate-100 border-none focus:ring-4 focus:ring-indigo-100"
-                )}
-              />
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsNoteMode(!isNoteMode)}
-                  className={cn(
-                    "px-3 py-2 rounded-xl text-xs font-bold transition-all border",
-                    isNoteMode
-                      ? "bg-amber-100 text-amber-700 border-amber-300"
-                      : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-amber-50 hover:text-amber-600"
-                  )}
-                >
-                  📝 Nota
-                </button>
-                <button
-                  type="submit"
-                  disabled={!newMessage.trim() || isSending}
-                  className={cn(
-                    "flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm",
-                    isNoteMode
-                      ? "bg-amber-400 text-white hover:bg-amber-500 disabled:opacity-50"
-                      : "bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 shadow-emerald-200"
-                  )}
-                >
-                  {isSending
-                    ? <Loader2 size={14} className="animate-spin" />
-                    : isNoteMode ? "💾 Salvar Nota" : "📱 Enviar WhatsApp"}
-                </button>
+            {/* Input e Controles */}
+            <div className="p-3 bg-[#f0f2f5] border-t border-slate-200">
+              {/* Preview de Arquivo antes do envio */}
+              {selectedFile && (
+                <div className="mb-3 bg-white p-3 rounded-2xl border border-slate-200 flex items-center justify-between shadow-xl animate-in slide-in-from-bottom duration-300">
+                  <div className="flex items-center gap-3">
+                    {filePreview ? (
+                      <img src={filePreview} className="w-14 h-14 rounded-xl object-cover border border-slate-100 shadow-sm" alt="preview" />
+                    ) : (
+                      <div className="p-4 bg-slate-100 rounded-xl text-slate-500 border border-slate-200"><FileText size={28}/></div>
+                    )}
+                    <div>
+                      <p className="text-xs font-bold text-slate-800 truncate max-w-[180px]">{selectedFile.name}</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                  </div>
+                  <button onClick={() => { setSelectedFile(null); setFilePreview(null); }} className="p-3 hover:bg-red-50 text-red-500 rounded-2xl transition-all"><X size={20}/></button>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+                
+                <div className="flex items-center bg-white rounded-2xl shadow-sm border border-slate-200">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsEmojiOpen(!isEmojiOpen)}
+                    className={cn("p-3 text-slate-500 hover:text-indigo-600 transition-all", isEmojiOpen && "text-indigo-600")}
+                  >
+                    <Smile size={24} />
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-3 text-slate-500 hover:text-indigo-600 transition-all border-l border-slate-100"
+                  >
+                    <Paperclip size={24} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSendMessage} className="flex-1 flex gap-2">
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder={isNoteMode ? "Adicionar nota interna..." : "Enviar mensagem pelo CRM..."}
+                      className={cn(
+                        "w-full h-12 px-4 rounded-2xl text-sm font-semibold border-none outline-none transition-all shadow-sm",
+                        isNoteMode ? "bg-[#fef3c7] focus:ring-2 focus:ring-amber-300" : "bg-white focus:ring-2 focus:ring-indigo-300"
+                      )}
+                    />
+                    {isEmojiOpen && (
+                      <div className="absolute bottom-16 left-0 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-[2rem] p-5 grid grid-cols-6 gap-3 border border-slate-100 animate-in slide-in-from-bottom-2 duration-300 z-[70] w-64 md:w-80">
+                        {["😀", "😂", "🚀", "🔥", "✅", "🙌", "🤝", "📦", "💰", "📞", "📝", "❓", "📌", "⚠️", "⏳", "🎉", "💙", "💊"].map(emoji => (
+                          <button key={emoji} type="button" onClick={() => addEmoji(emoji)} className="text-2xl hover:scale-125 transition-all active:scale-95">{emoji}</button>
+                        ))}
+                        <button type="button" onClick={() => setIsEmojiOpen(false)} className="col-span-6 mt-2 py-1 text-[10px] font-black text-slate-400 uppercase tracking-widest border-t border-slate-100 pt-3">Fechar</button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsNoteMode(!isNoteMode)}
+                      title={isNoteMode ? "Mudar para WhatsApp" : "Mudar para Nota Interna"}
+                      className={cn(
+                        "w-12 h-12 flex items-center justify-center rounded-2xl transition-all border shadow-sm",
+                        isNoteMode ? "bg-amber-400 text-white border-amber-500" : "bg-white text-slate-400 border-slate-200 hover:bg-amber-50"
+                      )}
+                    >
+                      {isNoteMode ? <CalendarCheck size={24} /> : <FileText size={24} />}
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={(!newMessage.trim() && !selectedFile) || isSending}
+                      className={cn(
+                        "w-12 h-12 flex items-center justify-center rounded-2xl text-white shadow-xl transition-all active:scale-95",
+                        isNoteMode ? "bg-amber-600 shadow-amber-200" : "bg-[#00a884] shadow-emerald-200"
+                      )}
+                    >
+                      {isSending ? <Loader2 size={24} className="animate-spin" /> : <Send size={24} className="ml-0.5" />}
+                    </button>
+                  </div>
+                </form>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Modal Criação Manual para testes */}
+      {/* Modal Criação Manual */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl p-10 animate-in zoom-in duration-300">
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-black">Criar Atendimento</h2>
-              <button onClick={() => setIsModalOpen(false)} className="p-3 hover:bg-slate-100 rounded-2xl transition-all">
+              <h2 className="text-2xl font-black">Novo Lead Manual</h2>
+              <button onClick={() => setIsModalOpen(false)} className="p-3 hover:bg-slate-100 rounded-2xl transition-all text-slate-400">
                 <X size={24} />
               </button>
             </div>
             <form className="space-y-5" onSubmit={handleSaveLead}>
               <div className="space-y-2">
                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Nome</label>
-                 <input name="name" required className="w-full p-4 rounded-2xl bg-slate-50 outline-none" />
+                 <input name="name" required placeholder="Ex: João Silva" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-indigo-100 transition-all font-bold" />
               </div>
               <div className="space-y-2">
-                 <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Telefone</label>
-                 <input name="phone" required className="w-full p-4 rounded-2xl bg-slate-50 outline-none" />
+                 <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Telefone (com DDD)</label>
+                 <input name="phone" required placeholder="Ex: 5527999881122" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-indigo-100 transition-all font-bold" />
               </div>
               <div className="space-y-2">
                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Atribuir a</label>
-                 <select name="assignedToId" className="w-full p-4 rounded-2xl bg-slate-50 outline-none cursor-pointer">
+                 <select name="assignedToId" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none cursor-pointer font-bold">
                     <option value="">(Deixar na Fila Geral)</option>
                     {sellers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                  </select>
               </div>
-              <button className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black shadow-xl hover:bg-indigo-700 transition-all mt-4">
-                 SALVAR
+              <button 
+                type="submit"
+                className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all mt-4 tracking-widest"
+              >
+                 CRIAR LEAD AGORA
               </button>
             </form>
           </div>
