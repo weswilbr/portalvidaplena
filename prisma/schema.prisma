@@ -55,6 +55,15 @@ model Message {
   createdAt     DateTime @default(now())
 }
 
+model QuickReply {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @db.Text
+  userId    String?  // null = global, string = específico do usuário
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}
+
 model OutgoingMessage {
   id        String   @id @default(cuid())
   to        String

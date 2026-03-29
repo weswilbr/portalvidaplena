@@ -322,3 +322,36 @@ export async function updateMessage(messageId: string, content: string) {
     return { success: false, error: "Falha ao editar mensagem" };
   }
 }
+
+export async function getQuickReplies(userId: string) {
+  try {
+    return await (prisma as any).quickReply.findMany({
+      where: {
+        OR: [{ userId }, { userId: null }]
+      },
+      orderBy: { title: "asc" }
+    });
+  } catch (error) {
+    return [];
+  }
+}
+
+export async function createQuickReply(data: { title: string; content: string; userId: string }) {
+  try {
+    const qr = await (prisma as any).quickReply.create({ data });
+    revalidatePath("/dashboard/vendas");
+    return { success: true, quickReply: qr };
+  } catch (error) {
+    return { success: false, error: "Falha ao criar gatilho" };
+  }
+}
+
+export async function deleteQuickReply(id: string) {
+  try {
+    await (prisma as any).quickReply.delete({ where: { id } });
+    revalidatePath("/dashboard/vendas");
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: "Falha ao excluir gatilho" };
+  }
+}

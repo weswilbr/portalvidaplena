@@ -29,11 +29,15 @@ import {
   Trash2,
   ChevronLeft,
   CalendarCheck,
-  Mic
+  Mic,
+  Zap,
+  Tag,
+  History,
+  Info
 } from "lucide-react";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { cn, openWhatsApp, getWhatsAppHref } from "@/lib/utils";
-import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead, sendWhatsAppMessage, addInternalNote, uploadMedia, deleteMessage, updateMessage } from "@/app/actions/leads";
+import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead, sendWhatsAppMessage, addInternalNote, uploadMedia, deleteMessage, updateMessage, getQuickReplies, createQuickReply, deleteQuickReply } from "@/app/actions/leads";
 import { getSellers } from "@/app/actions/users";
 import KanbanView from "@/components/leads/KanbanView";
 
@@ -95,6 +99,9 @@ export default function VendasClient({ user }: { user: any }) {
   const [recordingTime, setRecordingTime] = useState(0);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
+  const [quickReplies, setQuickReplies] = useState<any[]>([]);
+  const [isGatilhoOpen, setIsGatilhoOpen] = useState(false);
+  const [isGatilhoManagerOpen, setIsGatilhoManagerOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -121,20 +128,21 @@ export default function VendasClient({ user }: { user: any }) {
 
   const refreshData = async () => {
     setLoading(true);
-    // Vendedores veem TODOS os leads de Produto para poder acompanhar e "puxar", 
-    // mas não afeta a segurança pois o painel inteiro é auditável.
-    const [leadsData, sellersData] = await Promise.all([
+    const [fetchedLeads, fetchedSellers, fetchedQR] = await Promise.all([
       getLeads(),
-      getSellers()
+      getSellers(),
+      getQuickReplies(user.id)
     ]);
     
     // Lista os de produto, mas também puxa os leads virgens (sem interesse listado do bot)
-    setLeads(leadsData.filter((l: any) => l.interest === "Produto" || !l.interest));
-    setSellers(sellersData);
+    const filtered = fetchedLeads.filter((l: any) => l.interest === "Produto" || !l.interest);
+    setLeads(filtered);
+    setSellers(fetchedSellers);
+    setQuickReplies(fetchedQR);
     
     // Atualiza o lead selecionado se o modal de detalhes estiver aberto
     if (selectedLead) {
-      const updatedLead = leadsData.find((l: any) => l.id === selectedLead.id);
+      const updatedLead = fetchedLeads.find((l: any) => l.id === selectedLead.id);
       if (updatedLead) setSelectedLead(updatedLead);
     }
     
@@ -291,6 +299,40 @@ export default function VendasClient({ user }: { user: any }) {
     } else {
       alert(res.error);
     }
+  };
+
+  const [newQRTitle, setNewQRTitle] = useState("");
+  const [newQRContent, setNewQRContent] = useState("");
+
+  const handleAddGatilho = async () => {
+    if (!newQRTitle || !newQRContent) return;
+    const res = await createQuickReply({ title: newQRTitle, content: newQRContent, userId: user.id });
+    if (res.success) {
+      setNewQRTitle("");
+      setNewQRContent("");
+      refreshData();
+    }
+  };
+
+  const handleCreateInitialGatilhos = async () => {
+     const defaultQR = [
+       { title: "Fatores de Transferência", content: "Nossos produtos utilizam Nano Fórmulas Inteligentes, que são compostos de alta tecnologia que potencializam a absorção dos nutrientes pelo organismo. Com isso, seu corpo consegue aproveitar ao máximo os benefícios dos ingredientes ativos, promovendo:\n✅ Maior fortalecimento da imunidade\n✅ Redução dos efeitos colaterais de tratamentos\n✅ Mais disposição e bem-estar\n✅Em alguns casos até remissão de doença.\n\nA diferença está na nossa tecnologia exclusiva de Fator de Transferência, que permite resultados mais rápidos e eficazes.\n\nVocê gostaria de saber mais detalhes?" },
+       { title: "Prova Social", content: "\"Vou te enviar a história de pessoas que superaram suas doenças, uma das nossas clientes. Durante o tratamento, ela sentia fadiga intensa e baixa imunidade. Depois de usar os suplementos, percebeu melhora na disposição e no sistema imunológico. Hoje, ela recomenda para outras pessoas que estão na mesma luta.\n\n Quer ver mais depoimentos? Me avise!\"" },
+       { title: "Preços", content: "1️⃣ *Caixa Essencial — R$ 197,00 + frete*\n✨ Ideal pra quem quer iniciar aos poucos o fortalecimento do sistema imune.\n2️⃣ *Kit Intermediário — R$ 542,00 + frete*\n✨ Ajuda a reativar suas defesas, traz mais energia e menos dores. Inclui orientação da equipe.\n3️⃣ *Kit Avançado — R$ 836,94 + frete*\n✨ Suporte completo, inclui plano alimentar e suplementação para imunidade e metabolismo.\n4️⃣ *Kit Imuno Ouro — R$ 1.399,00 (frete grátis)*\n✨ Para quem precisa de suporte máximo, sintomas persistentes ou prevenção intensa. Inclui reavaliação depois de 3 meses.\nTodos são aprovados pela ANVISA, naturais e com suporte humano em todo o processo. 🌱🤗\n\n Faz sentido para você acessar esses benefícios ?" },
+       { title: "Triagem", content: "Escolha uma opção:\n\n1️⃣É indicado por médico?\n2️⃣Quero saber preço!\n3️⃣Estou apenas curiosa (o)" },
+       { title: "Novo Cadastro", content: "Para gerar Nota Fiscal e Rastreio de entrega preciso:\n\n🪪 Nome Completo\n📆 Data de Nascimento \n🚹 CPF \n🏠 Endereço completo \n🚛 Cep \n📩 E-mail \n💰Forma de pagamento:\n Pix ou Cartão parcelado 3x" }
+     ];
+
+     for (const qr of defaultQR) {
+        await createQuickReply({ ...qr, userId: user.id });
+     }
+     refreshData();
+  };
+
+  const handleDeleteGatilho = async (id: string) => {
+    if (!confirm("Excluir este gatilho?")) return;
+    await deleteQuickReply(id);
+    refreshData();
   };
 
   const handleTransfer = async () => {
@@ -575,54 +617,67 @@ export default function VendasClient({ user }: { user: any }) {
             {/* Painel de Ações do Lead (Opcional, abre sob o header) */}
             {isTransferring && (
               <div className="p-4 bg-white border-b border-slate-200 animate-in slide-in-from-top duration-300 space-y-4 shadow-sm z-20">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Foco</label>
-                    <select 
-                      className="w-full text-xs font-bold px-3 py-2 rounded-lg bg-slate-100 border border-slate-200"
-                      value={selectedLead.interest || "Produto"}
-                      onChange={handleInterestChange}
-                    >
-                      <option value="Produto">Produto</option>
-                      <option value="Negócio">Negócio</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</label>
-                    <select 
-                      className={cn("w-full text-xs font-bold px-3 py-2 rounded-lg border border-slate-200", statusStyles[selectedLead.status as keyof typeof statusStyles])}
-                      value={selectedLead.status}
-                      onChange={handleStatusChange}
-                    >
-                      {Object.entries(statusLabels).map(([key, label]) => (
-                        <option key={key} value={key} className="bg-white text-slate-900">{label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mover Estágio Kanban</label>
+                      <select 
+                        className="w-full text-xs font-bold px-3 py-2 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 font-black"
+                        value={selectedLead.status}
+                        onChange={handleStatusChange}
+                      >
+                        {Object.entries(statusLabels).map(([key, label]) => (
+                          <option key={key} value={key} className="bg-white text-slate-900">{label}</option>
+                        ))}
+                      </select>
+                    </div>
                 
-                <div className="space-y-2 border-t pt-2 border-slate-100">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Transferir Atendimento</label>
-                  <div className="flex gap-2">
-                    <select 
-                      className="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium"
-                      value={transferUserId}
-                      onChange={(e) => setTransferUserId(e.target.value)}
-                    >
-                      <option value="">Selecione outro atendente...</option>
-                      {sellers.filter(s => s.id !== selectedLead.assignedTo?.id).map(seller => (
-                        <option key={seller.id} value={seller.id}>{seller.name}</option>
-                      ))}
-                    </select>
-                    <button 
-                      onClick={handleTransfer}
-                      disabled={!transferUserId}
-                      className="px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-all shrink-0"
-                    >
-                      OK
-                    </button>
-                  </div>
-                </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Foco de Interesse</label>
+                        <select 
+                          className="w-full text-xs font-bold px-3 py-2 rounded-lg bg-slate-100 border border-slate-200"
+                          value={selectedLead.interest || "Produto"}
+                          onChange={handleInterestChange}
+                        >
+                          <option value="Produto">Produto</option>
+                          <option value="Negócio">Negócio</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status Geral</label>
+                        <select 
+                          className={cn("w-full text-xs font-bold px-3 py-2 rounded-lg border border-slate-200", statusStyles[selectedLead.status as keyof typeof statusStyles])}
+                          value={selectedLead.status}
+                          onChange={handleStatusChange}
+                        >
+                          {Object.entries(statusLabels).map(([key, label]) => (
+                            <option key={key} value={key} className="bg-white text-slate-900">{label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  
+                    <div className="space-y-2 border-t pt-2 border-slate-100">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Transferir Atendimento</label>
+                      <div className="flex gap-2">
+                        <select 
+                          className="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium"
+                          value={transferUserId}
+                          onChange={(e) => setTransferUserId(e.target.value)}
+                        >
+                          <option value="">Selecione outro atendente...</option>
+                          {sellers.map((seller: any) => (
+                            <option key={seller.id} value={seller.id}>{seller.name}</option>
+                          ))}
+                        </select>
+                        <button 
+                          onClick={handleTransfer}
+                          disabled={!transferUserId}
+                          className="px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-all shrink-0"
+                        >
+                          OK
+                        </button>
+                      </div>
+                    </div>
               </div>
             )}
 
@@ -779,10 +834,44 @@ export default function VendasClient({ user }: { user: any }) {
                   >
                     <Paperclip size={24} />
                   </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setIsGatilhoOpen(!isGatilhoOpen)}
+                    className={cn("p-3 text-slate-500 hover:text-amber-500 transition-all border-l border-slate-100", isGatilhoOpen && "text-amber-500")}
+                    title="Gatilhos Rápidos"
+                  >
+                    <Zap size={24} />
+                  </button>
                 </div>
 
                 <form onSubmit={handleSendMessage} className="flex-1 flex gap-2">
                   <div className="flex-1 relative">
+                    {/* Menu de Gatilhos */}
+                    {isGatilhoOpen && (
+                      <div className="absolute bottom-16 left-0 bg-white shadow-[0_20px_50px_rgba(0,0,0,0.2)] rounded-[2rem] p-3 flex flex-col gap-1 border border-slate-100 animate-in slide-in-from-bottom-2 duration-300 z-[70] w-64 md:w-80 max-h-[400px] overflow-y-auto">
+                        <div className="flex items-center justify-between p-2 mb-2 border-b border-slate-50">
+                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">Gatilhos Rápidos</span>
+                           <button type="button" onClick={() => setIsGatilhoManagerOpen(true)} className="text-[10px] font-bold text-indigo-600 hover:underline">Gerenciar</button>
+                        </div>
+                        {quickReplies.length === 0 && (
+                          <div className="p-4 text-center">
+                             <p className="text-xs text-slate-500 mb-3">Nenhum gatilho criado.</p>
+                             <button type="button" onClick={handleCreateInitialGatilhos} className="text-[10px] bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg font-bold">Gerar Sugestões</button>
+                          </div>
+                        )}
+                        {quickReplies.map(qr => (
+                          <button 
+                            key={qr.id} 
+                            type="button" 
+                            onClick={() => { setNewMessage(qr.content); setIsGatilhoOpen(false); }}
+                            className="text-left p-3 hover:bg-slate-50 rounded-xl transition-all border border-transparent hover:border-slate-100 group"
+                          >
+                             <div className="font-bold text-xs text-slate-900 group-hover:text-indigo-600 mb-1">{qr.title}</div>
+                             <div className="text-[10px] text-slate-400 line-clamp-1">{qr.content}</div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     {isRecording ? (
                       <div className="w-full h-12 px-4 rounded-2xl bg-[#ffeeee] flex items-center justify-between border border-red-100 shadow-sm animate-pulse">
                          <div className="flex items-center gap-3">
@@ -887,6 +976,61 @@ export default function VendasClient({ user }: { user: any }) {
                  CRIAR LEAD AGORA
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Gerenciador de Gatilhos */}
+      {isGatilhoManagerOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl p-10 animate-in zoom-in duration-300 flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-2xl font-black">Gerenciar Gatilhos</h2>
+              <button onClick={() => setIsGatilhoManagerOpen(false)} className="p-3 hover:bg-slate-100 rounded-2xl transition-all text-slate-400">
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-1 overflow-hidden">
+               <div className="space-y-5 flex flex-col">
+                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-400">Novo Gatilho</h4>
+                  <div className="space-y-4">
+                    <input 
+                      placeholder="Título (ex: Preços)" 
+                      className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none font-bold text-sm"
+                      value={newQRTitle}
+                      onChange={(e) => setNewQRTitle(e.target.value)}
+                    />
+                    <textarea 
+                      placeholder="Conteúdo da mensagem..." 
+                      className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none font-medium text-sm h-48 md:h-64"
+                      value={newQRContent}
+                      onChange={(e) => setNewQRContent(e.target.value)}
+                    />
+                    <button 
+                      onClick={handleAddGatilho}
+                      className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg hover:bg-indigo-700 transition-all"
+                    >
+                      CRIAR GATILHO
+                    </button>
+                  </div>
+               </div>
+
+               <div className="space-y-5 flex flex-col overflow-hidden">
+                  <h4 className="text-sm font-black uppercase tracking-widest text-slate-400">Meus Gatilhos ({quickReplies.length})</h4>
+                  <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+                    {quickReplies.map(qr => (
+                      <div key={qr.id} className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group">
+                         <div className="flex items-start justify-between mb-2">
+                            <span className="font-bold text-sm text-slate-900">{qr.title}</span>
+                            <button onClick={() => handleDeleteGatilho(qr.id)} className="text-red-400 hover:text-red-600 transition-all"><Trash2 size={16}/></button>
+                         </div>
+                         <p className="text-[10px] text-slate-500 line-clamp-3">{qr.content}</p>
+                      </div>
+                    ))}
+                  </div>
+               </div>
+            </div>
           </div>
         </div>
       )}
