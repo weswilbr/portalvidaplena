@@ -124,12 +124,12 @@ export default function VendasClient({ user }: { user: any }) {
   // Auto-refresh quando o chat está aberto (mensagens em tempo real)
   useEffect(() => {
     if (!isDetailsOpen) return;
-    const interval = setInterval(() => refreshData(), 4000);
+    const interval = setInterval(() => refreshData(true), 4000);
     return () => clearInterval(interval);
   }, [isDetailsOpen, selectedLead?.id]);
 
-  const refreshData = async () => {
-    setLoading(true);
+  const refreshData = async (silent = false) => {
+    if (!silent) setLoading(true);
     const [fetchedLeads, fetchedSellers, fetchedQR] = await Promise.all([
       getLeads(),
       getSellers(),
@@ -148,7 +148,7 @@ export default function VendasClient({ user }: { user: any }) {
       if (updatedLead) setSelectedLead(updatedLead);
     }
     
-    setLoading(false);
+    if (!silent) setLoading(false);
   };
 
   const filteredLeads = useMemo(() => {
