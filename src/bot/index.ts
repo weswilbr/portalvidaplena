@@ -10,6 +10,30 @@ import prisma from '../lib/prisma';
 
 const logger = pino({ level: 'info' });
 
+// Mapa manual de LIDs para Phone Numbers
+const LID_MAP_PATH = './lid_pn_map.json';
+let lidPnMap: Record<string, string> = {};
+
+function loadLidMap() {
+  if (fs.existsSync(LID_MAP_PATH)) {
+    try {
+      lidPnMap = JSON.parse(fs.readFileSync(LID_MAP_PATH, 'utf-8'));
+    } catch (e) {
+      console.error('Erro ao ler mapa de LIDs:', e);
+    }
+  }
+}
+
+function saveLidMap() {
+  try {
+    fs.writeFileSync(LID_MAP_PATH, JSON.stringify(lidPnMap, null, 2));
+  } catch (e) {
+    console.error('Erro ao salvar mapa de LIDs:', e);
+  }
+}
+
+loadLidMap();
+
 async function getOrCreateBotConfig() {
   let config = await (prisma as any).botConfig.findFirst();
   if (!config) {
@@ -66,6 +90,53 @@ async function startBot() {
 
   sock.ev.on('creds.update', saveCreds);
 
+  // Listener para capturar mapeamento de LID -> Phone Number
+  sock.ev.on('contacts.upsert', (contacts) => {
+    for (const contact of contacts) {
+      if (contact.id && contact.phoneNumber) {
+        const lid = contact.id.split('@')[0].split(':')[0];
+        const pn = contact.phoneNumber.replace(/[^0-9]/g, "");
+        if (lid.length > 13 && pn.length <= 13) {
+          lidPnMap[lid] = pn;
+          saveLidMap();
+          console.log(`🔗 Mapeamento Capturado (Upsert): LID ${lid} -> PN ${pn}`);
+        }
+      }
+    }
+  });
+
+  sock.ev.on('contacts.update', async (updates) => {
+    for (const update of updates) {
+      if (update.id && update.phoneNumber) {
+        const lid = update.id.split('@')[0].split(':')[0];
+        const pn = update.phoneNumber.replace(/[^0-9]/g, "");
+        
+        if (lid.length > 13 && pn.length <= 13) {
+          lidPnMap[lid] = pn;
+          saveLidMap();
+          console.log(`🔗 Mapeamento Capturado (Update): LID ${lid} -> PN ${pn}`);
+        }
+        
+        // Se já existe um lead com o LID, atualiza para o número real
+        try {
+          const leadWithLid = await (prisma as any).lead.findFirst({
+            where: { phone: lid }
+          });
+          
+          if (leadWithLid) {
+            console.log(`✅ Atualizando Lead ${leadWithLid.name} de LID ${lid} para PN ${pn}`);
+            await (prisma as any).lead.update({
+              where: { id: leadWithLid.id },
+              data: { phone: pn }
+            });
+          }
+        } catch (err) {
+          console.error('Erro ao atualizar lead com PN real:', err);
+        }
+      }
+    }
+  });
+
   sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
 
@@ -113,22 +184,28 @@ async function startBot() {
       if (!remoteJid || remoteJid.endsWith('@g.us')) return; // ignorar grupos e status
 
       // Logica robusta para resolver LID vs PN (Phone Number)
-      let phoneOnly = remoteJid.split('@')[0].split(':')[0].replace(/[^0-9]/g, "");
+      let rawId = remoteJid.split('@')[0].split(':')[0];
+      let phoneOnly = rawId.replace(/[^0-9]/g, "");
+
+      // 1. Tenta buscar no Mapa Manual (LID resolved)
+      if (lidPnMap[phoneOnly]) {
+          console.log(`🎯 Resolvido via Mapa: ${phoneOnly} -> ${lidPnMap[phoneOnly]}`);
+          phoneOnly = lidPnMap[phoneOnly];
+      }
       
-      // Se for LID (ID gigante de 14+ dígitos), tentamos extrair o número real dos metadados
+      // 2. Fallback: Se ainda for LID (ID gigante), tenta metadados da mensagem
       if (phoneOnly.length > 13) {
-          // Em novos LIDs, o Baileys costuma colocar o número real no participant se estiver disponível
-          // ou em instâncias onde o contato já foi resolvido.
           const realContactJid = msg.key.participant || remoteJid;
           const extractedPN = realContactJid.split('@')[0].split(':')[0].replace(/[^0-9]/g, "");
           
           if (extractedPN.length <= 13 && (extractedPN.startsWith("55") || extractedPN.length >= 10)) {
-              console.log(`✅ LID ${phoneOnly} resolvido para PN Real: ${extractedPN}`);
+              console.log(`✅ LID ${phoneOnly} resolvido via Participant/Meta: ${extractedPN}`);
               phoneOnly = extractedPN;
-          } else {
-              console.log(`⚠️ Não foi possível resolver o LID ${phoneOnly} para um número normal ainda.`);
           }
       }
+
+      // 3. Fallback Final: Se for grupo (embora já filtramos), ou se virmos um ID de dispositivo, limpamos
+      if (phoneOnly.includes(':')) phoneOnly = phoneOnly.split(':')[0];
       
       const participantName = msg.pushName || "Cliente WhatsApp";
       const textMessage = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
