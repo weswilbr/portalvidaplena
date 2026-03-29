@@ -579,18 +579,24 @@ export default function VendasClient({ user }: { user: any }) {
                             {msg.mediaType === 'image' || msg.mediaUrl.startsWith('data:image') ? (
                               <img 
                                 src={msg.mediaUrl} 
-                                alt="anexo" 
-                                className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-90 transition-all border border-black/5" 
+                                alt="imagem" 
+                                className="rounded-lg max-w-full h-auto cursor-pointer hover:opacity-100 transition-all border border-black/5" 
                                 onClick={() => window.open(msg.mediaUrl, '_blank')} 
                               />
+                            ) : msg.mediaType === 'video' || msg.mediaUrl.startsWith('data:video') ? (
+                              <video 
+                                src={msg.mediaUrl} 
+                                controls 
+                                className="rounded-lg max-w-full h-auto border border-black/5"
+                              />
                             ) : (
-                              <div className="flex items-center gap-3 p-3 bg-black/5 rounded-lg border border-black/5 min-w-[150px]">
-                                <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
-                                  <FileText size={20} />
+                              <div className="flex items-center gap-3 p-3 bg-white/50 dark:bg-black/5 rounded-lg border border-black/5 min-w-[200px]">
+                                <div className="p-3 bg-indigo-100 text-indigo-600 rounded-xl">
+                                  <FileText size={24} />
                                 </div>
                                 <div className="truncate flex-1">
-                                  <p className="text-[12px] font-bold truncate">Arquivo Recebido</p>
-                                  <a href={msg.mediaUrl} target="_blank" className="text-[10px] text-indigo-600 underline font-bold">Ver Anexo</a>
+                                  <p className="text-[11px] font-black truncate uppercase tracking-tighter text-slate-800">Visualizar Documento</p>
+                                  <a href={msg.mediaUrl} target="_blank" className="text-[10px] text-indigo-600 underline font-bold hover:text-indigo-800 transition-colors">Download / Abrir</a>
                                 </div>
                               </div>
                             )}
