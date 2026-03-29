@@ -108,6 +108,9 @@ export default function VendasClient({ user }: { user: any }) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const lastLeadIdRef = useRef<string | null>(null);
+  const lastMessageCount = useRef(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -116,11 +119,27 @@ export default function VendasClient({ user }: { user: any }) {
     refreshData();
   }, []);
 
+  // Smart Scroll: Só desce se o usuário estiver perto do fundo ou se mudar o lead
   useEffect(() => {
-    if (isDetailsOpen) {
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+    if (isDetailsOpen && chatContainerRef.current) {
+      const container = chatContainerRef.current;
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+      const currentCount = selectedLead?.messages?.length || 0;
+      const messageCountChanged = currentCount > lastMessageCount.current;
+      
+      // Controle de mudança de lead para scroll inicial
+      const isNewChatSession = selectedLead?.id !== lastLeadIdRef.current;
+      
+      if (isNewChatSession || (messageCountChanged && isNearBottom)) {
+        // Scroll imediato para novos chats, suave para novas mensagens
+        const behavior = isNewChatSession ? "auto" : "smooth";
+        setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior }), 50);
+      }
+      
+      lastMessageCount.current = currentCount;
+      lastLeadIdRef.current = selectedLead?.id || null;
     }
-  }, [selectedLead?.messages, isDetailsOpen]);
+  }, [selectedLead?.messages?.length, selectedLead?.id, isDetailsOpen]);
 
   // Auto-refresh quando o chat está aberto (mensagens em tempo real) - Reduzido para 1.5s p/ máxima velocidade
   useEffect(() => {
@@ -751,6 +770,7 @@ export default function VendasClient({ user }: { user: any }) {
 
             {/* Mensagens (Fundo WhatsApp) */}
             <div 
+              ref={chatContainerRef}
               className="flex-1 overflow-y-auto p-4 md:px-12 md:py-8 space-y-4 relative scroll-smooth"
               style={{ 
                 backgroundImage: `url('https://w0.peakpx.com/wallpaper/722/716/OHR-whatsapp-pattern-abstract-flat-style-light-green.jpg')`,
