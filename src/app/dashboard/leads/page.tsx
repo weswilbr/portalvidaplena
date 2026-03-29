@@ -15,11 +15,5 @@ export default async function LeadsPage() {
     redirect("/login");
   }
 
-  // Se for Vendedor, ele NÃO pode ver os leads de negócio (recrutamento)
-  // Redireciona para onde ele tem permissão
-  if (user.role === "SELLER") {
-    redirect("/dashboard/vendas");
-  }
-
-  return <LeadsClient />;
+  return <LeadsClient user={user} />;
 }

@@ -9,11 +9,12 @@ import {
   ExternalLink,
   X,
   List,
-  LayoutGrid
+  LayoutGrid,
+  ArrowRightLeft
 } from "lucide-react";
 import React, { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { getLeads, createLead, updateLead, deleteLead } from "@/app/actions/leads";
+import { getLeads, createLead, updateLead, deleteLead, pullLead } from "@/app/actions/leads";
 import KanbanView from "@/components/leads/KanbanView";
 
 const statusStyles = {
@@ -32,7 +33,7 @@ const statusLabels: Record<string, string> = {
   LOST: "Perdido",
 };
 
-export default function LeadsClient() {
+export default function LeadsClient({ user }: { user: any }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -78,6 +79,11 @@ export default function LeadsClient() {
         alert(res.error);
       }
     }
+  };
+
+  const handlePullLead = async (leadId: string) => {
+    const res = await pullLead(leadId, user.id);
+    if (res.success) refreshLeads();
   };
 
   const handleOpenEditModal = (lead: any) => {
@@ -226,6 +232,16 @@ export default function LeadsClient() {
                     </td>
                     <td className="px-8 py-5 text-right">
                       <div className="flex items-center justify-end gap-2 text-slate-400">
+                        {lead.assignedTo?.id !== user?.id && (
+                          <button
+                            onClick={() => handlePullLead(lead.id)}
+                            title="Puxar Atendimento"
+                            className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-xs hover:bg-indigo-600 hover:text-white transition-all shadow-sm flex items-center gap-1"
+                          >
+                            <ArrowRightLeft size={14} />
+                            <span>Puxar</span>
+                          </button>
+                        )}
                         <button 
                           onClick={() => handleSendMessage(lead.phone)}
                           className="p-2.5 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition-all"
