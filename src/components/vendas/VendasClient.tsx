@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead } from "@/app/actions/leads";
+import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead, sendWhatsAppMessage, addInternalNote } from "@/app/actions/leads";
 import { getSellers } from "@/app/actions/users";
 import KanbanView from "@/components/leads/KanbanView";
 
@@ -71,6 +71,8 @@ export default function VendasClient({ user }: { user: any }) {
   const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
   
   const [newMessage, setNewMessage] = useState("");
+  const [isNoteMode, setIsNoteMode] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [transferUserId, setTransferUserId] = useState("");
   const [isTransferring, setIsTransferring] = useState(false);
 
@@ -82,9 +84,16 @@ export default function VendasClient({ user }: { user: any }) {
 
   useEffect(() => {
     if (isDetailsOpen) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
     }
   }, [selectedLead?.messages, isDetailsOpen]);
+
+  // Auto-refresh quando o chat está aberto (mensagens em tempo real)
+  useEffect(() => {
+    if (!isDetailsOpen) return;
+    const interval = setInterval(() => refreshData(), 4000);
+    return () => clearInterval(interval);
+  }, [isDetailsOpen, selectedLead?.id]);
 
   const refreshData = async () => {
     setLoading(true);
@@ -125,20 +134,24 @@ export default function VendasClient({ user }: { user: any }) {
     window.open(`https://wa.me/${cleanPhone}?text=${message}`, "_blank");
   };
 
-  const handleAddInternalMessage = async (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedLead) return;
-    
-    const res = await addMessage({
-      leadId: selectedLead.id,
-      content: newMessage,
-      authorId: user.id
-    });
-    
+    if (!newMessage.trim() || !selectedLead || isSending) return;
+
+    setIsSending(true);
+    let res;
+
+    if (isNoteMode) {
+      res = await addInternalNote({ leadId: selectedLead.id, content: newMessage, authorId: user.id });
+    } else {
+      res = await sendWhatsAppMessage({ leadId: selectedLead.id, content: newMessage, authorId: user.id });
+    }
+
     if (res.success) {
       setNewMessage("");
       refreshData();
     }
+    setIsSending(false);
   };
 
   const handleTransfer = async () => {
@@ -492,47 +505,98 @@ export default function VendasClient({ user }: { user: any }) {
               </div>
               
               {selectedLead.messages?.length === 0 ? (
-                <div className="text-center text-slate-400 font-medium text-sm py-8">
-                  Nenhuma anotação neste lead.
+                <div className="flex flex-col items-center justify-center py-12 text-slate-400">
+                  <MessageSquare size={32} className="mb-3 opacity-30" />
+                  <p className="text-sm font-medium">Nenhuma mensagem ainda.</p>
+                  <p className="text-xs mt-1">Envie uma mensagem WhatsApp para iniciar o atendimento.</p>
                 </div>
               ) : (
-                selectedLead.messages?.map((msg: any) => (
-                  <div key={msg.id} className={cn(
-                    "p-4 rounded-2xl w-[90%] space-y-2 relative group",
-                    msg.isSystem ? "bg-slate-200 text-slate-700 mx-auto w-[95%] text-xs text-center italic" : 
-                    msg.author?.name === user.name ? "bg-indigo-600 text-white ml-auto rounded-br-sm" : 
-                    "bg-white border border-slate-200 text-slate-800 rounded-bl-sm"
-                  )}>
-                    {!msg.isSystem && (
-                      <div className="flex justify-between items-center text-[10px] font-bold opacity-70 mb-1">
-                        <span>{msg.author?.name === user.name ? "Você" : msg.author?.name || "Usuário Removido"}</span>
-                        <span>{new Date(msg.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                <div className="flex flex-col gap-3">
+                  {selectedLead.messages?.map((msg: any) => {
+                    const isMe = msg.author?.id === user.id;
+                    const isClient = !msg.author && !msg.isSystem;
+
+                    if (msg.isSystem) {
+                      return (
+                        <div key={msg.id} className="flex items-center gap-2 my-1">
+                          <div className="flex-1 h-px bg-slate-200" />
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap px-2">{msg.content}</span>
+                          <div className="flex-1 h-px bg-slate-200" />
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={msg.id} className={cn("flex flex-col gap-1 max-w-[82%]", isMe ? "self-end items-end" : "self-start items-start")}>
+                        <span className="text-[10px] font-bold text-slate-400 px-1">
+                          {isClient ? "👤 Cliente" : isMe ? "Você" : msg.author?.name || "Atendente"}
+                          {msg.isNote && " · 📝 Nota"}
+                        </span>
+                        <div className={cn(
+                          "px-4 py-3 rounded-2xl text-sm font-medium shadow-sm leading-relaxed",
+                          isClient
+                            ? "bg-white border border-slate-200 text-slate-800 rounded-tl-sm"
+                            : msg.isNote
+                            ? "bg-amber-50 border border-amber-200 text-amber-900 rounded-tr-sm"
+                            : isMe
+                            ? "bg-indigo-600 text-white rounded-tr-sm"
+                            : "bg-slate-200 text-slate-700 rounded-tr-sm"
+                        )}>
+                          {msg.content}
+                        </div>
+                        <span className="text-[9px] text-slate-400 px-1">
+                          {new Date(msg.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
-                    )}
-                    <p className={cn("leading-relaxed", msg.isSystem ? "text-[11px] font-semibold" : "text-sm font-medium")}>
-                      {msg.content}
-                    </p>
-                  </div>
-                ))
+                    );
+                  })}
+                </div>
               )}
               <div ref={messagesEndRef} />
             </div>
 
-            <form onSubmit={handleAddInternalMessage} className="p-4 bg-white border-t border-slate-100">
-              <div className="relative flex items-center">
-                <input 
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Adicionar nota interna ou histórico..."
-                  className="w-full bg-slate-100 border-none rounded-2xl pl-4 pr-14 py-4 text-sm font-medium focus:ring-4 focus:ring-indigo-100 outline-none"
-                />
-                <button 
-                  type="submit"
-                  disabled={!newMessage.trim()}
-                  className="absolute right-2 p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:bg-slate-300 transition-all"
+            <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-slate-100 space-y-2">
+              <textarea
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(e as any); }
+                }}
+                placeholder={isNoteMode ? "Escreva uma nota interna... (Enter para salvar)" : "Mensagem para enviar via WhatsApp... (Enter para enviar)"}
+                rows={2}
+                className={cn(
+                  "w-full rounded-2xl px-4 py-3 text-sm font-medium resize-none outline-none transition-all",
+                  isNoteMode
+                    ? "bg-amber-50 border border-amber-200 focus:ring-2 focus:ring-amber-300"
+                    : "bg-slate-100 border-none focus:ring-4 focus:ring-indigo-100"
+                )}
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsNoteMode(!isNoteMode)}
+                  className={cn(
+                    "px-3 py-2 rounded-xl text-xs font-bold transition-all border",
+                    isNoteMode
+                      ? "bg-amber-100 text-amber-700 border-amber-300"
+                      : "bg-slate-100 text-slate-500 border-slate-200 hover:bg-amber-50 hover:text-amber-600"
+                  )}
                 >
-                  <Send size={16} />
+                  📝 Nota
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newMessage.trim() || isSending}
+                  className={cn(
+                    "flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm",
+                    isNoteMode
+                      ? "bg-amber-400 text-white hover:bg-amber-500 disabled:opacity-50"
+                      : "bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 shadow-emerald-200"
+                  )}
+                >
+                  {isSending
+                    ? <Loader2 size={14} className="animate-spin" />
+                    : isNoteMode ? "💾 Salvar Nota" : "📱 Enviar WhatsApp"}
                 </button>
               </div>
             </form>

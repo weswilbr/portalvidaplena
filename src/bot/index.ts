@@ -207,4 +207,37 @@ client.on('message', async (msg: any) => {
   }
 });
 
+// Polling de mensagens de saída — vendedor envia via CRM, bot entrega no WhatsApp
+setInterval(async () => {
+  try {
+    const state = await client.getState().catch(() => null);
+    if (state !== 'CONNECTED') return;
+
+    const pending = await (prisma as any).outgoingMessage.findMany({
+      where: { status: 'PENDING' },
+      take: 5,
+      orderBy: { createdAt: 'asc' }
+    });
+
+    for (const om of pending) {
+      try {
+        await client.sendMessage(`${om.to}@c.us`, om.body);
+        await (prisma as any).outgoingMessage.update({
+          where: { id: om.id },
+          data: { status: 'SENT' }
+        });
+        console.log(`📤 WhatsApp enviado para ${om.to}: "${om.body.substring(0, 60)}..."`);
+      } catch (err: any) {
+        await (prisma as any).outgoingMessage.update({
+          where: { id: om.id },
+          data: { status: 'FAILED', errorMsg: err.message }
+        });
+        console.error(`❌ Falha ao enviar para ${om.to}:`, err.message);
+      }
+    }
+  } catch {
+    // Bot pode não estar conectado ainda
+  }
+}, 3000);
+
 client.initialize();

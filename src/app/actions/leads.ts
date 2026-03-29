@@ -13,7 +13,7 @@ export async function getLeads(assignedToId?: string) {
         },
         messages: {
           include: {
-            author: { select: { name: true } }
+            author: { select: { name: true, id: true } }
           },
           orderBy: { createdAt: "asc" }
         }
@@ -122,14 +122,15 @@ export async function deleteLead(id: string) {
   }
 }
 
-export async function addMessage(data: { leadId: string; content: string; authorId: string; isSystem?: boolean }) {
+export async function addMessage(data: { leadId: string; content: string; authorId: string; isSystem?: boolean; isNote?: boolean }) {
   try {
     const message = await (prisma as any).message.create({
       data: {
         content: data.content,
         authorId: data.authorId,
         leadId: data.leadId,
-        isSystem: data.isSystem || false
+        isSystem: data.isSystem || false,
+        isNote: data.isNote || false
       }
     });
     revalidatePath("/dashboard/leads");
@@ -138,6 +139,60 @@ export async function addMessage(data: { leadId: string; content: string; author
   } catch (error) {
     console.error("Error adding message:", error);
     return { success: false, error: "Falha ao adicionar nota" };
+  }
+}
+
+export async function sendWhatsAppMessage(data: { leadId: string; content: string; authorId: string }) {
+  try {
+    const lead = await (prisma as any).lead.findUnique({ where: { id: data.leadId } });
+    if (!lead?.phone) return { success: false, error: "Lead sem número de telefone" };
+
+    // Salva no histórico do CRM como mensagem WhatsApp enviada
+    await (prisma as any).message.create({
+      data: {
+        content: data.content,
+        authorId: data.authorId,
+        leadId: data.leadId,
+        isSystem: false,
+        isNote: false
+      }
+    });
+
+    // Cria registro na fila de saída para o bot enviar via WhatsApp
+    await (prisma as any).outgoingMessage.create({
+      data: {
+        to: lead.phone,
+        body: data.content,
+        leadId: data.leadId,
+        authorId: data.authorId,
+        status: "PENDING"
+      }
+    });
+
+    revalidatePath("/dashboard/vendas");
+    return { success: true };
+  } catch (error) {
+    console.error("Error sending WhatsApp message:", error);
+    return { success: false, error: "Falha ao enviar mensagem" };
+  }
+}
+
+export async function addInternalNote(data: { leadId: string; content: string; authorId: string }) {
+  try {
+    await (prisma as any).message.create({
+      data: {
+        content: data.content,
+        authorId: data.authorId,
+        leadId: data.leadId,
+        isSystem: false,
+        isNote: true
+      }
+    });
+    revalidatePath("/dashboard/leads");
+    revalidatePath("/dashboard/vendas");
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: "Falha ao salvar nota" };
   }
 }
 
