@@ -115,7 +115,7 @@ export default function BotConfigClient() {
                 <div className="flex items-center gap-3 text-slate-600 font-medium">
                   <Smartphone size={18} /> Número Conectado
                 </div>
-                <span className="font-bold text-slate-900">+55 27 9999-9999</span>
+                <span className="font-bold text-slate-900">+55 27 99687-2622</span>
               </div>
               <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between">
                 <div className="flex items-center gap-3 text-slate-600 font-medium">

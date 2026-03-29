@@ -23,7 +23,7 @@ export default function LandingClient() {
   const [submitted, setSubmitted] = useState(false);
 
   // Constants
-  const WHATSAPP_NUMBER = "5511999999999"; // Substituir pelo número real
+  const WHATSAPP_NUMBER = "5527996872622"; // Número Oficial do CRM / Bot
   const AFFILIATE_LINK = "https://brazil.4life.com/12866267/signup/PC";
 
   // Actions
