@@ -1,38 +1,11 @@
-import { makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
-import { Boom } from '@hapi/boom';
-import pino from 'pino';
+import { Client, LocalAuth } from 'whatsapp-web.js';
 import * as QRCode from 'qrcode';
 import qrcodeTerminal from 'qrcode-terminal';
-import * as fs from 'fs';
 import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 import prisma from '../lib/prisma';
 
-const logger = pino({ level: 'info' });
-
-// Mapa manual de LIDs para Phone Numbers
-const LID_MAP_PATH = './lid_pn_map.json';
-let lidPnMap: Record<string, string> = {};
-
-function loadLidMap() {
-  if (fs.existsSync(LID_MAP_PATH)) {
-    try {
-      lidPnMap = JSON.parse(fs.readFileSync(LID_MAP_PATH, 'utf-8'));
-    } catch (e) {
-      console.error('Erro ao ler mapa de LIDs:', e);
-    }
-  }
-}
-
-function saveLidMap() {
-  try {
-    fs.writeFileSync(LID_MAP_PATH, JSON.stringify(lidPnMap, null, 2));
-  } catch (e) {
-    console.error('Erro ao salvar mapa de LIDs:', e);
-  }
-}
-
-loadLidMap();
+console.log('🤖 Inicializando WhatsApp Web Bot (whatsapp-web.js)...');
 
 async function getOrCreateBotConfig() {
   let config = await (prisma as any).botConfig.findFirst();
@@ -48,311 +21,165 @@ async function getOrCreateBotConfig() {
   return config;
 }
 
-async function startBot() {
-  console.log('🤖 Inicializando Instância Baileys VPS...');
-  
-  // Vigilante do Painel (Restart automático caso o Administrador aperte o botão)
-  setInterval(async () => {
-    try {
-      const dbConfig = await (prisma as any).botConfig.findFirst();
-      if (dbConfig?.status === 'RESTART_REQUESTED') {
-        console.log('🔄 ALERTA: Pedido de Restart / Hard Reset recebido do Painel...');
-        await (prisma as any).botConfig.update({
-          where: { id: dbConfig.id },
-          data: { status: 'DISCONNECTED', qrCode: null }
-        });
-        
-        console.log('🗑️ Apagando cache do Baileys para varrer corrupções...');
-        if (fs.existsSync('./bot_auth_info')) {
-          fs.rmSync('./bot_auth_info', { recursive: true, force: true });
-        }
-        
-        console.log('💥 Forçando o fechamento para o PM2 reabastecer a instância limpa.');
-        process.exit(1);
-      }
-    } catch(e) {
-      console.error('Erro no vigilante:', e);
+const client = new Client({
+  authStrategy: new LocalAuth({ dataPath: './wwebjs_auth', clientId: 'zabot' }),
+  puppeteer: {
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--single-process',
+      '--disable-gpu'
+    ],
+    headless: true,
+  }
+});
+
+// Vigilante do Painel (Restart automático via botão do admin)
+setInterval(async () => {
+  try {
+    const dbConfig = await (prisma as any).botConfig.findFirst();
+    if (dbConfig?.status === 'RESTART_REQUESTED') {
+      console.log('🔄 Pedido de Restart recebido do Painel...');
+      await (prisma as any).botConfig.update({
+        where: { id: dbConfig.id },
+        data: { status: 'DISCONNECTED', qrCode: null }
+      });
+      console.log('💥 Encerrando processo para PM2 reiniciar...');
+      process.exit(1);
     }
-  }, 5000);
-  
-  const { version, isLatest } = await fetchLatestBaileysVersion();
-  console.log(`📡 Versão do WhatsApp sincronizada: v${version.join('.')} (Última: ${isLatest})`);
+  } catch(e) {
+    console.error('Erro no vigilante:', e);
+  }
+}, 5000);
 
-  const { state, saveCreds } = await useMultiFileAuthState('./bot_auth_info');
-  const botConfig = await getOrCreateBotConfig();
+client.on('qr', async (qr: string) => {
+  console.log('✅ Novo QR Code gerado — escaneie pelo WhatsApp.');
+  qrcodeTerminal.generate(qr, { small: true });
+  try {
+    const qrBase64 = await QRCode.toDataURL(qr);
+    const cfg = await getOrCreateBotConfig();
+    await (prisma as any).botConfig.update({
+      where: { id: cfg.id },
+      data: { status: 'QR_READY', qrCode: qrBase64 }
+    });
+  } catch (err) {
+    console.error('Erro ao salvar QR no banco:', err);
+  }
+});
 
-  const sock = makeWASocket({
-    version,
-    auth: state,
-    logger,
-    browser: Browsers.macOS('Desktop')
+client.on('ready', async () => {
+  console.log('🚀 WhatsApp conectado com sucesso!');
+  const cfg = await getOrCreateBotConfig();
+  await (prisma as any).botConfig.update({
+    where: { id: cfg.id },
+    data: { status: 'CONNECTED', qrCode: null }
   });
+});
 
-  sock.ev.on('creds.update', saveCreds);
-
-  // Estratégia 1: History Sync - dispara na conexão inicial com TODOS os contatos
-  sock.ev.on('messaging-history.set' as any, ({ contacts = [] }: any) => {
-    console.log(`📋 History Sync: ${contacts.length} contatos recebidos`);
-    for (const contact of contacts) {
-      if (contact.id && contact.phoneNumber) {
-        const lid = contact.id.split('@')[0].split(':')[0];
-        const pn = contact.phoneNumber.replace(/[^0-9]/g, '');
-        if (lid.length > 13 && pn.length <= 13) {
-          lidPnMap[lid] = pn;
-          saveLidMap();
-          console.log(`🔗 Mapeamento via History Sync: LID ${lid} -> PN ${pn}`);
-        }
-      }
-    }
+client.on('auth_failure', async (msg: string) => {
+  console.log('❌ Falha de autenticação:', msg);
+  const cfg = await getOrCreateBotConfig();
+  await (prisma as any).botConfig.update({
+    where: { id: cfg.id },
+    data: { status: 'DISCONNECTED' }
   });
+});
 
-  // Listener para capturar mapeamento de LID -> Phone Number
-  sock.ev.on('contacts.upsert', (contacts) => {
-    // Debug: mostra o que o Baileys envia
-    console.log(`👥 contacts.upsert: ${contacts.length} contato(s)`);
-    for (const c of contacts.slice(0, 3)) {
-      console.log(`   - id=${c.id} | phoneNumber=${(c as any).phoneNumber || 'N/A'} | name=${c.name || 'N/A'}`);
-    }
-    for (const contact of contacts) {
-      if (contact.id && (contact as any).phoneNumber) {
-        const lid = contact.id.split('@')[0].split(':')[0];
-        const pn = (contact as any).phoneNumber.replace(/[^0-9]/g, "");
-        if (lid.length > 13 && pn.length <= 13) {
-          lidPnMap[lid] = pn;
-          saveLidMap();
-          console.log(`🔗 Mapeamento Capturado (Upsert): LID ${lid} -> PN ${pn}`);
-        }
-      }
-    }
+client.on('disconnected', async (reason: string) => {
+  console.log('❌ WhatsApp desconectado:', reason);
+  const cfg = await getOrCreateBotConfig();
+  await (prisma as any).botConfig.update({
+    where: { id: cfg.id },
+    data: { status: 'DISCONNECTED' }
   });
+  // PM2 vai reiniciar automaticamente
+  setTimeout(() => process.exit(1), 2000);
+});
 
-  sock.ev.on('contacts.update', async (updates) => {
-    for (const update of updates) {
-      if (update.id && update.phoneNumber) {
-        const lid = update.id.split('@')[0].split(':')[0];
-        const pn = update.phoneNumber.replace(/[^0-9]/g, "");
-        
-        if (lid.length > 13 && pn.length <= 13) {
-          lidPnMap[lid] = pn;
-          saveLidMap();
-          console.log(`🔗 Mapeamento Capturado (Update): LID ${lid} -> PN ${pn}`);
-        }
-        
-        // Se já existe um lead com o LID, atualiza para o número real
-        try {
-          const leadWithLid = await (prisma as any).lead.findFirst({
-            where: { phone: lid }
-          });
-          
-          if (leadWithLid) {
-            console.log(`✅ Atualizando Lead ${leadWithLid.name} de LID ${lid} para PN ${pn}`);
-            await (prisma as any).lead.update({
-              where: { id: leadWithLid.id },
-              data: { phone: pn }
-            });
-          }
-        } catch (err) {
-          console.error('Erro ao atualizar lead com PN real:', err);
-        }
-      }
-    }
-  });
+client.on('message', async (msg: any) => {
+  try {
+    // Ignorar mensagens de grupo e do próprio bot
+    if (msg.fromMe) return;
+    if (msg.from.endsWith('@g.us')) return;
 
-  sock.ev.on('connection.update', async (update) => {
-    const { connection, lastDisconnect, qr } = update;
+    // ✅ getContact() resolve o NÚMERO REAL — sem problema de LID
+    const contact = await msg.getContact();
+    const phoneOnly = contact.number; // ex: 5527999998888
+    const participantName = contact.name || contact.pushname || 'Cliente WhatsApp';
+    const textMessage = msg.body || '';
 
-    if (qr) {
-      console.log('✅ Novo QR Code gerado.');
-      qrcodeTerminal.generate(qr, { small: true });
+    console.log(`📩 Mensagem recebida de: ${participantName} (${phoneOnly})`);
+
+    const cfg = await (prisma as any).botConfig.findFirst();
+
+    // Checa se já existe lead com esse número
+    let lead = await (prisma as any).lead.findFirst({ where: { phone: phoneOnly } });
+
+    if (!lead) {
+      console.log(`✨ Novo Lead detectado: ${phoneOnly}`);
+
+      let profilePic: string | null = null;
       try {
-        const qrBase64 = await QRCode.toDataURL(qr);
-        const cfg = await getOrCreateBotConfig();
-        await (prisma as any).botConfig.update({
-          where: { id: cfg.id },
-          data: { status: 'QR_READY', qrCode: qrBase64 }
+        profilePic = await contact.getProfilePicUrl() || null;
+      } catch {
+        console.log(`Sem foto de perfil para ${phoneOnly}`);
+      }
+
+      // Lógica Round Robin
+      let assignedToId: string | null = null;
+      if (cfg?.isRoundRobin) {
+        const sellers = await (prisma as any).user.findMany({
+          where: { role: 'SELLER' },
+          include: { leads: { where: { status: 'CONTACTED' } } }
         });
-      } catch (err) {
-        console.error('Erro ao salvar QR no banco:', err);
-      }
-    }
-
-    if (connection === 'close') {
-      const error = (lastDisconnect?.error as Boom);
-      const statusCode = error?.output?.statusCode;
-      const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-      
-      console.log('❌ Conexão Baileys fechou. Detalhes: ', error?.message, ' | Status Code:', statusCode);
-      console.log('Reconectando:', shouldReconnect);
-      
-      const cfg = await getOrCreateBotConfig();
-      await (prisma as any).botConfig.update({ where: { id: cfg.id }, data: { status: 'DISCONNECTED' } });
-      
-      if (shouldReconnect) startBot();
-    } else if (connection === 'open') {
-      console.log('🚀 WhatsApp conectado a VPS!');
-      const cfg = await getOrCreateBotConfig();
-      await (prisma as any).botConfig.update({ where: { id: cfg.id }, data: { status: 'CONNECTED', qrCode: null } });
-    }
-  });
-
-  sock.ev.on('messages.upsert', async (m) => {
-    try {
-      if (m.type !== 'notify') return;
-      const msg = m.messages[0];
-      if (!msg.message || msg.key.fromMe) return;
-
-      const remoteJid = msg.key.remoteJid;
-      if (!remoteJid || remoteJid.endsWith('@g.us')) return; // ignorar grupos e status
-
-      // Logica robusta para resolver LID vs PN (Phone Number)
-      let rawId = remoteJid.split('@')[0].split(':')[0];
-      let phoneOnly = rawId.replace(/[^0-9]/g, "");
-
-      // 1. Tenta buscar no Mapa Manual (LID persistido)
-      if (lidPnMap[phoneOnly]) {
-          console.log(`🎯 Resolvido via Mapa: ${phoneOnly} -> ${lidPnMap[phoneOnly]}`);
-          phoneOnly = lidPnMap[phoneOnly];
-      }
-
-      // 2. Fallback: tenta metadados da mensagem (participant)
-      if (phoneOnly.length > 13) {
-          const realContactJid = msg.key.participant || remoteJid;
-          const extractedPN = realContactJid.split('@')[0].split(':')[0].replace(/[^0-9]/g, "");
-          if (extractedPN.length <= 13 && (extractedPN.startsWith("55") || extractedPN.length >= 10)) {
-              lidPnMap[phoneOnly] = extractedPN;
-              saveLidMap();
-              console.log(`✅ LID ${phoneOnly} resolvido via Participant: ${extractedPN}`);
-              phoneOnly = extractedPN;
-          }
-      }
-
-      // 3. Fallback: contatos internos do Baileys (sock.contacts)
-      if (phoneOnly.length > 13) {
-          const internalContacts = (sock as any).contacts as Record<string, any> | undefined;
-          if (internalContacts) {
-              const contact = internalContacts[remoteJid]
-                  || internalContacts[`${phoneOnly}@lid`]
-                  || internalContacts[`${phoneOnly}@s.whatsapp.net`];
-              if (contact?.phoneNumber) {
-                  const pn = contact.phoneNumber.replace(/[^0-9]/g, "");
-                  if (pn.length <= 13) {
-                      lidPnMap[phoneOnly] = pn;
-                      saveLidMap();
-                      console.log(`✅ Resolvido via sock.contacts: ${phoneOnly} -> ${pn}`);
-                      phoneOnly = pn;
-                  }
-              }
-          }
-      }
-
-      // 4. Última tentativa: query direta ao servidor do WhatsApp via onWhatsApp
-      if (phoneOnly.length > 13) {
-          try {
-              const results = await sock.onWhatsApp(remoteJid);
-              console.log(`🔍 onWhatsApp result:`, JSON.stringify(results));
-              if (results && results[0]?.jid) {
-                  const resolvedJid = results[0].jid;
-                  const resolvedPN = resolvedJid.split('@')[0].replace(/[^0-9]/g, '');
-                  if (resolvedPN.length <= 13) {
-                      lidPnMap[phoneOnly] = resolvedPN;
-                      saveLidMap();
-                      console.log(`✅ Resolvido via onWhatsApp: ${phoneOnly} -> ${resolvedPN}`);
-                      phoneOnly = resolvedPN;
-                  }
-              }
-          } catch (e: any) {
-              console.log(`🔍 onWhatsApp falhou: ${e.message}`);
-          }
-      }
-
-      // Debug final: loga dados brutos quando LID ainda não foi resolvido
-      if (phoneOnly.length > 13) {
-          console.log(`⚠️ LID não resolvido por nenhuma estratégia: ${phoneOnly}`);
-          console.log(`   remoteJid: ${remoteJid} | pushName: ${msg.pushName || 'sem nome'}`);
-      }
-
-      if (phoneOnly.includes(':')) phoneOnly = phoneOnly.split(':')[0];
-      
-      const participantName = msg.pushName || "Cliente WhatsApp";
-      const textMessage = msg.message.conversation || msg.message.extendedTextMessage?.text || "";
-      
-      // Pegar config mais atualizada
-      const cfg = await (prisma as any).botConfig.findFirst();
-
-      // Checa se ja existe Lead com esse fone
-      let lead = await (prisma as any).lead.findFirst({ where: { phone: phoneOnly } });
-
-      let isNewLead = false;
-      if (!lead) {
-        isNewLead = true;
-        
-        // Se ainda for um ID gigante, vamos tentar uma ultima limpeza para salvar algo util
-        // ou avisar no CRM que o numero real esta sendo sincronizado
-        console.log(`✨ Novo Lead detectado: ${phoneOnly}`);
-        
-        let profilePic: string | null = null;
-        try {
-          profilePic = await sock.profilePictureUrl(remoteJid, 'image') || null;
-        } catch (err) {
-          console.log(`Sem foto de perfil pública para ${phoneOnly}`);
+        if (sellers.length > 0) {
+          const sortedSellers = sellers.sort((a: any, b: any) => a.leads.length - b.leads.length);
+          assignedToId = sortedSellers[0].id;
         }
-
-        // Logica Round Robin ou Pool
-        let assignedToId: string | null = null;
-        if (cfg?.isRoundRobin) {
-          const sellers = await (prisma as any).user.findMany({
-            where: { role: 'SELLER' },
-            include: { leads: { where: { status: 'CONTACTED' } } }
-          });
-          
-          if (sellers.length > 0) {
-            // Pega o com menos leads ativos
-            const sortedSellers = sellers.sort((a: any, b: any) => a.leads.length - b.leads.length);
-            assignedToId = sortedSellers[0].id;
-          }
-        }
-
-        lead = await (prisma as any).lead.create({
-          data: {
-            name: participantName,
-            phone: phoneOnly,
-            profilePic,
-            source: 'WhatsApp Bot',
-            status: assignedToId ? 'CONTACTED' : 'NEW',
-            assignedToId
-          }
-        });
-
-        // Envia mensagem de Saudação e Transferência
-        const greeting = `${cfg?.welcomeMessage}\n\n${cfg?.transferMessage}`;
-        await sock.sendMessage(remoteJid, { text: greeting });
-
-        // Salva a mensagem do sistema enviada no histórico
-        await (prisma as any).message.create({
-          data: {
-            content: greeting,
-            leadId: lead.id,
-            isSystem: true
-          }
-        });
       }
 
-      // Salva a mensagem do cliente que acabou de chegar
-      await (prisma as any).message.create({
+      lead = await (prisma as any).lead.create({
         data: {
-          content: textMessage,
-          leadId: lead.id,
-          isSystem: false // Apesar de false (não é system rule), authorId será null significando "Autor: Cliente", a UI lidará com isso ok ou o Admin olhará o chat e verá as msgs alternadas
-          // WAIT: a UI renderiza no VendasClient: author === USER.name -> verde, senão -> branco. 
-          // Vamos fazer uma pequena adaptação na logica do Message
+          name: participantName,
+          phone: phoneOnly,
+          profilePic,
+          source: 'WhatsApp Bot',
+          status: assignedToId ? 'CONTACTED' : 'NEW',
+          assignedToId
         }
       });
-      console.log(`📩 Mensagem arquivada no CRM para Lead ${lead.name}`);
 
-    } catch (err) {
-      console.error('Erro processando mensagem:', err);
+      // Envia mensagem de saudação
+      const greeting = `${cfg?.welcomeMessage}\n\n${cfg?.transferMessage}`;
+      await msg.reply(greeting);
+
+      await (prisma as any).message.create({
+        data: {
+          content: greeting,
+          leadId: lead.id,
+          isSystem: true
+        }
+      });
     }
-  });
-}
 
-startBot();
+    // Salva a mensagem do cliente
+    await (prisma as any).message.create({
+      data: {
+        content: textMessage,
+        leadId: lead.id,
+        isSystem: false
+      }
+    });
+
+    console.log(`📩 Mensagem arquivada no CRM para Lead ${lead.name}`);
+
+  } catch (err) {
+    console.error('Erro processando mensagem:', err);
+  }
+});
+
+client.initialize();
