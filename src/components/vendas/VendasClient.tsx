@@ -104,6 +104,7 @@ export default function VendasClient({ user }: { user: any }) {
   const [isGatilhoOpen, setIsGatilhoOpen] = useState(false);
   const [isGatilhoManagerOpen, setIsGatilhoManagerOpen] = useState(false);
   const [editingQR, setEditingQR] = useState<any>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -794,7 +795,12 @@ export default function VendasClient({ user }: { user: any }) {
                         {msg.mediaUrl && (
                           <div className="mb-2">
                             {msg.mediaType === 'image' || msg.mediaUrl.startsWith('data:image') ? (
-                              <img src={msg.mediaUrl} alt="imagem" className="rounded-xl max-w-full h-auto cursor-pointer border border-black/5" onClick={() => window.open(msg.mediaUrl, '_blank')} />
+                              <img 
+                                src={msg.mediaUrl} 
+                                alt="imagem" 
+                                className="rounded-xl max-w-full h-auto cursor-pointer border border-black/5 hover:scale-[1.02] active:scale-95 transition-all" 
+                                onClick={() => setPreviewImage(msg.mediaUrl)} 
+                              />
                             ) : msg.mediaType === 'video' || msg.mediaUrl.startsWith('data:video') ? (
                               <video src={msg.mediaUrl} controls className="rounded-xl max-w-full h-auto border border-black/5" />
                             ) : msg.mediaType === 'audio' || msg.mediaUrl.startsWith('data:audio') ? (
@@ -1155,6 +1161,24 @@ export default function VendasClient({ user }: { user: any }) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Modal Visualizador de Imagem - Lightbox */}
+      {previewImage && (
+        <div 
+          className="fixed inset-0 z-[200] bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-300"
+          onClick={() => setPreviewImage(null)}
+        >
+          <button className="absolute top-6 right-6 p-4 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all">
+            <X size={32} />
+          </button>
+          <img 
+            src={previewImage} 
+            className="max-w-full max-h-full object-contain rounded-xl shadow-2xl animate-in zoom-in-95 duration-300" 
+            alt="Preview"
+            onClick={(e) => e.stopPropagation()} 
+          />
         </div>
       )}
     </div>
