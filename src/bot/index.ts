@@ -2,15 +2,16 @@ import { makeWASocket, useMultiFileAuthState, DisconnectReason } from '@whiskeys
 import { Boom } from '@hapi/boom';
 import pino from 'pino';
 import * as QRCode from 'qrcode';
-import { PrismaClient } from '@prisma/client';
+import { loadEnvConfig } from '@next/env';
+loadEnvConfig(process.cwd());
+import prisma from '../lib/prisma';
 
-const prisma = new PrismaClient();
 const logger = pino({ level: 'silent' });
 
 async function getOrCreateBotConfig() {
-  let config = await prisma.botConfig.findFirst();
+  let config = await (prisma as any).botConfig.findFirst();
   if (!config) {
-    config = await prisma.botConfig.create({
+    config = await (prisma as any).botConfig.create({
       data: {
         welcomeMessage: "Olá! Recebemos sua mensagem. Sou o assistente virtual da equipe...",
         transferMessage: "Vou transferir seu atendimento para um de nossos especialistas. Aguarde um instante.",
@@ -44,7 +45,7 @@ async function startBot() {
       try {
         const qrBase64 = await QRCode.toDataURL(qr);
         const cfg = await getOrCreateBotConfig();
-        await prisma.botConfig.update({
+        await (prisma as any).botConfig.update({
           where: { id: cfg.id },
           data: { status: 'QR_READY', qrCode: qrBase64 }
         });
@@ -57,13 +58,13 @@ async function startBot() {
       const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
       console.log('❌ Conexão fechada. Reconectando:', shouldReconnect);
       const cfg = await getOrCreateBotConfig();
-      await prisma.botConfig.update({ where: { id: cfg.id }, data: { status: 'DISCONNECTED' } });
+      await (prisma as any).botConfig.update({ where: { id: cfg.id }, data: { status: 'DISCONNECTED' } });
       
       if (shouldReconnect) startBot();
     } else if (connection === 'open') {
       console.log('🚀 WhatsApp conectado a VPS!');
       const cfg = await getOrCreateBotConfig();
-      await prisma.botConfig.update({ where: { id: cfg.id }, data: { status: 'CONNECTED', qrCode: null } });
+      await (prisma as any).botConfig.update({ where: { id: cfg.id }, data: { status: 'CONNECTED', qrCode: null } });
     }
   });
 
@@ -83,10 +84,10 @@ async function startBot() {
       if (!textMessage.trim()) return;
 
       // Pegar config mais atualizada
-      const cfg = await prisma.botConfig.findFirst();
+      const cfg = await (prisma as any).botConfig.findFirst();
 
       // Checa se ja existe Lead com esse fone
-      let lead = await prisma.lead.findFirst({ where: { phone: phoneOnly } });
+      let lead = await (prisma as any).lead.findFirst({ where: { phone: phoneOnly } });
 
       let isNewLead = false;
       if (!lead) {
@@ -96,7 +97,7 @@ async function startBot() {
         // Logica Round Robin ou Pool
         let assignedToId: string | null = null;
         if (cfg?.isRoundRobin) {
-          const sellers = await prisma.user.findMany({
+          const sellers = await (prisma as any).user.findMany({
             where: { role: 'SELLER' },
             include: { leads: { where: { status: 'CONTACTED' } } }
           });
@@ -108,7 +109,7 @@ async function startBot() {
           }
         }
 
-        lead = await prisma.lead.create({
+        lead = await (prisma as any).lead.create({
           data: {
             name: participantName,
             phone: phoneOnly,
@@ -123,7 +124,7 @@ async function startBot() {
         await sock.sendMessage(remoteJid, { text: greeting });
 
         // Salva a mensagem do sistema enviada no histórico
-        await prisma.message.create({
+        await (prisma as any).message.create({
           data: {
             content: greeting,
             leadId: lead.id,
@@ -133,7 +134,7 @@ async function startBot() {
       }
 
       // Salva a mensagem do cliente que acabou de chegar
-      await prisma.message.create({
+      await (prisma as any).message.create({
         data: {
           content: textMessage,
           leadId: lead.id,

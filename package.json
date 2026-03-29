@@ -7,7 +7,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
-    "bot": "tsx src/bot/index.ts"
+    "bot": "node --import tsx --env-file=.env src/bot/index.ts"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.20",
