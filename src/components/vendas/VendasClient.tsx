@@ -37,7 +37,7 @@ import {
   Edit2
 } from "lucide-react";
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import axios from "axios";
+import axios, { type AxiosProgressEvent } from "axios";
 import { cn, openWhatsApp, getWhatsAppHref } from "@/lib/utils";
 import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead, sendWhatsAppMessage, addInternalNote, uploadMedia, deleteMessage, updateMessage, getQuickReplies, createQuickReply, deleteQuickReply, updateQuickReply, getLeadById } from "@/app/actions/leads";
 import { getSellers } from "@/app/actions/users";
@@ -213,7 +213,7 @@ export default function VendasClient({ user }: { user: any }) {
       
       try {
         const uploadRes = await axios.post("/api/upload", formData, {
-          onUploadProgress: (progressEvent) => {
+          onUploadProgress: (progressEvent: AxiosProgressEvent) => {
             const progress = progressEvent.total 
               ? Math.round((progressEvent.loaded * 100) / progressEvent.total) 
               : 0;

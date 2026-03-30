@@ -48,7 +48,7 @@ async function compressVideo(inputPath: string): Promise<string> {
         '-b:a 128k',
         '-movflags +faststart' // Streaming instantâneo
       ])
-      .on('error', (err) => {
+      .on('error', (err: any) => {
         console.error('Erro na compressão:', err);
         resolve(inputPath); // Em caso de erro, manda o original mesmo
       })
@@ -81,7 +81,7 @@ async function convertAudioToVoice(inputPath: string): Promise<string> {
         '-ac 1',
         '-ar 48000'
       ])
-      .on('error', (err) => {
+      .on('error', (err: any) => {
         console.error('Erro na conversão de áudio:', err);
         resolve(inputPath);
       })
@@ -138,7 +138,7 @@ client.on('qr', async (qr: string) => {
       where: { id: cfg.id },
       data: { status: 'QR_READY', qrCode: qrBase64 }
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error('Erro ao salvar QR no banco:', err);
   }
 });
@@ -178,7 +178,7 @@ async function scanProfilePhotos() {
       }
     }
     console.log('✨ Varredura de fotos concluída.');
-  } catch (err) {
+  } catch (err: any) {
     console.error('Erro na varredura de fotos:', err);
   }
 }
@@ -338,7 +338,7 @@ client.on('message', async (msg: any) => {
         } else {
           console.error("❌ Falha ao processar downloadMedia: Retornou nulo.");
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error("❌ Erro ao baixar/salvar mídia do WhatsApp:", e);
       }
     }
@@ -351,7 +351,7 @@ client.on('message', async (msg: any) => {
         // Placeholder para chamada de transcrição (Whisper)
         // transcription = await transcribeAudio(savedMediaUrl);
         transcription = "[Transcrição automática em processamento...]"; 
-      } catch (err) {
+      } catch (err: any) {
         console.error("Erro na transcrição:", err);
       }
     }
@@ -375,7 +375,7 @@ client.on('message', async (msg: any) => {
 
     console.log(`📩 Mensagem ${msg.hasMedia ? 'com mídia ' : ''}arquivada no CRM para Lead ${lead.name}`);
 
-  } catch (err) {
+  } catch (err: any) {
     console.error('Erro processando mensagem:', err);
   }
 });
@@ -469,7 +469,7 @@ setInterval(async () => {
             where: { id: om.id },
             data: { status: 'SENT' }
           });
-        } catch (dbErr) {
+        } catch (dbErr: any) {
           console.error(`⚠️ Erro ao atualizar status no DB (Cota?):`, (dbErr as any).message);
         }
         
