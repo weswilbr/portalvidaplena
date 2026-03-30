@@ -257,7 +257,7 @@ export default function LeadsClient({ user }: { user: any }) {
                   <th className="px-8 py-5 font-black text-xs uppercase tracking-widest text-slate-400">Origem</th>
                   <th className="px-8 py-5 font-black text-xs uppercase tracking-widest text-slate-400">Atribuído a</th>
                   <th className="px-8 py-5 font-black text-xs uppercase tracking-widest text-slate-400">Status</th>
-                  <th className="px-8 py-5 font-black text-xs uppercase tracking-widest text-slate-400 text-right">Ações</th>
+                  <th className="px-8 py-5 font-black text-xs uppercase tracking-widest text-slate-400 text-left md:text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -298,8 +298,8 @@ export default function LeadsClient({ user }: { user: any }) {
                         {statusLabels[lead.status as keyof typeof statusLabels]}
                       </span>
                     </td>
-                    <td className="px-8 py-5 text-right">
-                      <div className="flex items-center justify-end gap-2 text-slate-400">
+                    <td className="px-8 py-5 text-left md:text-right">
+                      <div className="flex items-center justify-start md:justify-end gap-2 text-slate-400">
                         {(!lead.assignedTo || (lead.assignedTo.id !== user?.id && user?.role === 'ADMIN')) && (
                           <button
                             onClick={() => handlePullLead(lead.id)}

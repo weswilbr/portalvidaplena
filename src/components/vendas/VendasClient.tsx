@@ -637,7 +637,7 @@ export default function VendasClient({ user }: { user: any }) {
                     <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400">Cliente</th>
                     <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400">Atendimento</th>
                     <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400">Status</th>
-                    <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400 text-right">Ação</th>
+                    <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400 text-left md:text-right">Ação</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -683,7 +683,7 @@ export default function VendasClient({ user }: { user: any }) {
                           {statusLabels[lead.status as keyof typeof statusLabels]}
                         </span>
                       </td>
-                      <td className="px-6 md:px-8 py-4 md:py-5 text-right flex justify-end gap-2">
+                      <td className="px-6 md:px-8 py-4 md:py-5 text-left md:text-right flex justify-start md:justify-end gap-2">
                          {(!lead.assignedTo || (lead.assignedTo.id !== user.id && user.role === 'ADMIN')) && (
                            <button 
                             onClick={() => handlePullLead(lead.id)}
