@@ -139,18 +139,18 @@ export default function LeadsClient({ user }: { user: any }) {
   };
 
   return (
-    <div className="p-8 space-y-6">
-      <header className="flex items-center justify-between">
+    <div className="p-4 md:p-8 space-y-4 md:space-y-6 pb-24 md:pb-8">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-slate-900 leading-none">Gestão de Leads (Negócio)</h1>
-          <p className="text-slate-500 font-medium mt-2">Gerencie seus prospectos interessados no Projeto Vida Plena e 4Life.</p>
+          <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 leading-none">Gestão de Leads (Negócio)</h1>
+          <p className="text-slate-500 font-medium mt-2 text-sm md:text-base">Gerencie seus prospectos interessados no Projeto Vida Plena e 4Life.</p>
         </div>
-        <div className="flex gap-3">
-          <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-full md:w-auto">
             <button 
               onClick={() => setViewMode("table")}
               className={cn(
-                "flex items-center gap-2 px-6 py-2.5 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest", 
+                "flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest", 
                 viewMode === "table" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400 hover:text-indigo-600"
               )}
             >
@@ -176,10 +176,21 @@ export default function LeadsClient({ user }: { user: any }) {
             className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100"
           >
             <Plus size={20} />
-            Novo Prospecto
+            <span className="hidden md:inline">Novo Prospecto</span>
           </button>
         </div>
       </header>
+
+      {/* Floating Action Button for Mobile */}
+      <button 
+        onClick={() => {
+          setSelectedLead(null);
+          setIsModalOpen(true);
+        }}
+        className="fixed bottom-6 right-6 z-40 md:hidden h-16 w-16 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all animate-in zoom-in duration-300"
+      >
+        <Plus size={32} />
+      </button>
 
       {/* Filters Area */}
       <div className="p-4 bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-center">

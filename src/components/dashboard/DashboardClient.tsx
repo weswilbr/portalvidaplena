@@ -82,16 +82,16 @@ export default function DashboardClient() {
   ];
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto animate-in fade-in duration-700">
-      <div className="relative overflow-hidden bg-gradient-to-r from-indigo-700 via-purple-700 to-pink-600 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-indigo-200 group">
+    <div className="p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto animate-in fade-in duration-700 pb-24 md:pb-8">
+      <div className="relative overflow-hidden bg-gradient-to-r from-indigo-700 via-purple-700 to-pink-600 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 text-white shadow-2xl shadow-indigo-200 group">
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="space-y-4">
             <div className="flex items-center gap-2 bg-white/20 w-fit px-4 py-1.5 rounded-full text-[10px] font-black backdrop-blur-md border border-white/10 uppercase tracking-[0.2em]">
               <Zap size={14} className="fill-white" />
               Março com Momentum
             </div>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-none">
-              Ativando o Potencial para <br /> <span className="text-amber-300">Multiplicar Resultados</span>
+            <h1 className="text-2xl md:text-5xl font-black tracking-tight leading-tight md:leading-none">
+              Ativando o Potencial para <br className="hidden md:block" /> <span className="text-amber-300">Multiplicar Resultados</span>
             </h1>
             <p className="text-indigo-100 font-medium max-w-md italic opacity-90 block pt-2">
               "{randomQuote}"
@@ -111,15 +111,15 @@ export default function DashboardClient() {
         <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-96 h-96 bg-white/10 rounded-full blur-[100px] pointer-events-none"></div>
       </div>
 
-      <header className="flex items-center justify-between">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-black tracking-tight text-slate-900 leading-none">Fala, Líder! 🚀</h2>
-          <p className="text-slate-500 font-medium mt-2 tracking-tight">Evolução em tempo real da sua estrutura 4Life.</p>
+          <h2 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 leading-none">Fala, Líder! 🚀</h2>
+          <p className="text-slate-500 font-medium mt-2 text-sm md:text-base tracking-tight">Evolução em tempo real da sua estrutura 4Life.</p>
         </div>
         <div className="flex gap-4">
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all"
+            className="hidden md:flex items-center gap-2 bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all"
           >
             <Plus size={20} />
             Novo Lead
@@ -127,9 +127,17 @@ export default function DashboardClient() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Floating Action Button for Mobile Dashboard */}
+      <button 
+        onClick={() => setIsModalOpen(true)}
+        className="fixed bottom-6 right-6 z-40 md:hidden h-16 w-16 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all animate-in zoom-in duration-300"
+      >
+        <Plus size={32} />
+      </button>
+
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {stats.map((stat) => (
-          <div key={stat.label} className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
+          <div key={stat.label} className="p-5 md:p-8 bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
             <div className={cn("p-4 rounded-2xl text-white w-fit mb-6", stat.color)}>
               <stat.icon size={28} />
             </div>

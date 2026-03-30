@@ -629,7 +629,7 @@ export default function VendasClient({ user }: { user: any }) {
           onStatusChange={handleKanbanStatusChange}
         />
       ) : (
-        <div className="bg-white rounded-3xl md:rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden w-full">
+        <div className={cn("bg-white rounded-3xl md:rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden w-full", isDetailsOpen ? "hidden md:block" : "block")}>
            <div className="overflow-x-auto w-full">
              <table className="w-full text-left whitespace-nowrap">
                 <thead className="bg-slate-50/80 border-b border-slate-100">
@@ -713,30 +713,33 @@ export default function VendasClient({ user }: { user: any }) {
           
           <div className="relative w-full md:max-w-2xl bg-[#f0f2f5] h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
             {/* Cabeçalho do Chat */}
-            <header className="p-3 px-4 bg-white flex items-center justify-between border-b border-slate-200 shadow-sm z-10">
+            <header className="p-3 px-4 bg-white flex items-center justify-between border-b border-slate-200 shadow-sm z-10 sticky top-0">
               <div className="flex items-center gap-3 flex-1 min-w-0">
-                <button onClick={() => setIsDetailsOpen(false)} className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-all shrink-0">
-                  <ChevronLeft size={22} />
+                <button 
+                  onClick={() => setIsDetailsOpen(false)} 
+                  className="p-3 -ml-2 text-indigo-600 hover:bg-slate-100 rounded-2xl transition-all shrink-0"
+                >
+                  <ChevronLeft size={28} />
                 </button>
                 {selectedLead.profilePic ? (
-                  <img src={selectedLead.profilePic} className="w-9 h-9 rounded-full object-cover shadow-sm border border-slate-200 shrink-0" alt={selectedLead.name} />
+                  <img src={selectedLead.profilePic} className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200 shrink-0" alt={selectedLead.name} />
                 ) : (
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm shrink-0">{selectedLead.name?.charAt(0) || '?'}</div>
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-base shrink-0">{selectedLead.name?.charAt(0) || '?'}</div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-bold text-slate-900 leading-tight truncate">{selectedLead.name}</h3>
-                  <span className="text-[10px] font-medium text-emerald-500">CRM Vida Plena</span>
+                  <h3 className="text-base font-black text-slate-900 leading-tight truncate">{selectedLead.name}</h3>
+                  <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    WhatsApp Online
+                  </span>
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 <button 
                   onClick={() => setIsTransferring(!isTransferring)}
-                  className={cn("p-2 rounded-xl transition-all text-xs font-bold", isTransferring ? "bg-indigo-600 text-white" : "text-indigo-600 hover:bg-indigo-50")}
+                  className={cn("p-3 rounded-2xl transition-all text-xs font-bold", isTransferring ? "bg-indigo-600 text-white" : "text-indigo-600 hover:bg-indigo-50")}
                 >
-                  <Info size={20} />
-                </button>
-                <button onClick={() => setIsDetailsOpen(false)} className="p-2 hover:bg-red-50 hover:text-red-500 text-slate-400 rounded-xl transition-all">
-                  <X size={20} />
+                  <Info size={24} />
                 </button>
               </div>
             </header>
