@@ -16,7 +16,9 @@ import React, { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { openWhatsApp } from "@/lib/utils";
 import { getLeads, createLead, updateLead, deleteLead, pullLead } from "@/app/actions/leads";
+import { getSellers } from "@/app/actions/users";
 import KanbanView from "@/components/leads/KanbanView";
+import { User } from "lucide-react";
 
 const statusStyles = {
   NEW: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
@@ -39,13 +41,21 @@ export default function LeadsClient({ user }: { user: any }) {
   const [statusFilter, setStatusFilter] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [leads, setLeads] = useState<any[]>([]);
+  const [sellers, setSellers] = useState<any[]>([]);
+  const [sellerFilter, setSellerFilter] = useState("");
   const [selectedLead, setSelectedLead] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
 
   useEffect(() => {
     refreshLeads();
+    fetchSellers();
   }, []);
+
+  const fetchSellers = async () => {
+    const data = await getSellers();
+    setSellers(data);
+  };
 
   const refreshLeads = async () => {
     setLoading(true);
@@ -61,9 +71,10 @@ export default function LeadsClient({ user }: { user: any }) {
         (lead.phone || "").includes(searchTerm) ||
         (lead.email || "").toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === "" || lead.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesSeller = sellerFilter === "" || lead.assignedToId === sellerFilter;
+      return matchesSearch && matchesStatus && matchesSeller;
     });
-  }, [searchTerm, statusFilter, leads]);
+  }, [searchTerm, statusFilter, sellerFilter, leads]);
 
 
   const handleDeleteLead = async (id: string) => {
@@ -172,12 +183,38 @@ export default function LeadsClient({ user }: { user: any }) {
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
         >
-          <option value="">Filtro: Todos</option>
+          <option value="">Status: Todos</option>
           <option value="NEW">Novo</option>
           <option value="CONTACTED">Contatado</option>
           <option value="PRESENTED">Apresentado</option>
           <option value="CLOSED">Fechado</option>
         </select>
+
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <select 
+            className="flex-1 md:flex-none px-6 py-3 rounded-2xl bg-indigo-50 border border-indigo-100 outline-none cursor-pointer font-black text-indigo-700 text-sm"
+            value={sellerFilter}
+            onChange={(e) => setSellerFilter(e.target.value)}
+          >
+            <option value="">Vendedor: Todos</option>
+            {sellers.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+
+          {user?.role === 'SELLER' && (
+            <button 
+              onClick={() => setSellerFilter(sellerFilter === user.id ? "" : user.id)}
+              className={cn(
+                "px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 transition-all",
+                sellerFilter === user.id ? "bg-indigo-600 text-white shadow-lg" : "bg-white border border-slate-100 text-slate-600 hover:bg-slate-50"
+              )}
+            >
+              <User size={16} />
+              <span>{sellerFilter === user.id ? "Vendo Meus Leads" : "Meus Leads"}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {loading ? (
