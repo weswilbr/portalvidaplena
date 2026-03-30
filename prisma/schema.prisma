@@ -37,6 +37,7 @@ model Lead {
   assignedToId String?
   assignedTo   User?    @relation("UserLeads", fields: [assignedToId], references: [id])
   unreadCount Int      @default(0)
+  messages    Message[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
