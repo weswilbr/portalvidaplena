@@ -50,18 +50,25 @@ export default function LeadsClient({ user }: { user: any }) {
   useEffect(() => {
     refreshLeads();
     fetchSellers();
-  }, []);
+
+    // Auto-refresh a cada 5 segundos (Tempo Real Silencioso)
+    const interval = setInterval(() => {
+      if (!isModalOpen) refreshLeads(true); // Só atualiza se não estiver com o modal aberto editando
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [isModalOpen]);
 
   const fetchSellers = async () => {
     const data = await getSellers();
     setSellers(data);
   };
 
-  const refreshLeads = async () => {
-    setLoading(true);
+  const refreshLeads = async (silent = false) => {
+    if (!silent) setLoading(true);
     const data = await getLeads();
     setLeads(data.filter((l: any) => l.interest !== "Produto")); // Filtra apenas Leads de NEGÓCIO
-    setLoading(false);
+    if (!silent) setLoading(false);
   };
 
   const filteredLeads = useMemo(() => {
