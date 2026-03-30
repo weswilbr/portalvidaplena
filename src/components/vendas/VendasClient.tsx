@@ -37,8 +37,9 @@ import {
   Edit2
 } from "lucide-react";
 import React, { useState, useMemo, useEffect, useRef } from "react";
+import axios from "axios";
 import { cn, openWhatsApp, getWhatsAppHref } from "@/lib/utils";
-import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead, sendWhatsAppMessage, addInternalNote, uploadMedia, deleteMessage, updateMessage, getQuickReplies, createQuickReply, deleteQuickReply, updateQuickReply } from "@/app/actions/leads";
+import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead, sendWhatsAppMessage, addInternalNote, uploadMedia, deleteMessage, updateMessage, getQuickReplies, createQuickReply, deleteQuickReply, updateQuickReply, getLeadById } from "@/app/actions/leads";
 import { getSellers } from "@/app/actions/users";
 import KanbanView from "@/components/leads/KanbanView";
 
@@ -105,6 +106,7 @@ export default function VendasClient({ user }: { user: any }) {
   const [isGatilhoManagerOpen, setIsGatilhoManagerOpen] = useState(false);
   const [editingQR, setEditingQR] = useState<any>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -141,10 +143,14 @@ export default function VendasClient({ user }: { user: any }) {
     }
   }, [selectedLead?.messages?.length, selectedLead?.id, isDetailsOpen]);
 
-  // Auto-refresh quando o chat está aberto (mensagens em tempo real) - Reduzido para 1.5s p/ máxima velocidade
+  // Auto-refresh OTIMIZADO quando o chat está aberto (busca APENAS o lead atual, salva enorme banda e resolve lentidão de uploads)
   useEffect(() => {
-    if (!isDetailsOpen) return;
-    const interval = setInterval(() => refreshData(true), 1500);
+    if (!isDetailsOpen || !selectedLead?.id) return;
+    const fetchOnlyLead = async () => {
+       const updatedLead = await getLeadById(selectedLead.id);
+       if (updatedLead) setSelectedLead(updatedLead);
+    };
+    const interval = setInterval(fetchOnlyLead, 1500);
     return () => clearInterval(interval);
   }, [isDetailsOpen, selectedLead?.id]);
 
@@ -195,14 +201,32 @@ export default function VendasClient({ user }: { user: any }) {
     if (selectedFile) {
       const formData = new FormData();
       formData.append("file", selectedFile);
-      const uploadRes = await uploadMedia(formData);
-      if (uploadRes.success) {
-        mediaUrl = uploadRes.url;
-        mediaType = uploadRes.type;
-        fileName = uploadRes.name;
-      } else {
-        alert(uploadRes.error || "Erro ao subir arquivo");
+      
+      try {
+        const uploadRes = await axios.post("/api/upload", formData, {
+          onUploadProgress: (progressEvent) => {
+            const progress = progressEvent.total 
+              ? Math.round((progressEvent.loaded * 100) / progressEvent.total) 
+              : 0;
+            setUploadProgress(progress);
+          },
+        });
+
+        if (uploadRes.data.success) {
+          mediaUrl = uploadRes.data.url;
+          mediaType = uploadRes.data.type;
+          fileName = uploadRes.data.name;
+        } else {
+          alert(uploadRes.data.error || "Erro ao subir arquivo");
+          setIsSending(false);
+          setUploadProgress(0);
+          return;
+        }
+      } catch (uploadErr) {
+        console.error("Erro no upload axios:", uploadErr);
+        alert("Erro na conexão durante o envio do arquivo.");
         setIsSending(false);
+        setUploadProgress(0);
         return;
       }
     }
@@ -222,12 +246,35 @@ export default function VendasClient({ user }: { user: any }) {
 
     try {
       if (res.success) {
+        // Atualização Otimista: Adiciona a mensagem localmente para feedback instantâneo
+        const tempMsg = {
+          id: `temp-${Date.now()}`,
+          content: newMessage || (mediaType ? `[Arquivo ${mediaType}]` : "Nova Mensagem"),
+          mediaUrl,
+          mediaType,
+          createdAt: new Date().toISOString(),
+          author: { id: user.id, name: user.name },
+          authorId: user.id,
+          isSystem: false,
+          isNote: isNoteMode
+        };
+
+        if (selectedLead.messages) {
+          setSelectedLead({
+            ...selectedLead,
+            messages: [...selectedLead.messages, tempMsg]
+          });
+        }
+
         setNewMessage("");
         setSelectedFile(null);
         setFilePreview(null);
         setIsEmojiOpen(false);
-        refreshData();
+        setUploadProgress(0);
+        // Refresh em background para garantir integridade silenciosa
+        refreshData(true);
       } else {
+
         // Trata erro de limite do Vercel (4.5MB) especificamente se possível, ou exibe o erro retornado
         const errorMsg = res.error || "Ocorreu um erro ao enviar.";
         if (errorMsg.includes("413") || errorMsg.includes("Large")) {
@@ -903,6 +950,26 @@ export default function VendasClient({ user }: { user: any }) {
 
             {/* Barra de Input - Mobile-first sticky bottom */}
             <div className="bg-[#f0f2f5] border-t border-slate-200" style={{paddingBottom: 'env(safe-area-inset-bottom, 0px)'}}>
+              
+              {/* Barra de Progresso de Upload */}
+              {uploadProgress > 0 && (
+                <div className="mx-3 mt-3 bg-white p-3 rounded-2xl border border-slate-200 overflow-hidden shadow-sm animate-in slide-in-from-bottom duration-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2">
+                      <Loader2 size={12} className="animate-spin" />
+                      Enviando Arquivo...
+                    </span>
+                    <span className="text-xs font-black text-slate-900">{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-50">
+                    <div 
+                      className="h-full bg-indigo-600 transition-all duration-300 ease-out shadow-[0_0_10px_rgba(79,70,229,0.3)]" 
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Preview de Arquivo */}
               {selectedFile && (
                 <div className="mx-3 mt-3 bg-white p-3 rounded-2xl border border-slate-200 flex items-center justify-between shadow-sm animate-in slide-in-from-bottom duration-200">

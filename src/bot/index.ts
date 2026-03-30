@@ -1,4 +1,5 @@
 import { Client, LocalAuth, MessageMedia } from 'whatsapp-web.js';
+import ffmpeg from 'fluent-ffmpeg';
 import * as QRCode from 'qrcode';
 import qrcodeTerminal from 'qrcode-terminal';
 import { loadEnvConfig } from '@next/env';
@@ -21,6 +22,75 @@ async function getOrCreateBotConfig() {
     });
   }
   return config;
+}
+
+/**
+ * Comprime vídeo usando h264 para ser ultra leve no WhatsApp
+ */
+async function compressVideo(inputPath: string): Promise<string> {
+  const outputPath = inputPath.replace(/(\.[a-z0-9]+)$/i, '-compressed.mp4');
+  
+  // Se o arquivo comprimido já existe (mesma mídia enviada antes), reaproveita
+  if (fs.existsSync(outputPath)) {
+    const stats = fs.statSync(outputPath);
+    if (stats.size > 0) return outputPath;
+  }
+
+  console.log(`🎬 Comprimindo vídeo: ${path.basename(inputPath)}...`);
+  
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputPath)
+      .outputOptions([
+        '-c:v libx264',
+        '-crf 28',         // Qualidade ótima, arquivo pequeno
+        '-preset faster',   // Rapidez no processamento
+        '-c:a aac',
+        '-b:a 128k',
+        '-movflags +faststart' // Streaming instantâneo
+      ])
+      .on('error', (err) => {
+        console.error('Erro na compressão:', err);
+        resolve(inputPath); // Em caso de erro, manda o original mesmo
+      })
+      .on('end', () => {
+        console.log(`✅ Vídeo comprimido com sucesso: ${path.basename(outputPath)}`);
+        resolve(outputPath);
+      })
+      .save(outputPath);
+  });
+}
+
+/**
+ * Converte áudio para OGG Opus para garantir compatibilidade com WhatsApp Voice
+ */
+async function convertAudioToVoice(inputPath: string): Promise<string> {
+  const outputPath = inputPath.replace(/(\.[a-z0-9]+)$/i, '-voice.ogg');
+  
+  if (fs.existsSync(outputPath)) {
+    const stats = fs.statSync(outputPath);
+    if (stats.size > 0) return outputPath;
+  }
+
+  console.log(`🎙️ Convertendo áudio para voz: ${path.basename(inputPath)}...`);
+  
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputPath)
+      .outputOptions([
+        '-c:a libopus',
+        '-b:a 64k',
+        '-ac 1',
+        '-ar 48000'
+      ])
+      .on('error', (err) => {
+        console.error('Erro na conversão de áudio:', err);
+        resolve(inputPath);
+      })
+      .on('end', () => {
+        console.log(`✅ Áudio convertido com sucesso: ${path.basename(outputPath)}`);
+        resolve(outputPath);
+      })
+      .save(outputPath);
+  });
 }
 
 const client = new Client({
@@ -121,8 +191,8 @@ client.on('ready', async () => {
     data: { status: 'CONNECTED', qrCode: null }
   });
 
-  // Dispara a varredura em background após 10 segundos da conexão
-  setTimeout(() => scanProfilePhotos(), 10000);
+  // Dispara a varredura em background após 10 segundos da conexão (DESATIVADO PARA ESTABILIDADE)
+  // setTimeout(() => scanProfilePhotos(), 10000);
 });
 
 client.on('auth_failure', async (msg: string) => {
@@ -355,6 +425,25 @@ setInterval(async () => {
             const isAudio = om.mediaType === 'audio' || (media && media.mimetype.startsWith('audio/'));
             const isDocument = om.mediaType === 'document' || (!isAudio && !media.mimetype.startsWith('image/') && !media.mimetype.startsWith('video/'));
 
+            if (media && media.mimetype.startsWith('video/')) {
+               const absPath = path.join(process.cwd(), 'public', 'uploads', (om.mediaUrl.split('/').pop() || ''));
+               if (fs.existsSync(absPath)) {
+                  const compressedPath = await compressVideo(absPath);
+                  media = MessageMedia.fromFilePath(compressedPath);
+               }
+            }
+
+            if (media && (media.mimetype.startsWith('audio/') || om.mediaType === 'audio')) {
+               const filename = om.mediaUrl.split('/').pop();
+               const absPath = path.join(process.cwd(), 'public', 'uploads', filename || '');
+               if (fs.existsSync(absPath)) {
+                  const voicePath = await convertAudioToVoice(absPath);
+                  // FORÇAR MIMETYPE OGG NOVO PARA MENSAGEM DE VOZ
+                  const data = fs.readFileSync(voicePath).toString('base64');
+                  media = new MessageMedia('audio/ogg; codecs=opus', data, 'voice.ogg');
+               }
+            }
+
             await client.sendMessage(`${om.to}@c.us`, media, { 
               caption: om.body || undefined,
               sendAudioAsVoice: isAudio,
@@ -382,7 +471,7 @@ setInterval(async () => {
         await new Promise(r => setTimeout(r, 1500));
         
       } catch (err: any) {
-        console.error(`❌ Falha crítica ao enviar para ${om.to}:`, err.message);
+        console.error(`❌ Falha crítica ao enviar para ${om.to}:`, err);
         try {
           await (prisma as any).outgoingMessage.update({
             where: { id: om.id },
@@ -398,7 +487,8 @@ setInterval(async () => {
   } finally {
     isProcessingOutgoing = false;
   }
-}, 4000);
+}, 2000);
+
 
 
 client.initialize();

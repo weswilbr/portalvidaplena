@@ -124,6 +124,23 @@ export async function deleteLead(id: string) {
   }
 }
 
+export async function getLeadById(id: string) {
+  try {
+    return await (prisma as any).lead.findUnique({
+      where: { id },
+      include: {
+        assignedTo: { select: { name: true, id: true } },
+        messages: {
+          include: { author: { select: { name: true, id: true } } },
+          orderBy: { createdAt: "asc" }
+        }
+      }
+    });
+  } catch (error) {
+    return null;
+  }
+}
+
 export async function addMessage(data: { leadId: string; content: string; authorId: string; isSystem?: boolean; isNote?: boolean }) {
   try {
     const message = await (prisma as any).message.create({
@@ -135,8 +152,7 @@ export async function addMessage(data: { leadId: string; content: string; author
         isNote: data.isNote || false
       }
     });
-    revalidatePath("/dashboard/leads");
-    revalidatePath("/dashboard/vendas");
+    // Removed revalidatePath for speed
     return { success: true, message };
   } catch (error) {
     console.error("Error adding message:", error);
@@ -176,7 +192,7 @@ export async function sendWhatsAppMessage(data: { leadId: string; content: strin
       }
     });
 
-    revalidatePath("/dashboard/vendas");
+    // Removido revalidatePath para performance no client
     return { success: true };
   } catch (error) {
     console.error("Error sending WhatsApp message:", error);
@@ -238,8 +254,7 @@ export async function addInternalNote(data: { leadId: string; content: string; a
         isNote: true
       }
     });
-    revalidatePath("/dashboard/leads");
-    revalidatePath("/dashboard/vendas");
+    // Removido revalidatePath para performance no client
     return { success: true };
   } catch (error) {
     return { success: false, error: "Falha ao salvar nota" };

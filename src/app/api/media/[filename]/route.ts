@@ -4,13 +4,16 @@ import path from 'path';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { filename: string } }
+  context: { params: Promise<{ filename: string }> }
 ) {
   try {
-    const filename = (await (params as any)).filename;
+    const { filename } = await context.params;
+    
     if (!filename) {
       return new NextResponse('Filename is required', { status: 400 });
     }
+
+
 
     // Acessa a pasta uploads fora do bundle estático (public/uploads)
     const filePath = path.join(process.cwd(), 'public', 'uploads', filename);
