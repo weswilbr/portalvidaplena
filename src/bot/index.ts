@@ -367,6 +367,12 @@ client.on('message', async (msg: any) => {
       }
     });
 
+    // Incrementa contador de não lidas no Lead
+    await (prisma as any).lead.update({
+      where: { id: lead.id },
+      data: { unreadCount: { increment: 1 } }
+    });
+
     console.log(`📩 Mensagem ${msg.hasMedia ? 'com mídia ' : ''}arquivada no CRM para Lead ${lead.name}`);
 
   } catch (err) {

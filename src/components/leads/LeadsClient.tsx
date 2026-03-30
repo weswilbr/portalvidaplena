@@ -146,18 +146,26 @@ export default function LeadsClient({ user }: { user: any }) {
           <p className="text-slate-500 font-medium mt-2">Gerencie seus prospectos interessados no Projeto Vida Plena e 4Life.</p>
         </div>
         <div className="flex gap-3">
-          <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-slate-200">
+          <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
             <button 
               onClick={() => setViewMode("table")}
-              className={cn("p-2.5 rounded-xl transition-all", viewMode === "table" ? "bg-indigo-600 text-white shadow-lg" : "text-slate-400 hover:text-indigo-600")}
+              className={cn(
+                "flex items-center gap-2 px-6 py-2.5 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest", 
+                viewMode === "table" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400 hover:text-indigo-600"
+              )}
             >
-              <List size={20} />
+              <List size={16} />
+              <span>Lista</span>
             </button>
             <button 
               onClick={() => setViewMode("kanban")}
-              className={cn("p-2.5 rounded-xl transition-all", viewMode === "kanban" ? "bg-indigo-600 text-white shadow-lg" : "text-slate-400 hover:text-indigo-600")}
+              className={cn(
+                "flex items-center gap-2 px-6 py-2.5 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest", 
+                viewMode === "kanban" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400 hover:text-indigo-600"
+              )}
             >
-              <LayoutGrid size={20} />
+              <LayoutGrid size={16} />
+              <span>Kanban</span>
             </button>
           </div>
           <button 
@@ -245,11 +253,20 @@ export default function LeadsClient({ user }: { user: any }) {
                 {filteredLeads.map((lead) => (
                   <tr key={lead.id} className="hover:bg-indigo-50/30 transition-all group">
                     <td className="px-8 py-5">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-slate-900">{lead.name}</span>
-                        <span className="text-xs text-slate-400 flex items-center gap-1 mt-1">
-                          <Phone size={12} /> {lead.phone}
-                        </span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex flex-col relative">
+                          <div className="font-bold text-slate-900 text-sm md:text-base flex items-center gap-2">
+                             {lead.name}
+                             {lead.unreadCount > 0 && (
+                               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-black text-white shadow-lg animate-in zoom-in duration-300">
+                                 {lead.unreadCount}
+                               </span>
+                             )}
+                          </div>
+                          <span className="text-xs text-slate-400 flex items-center gap-1 mt-1">
+                            <Phone size={12} /> {lead.phone}
+                          </span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-8 py-5">

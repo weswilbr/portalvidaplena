@@ -36,7 +36,7 @@ model Lead {
   profilePic  String?  // URL da foto de perfil do WhatsApp
   assignedToId String?
   assignedTo   User?    @relation("UserLeads", fields: [assignedToId], references: [id])
-  messages    Message[]
+  unreadCount Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

@@ -150,9 +150,18 @@ export default function VendasClient({ user }: { user: any }) {
        const updatedLead = await getLeadById(selectedLead.id);
        if (updatedLead) setSelectedLead(updatedLead);
     };
+
+    // Zera contador ao entrar no chat
+    const clearUnread = async () => {
+       if (selectedLead.unreadCount > 0) {
+         await updateLead(selectedLead.id, { unreadCount: 0 });
+       }
+    };
+    clearUnread();
+
     const interval = setInterval(fetchOnlyLead, 1500);
     return () => clearInterval(interval);
-  }, [isDetailsOpen, selectedLead?.id]);
+  }, [isDetailsOpen, selectedLead?.id, selectedLead?.unreadCount]);
 
   const refreshData = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -643,7 +652,14 @@ export default function VendasClient({ user }: { user: any }) {
                           </div>
                         )}
                         <div>
-                          <div className="font-bold text-slate-900 text-sm md:text-base">{lead.name}</div>
+                          <div className="font-bold text-slate-900 text-sm md:text-base flex items-center gap-2">
+                             {lead.name}
+                             {lead.unreadCount > 0 && (
+                               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-black text-white shadow-lg animate-in zoom-in duration-300">
+                                 {lead.unreadCount}
+                               </span>
+                             )}
+                          </div>
                           <div className="text-[10px] md:text-xs font-semibold text-slate-400 mt-0.5">{formatPhoneNumber(lead.phone)}</div>
                         </div>
                       </td>
