@@ -160,7 +160,16 @@ export async function addMessage(data: { leadId: string; content: string; author
   }
 }
 
-export async function sendWhatsAppMessage(data: { leadId: string; content: string; authorId: string; mediaUrl?: string; mediaType?: string; fileName?: string }) {
+export async function sendWhatsAppMessage(data: { 
+  leadId: string; 
+  content: string; 
+  authorId: string; 
+  mediaUrl?: string; 
+  mediaType?: string; 
+  fileName?: string;
+  quotedMessageId?: string;
+  quotedMessageContent?: string;
+}) {
   try {
     const lead = await (prisma as any).lead.findUnique({ where: { id: data.leadId } });
     if (!lead?.phone) return { success: false, error: "Lead sem número de telefone" };
@@ -174,7 +183,9 @@ export async function sendWhatsAppMessage(data: { leadId: string; content: strin
         isSystem: false,
         isNote: false,
         mediaUrl: data.mediaUrl,
-        mediaType: data.mediaType
+        mediaType: data.mediaType,
+        quotedMessageId: data.quotedMessageId,
+        quotedMessageContent: data.quotedMessageContent
       }
     });
 
@@ -188,7 +199,9 @@ export async function sendWhatsAppMessage(data: { leadId: string; content: strin
         fileName: data.fileName,
         leadId: data.leadId,
         authorId: data.authorId,
-        status: "PENDING"
+        status: "PENDING",
+        quotedMessageId: data.quotedMessageId,
+        quotedMessageContent: data.quotedMessageContent
       }
     });
 

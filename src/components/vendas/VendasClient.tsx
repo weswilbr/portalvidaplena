@@ -36,7 +36,8 @@ import {
   History,
   Info,
   Edit2,
-  AlertTriangle
+  AlertTriangle,
+  Reply
 } from "lucide-react";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import axios, { type AxiosProgressEvent } from "axios";
@@ -113,6 +114,7 @@ export default function VendasClient({ user }: { user: any }) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState<any>(null);
+  const [replyingTo, setReplyingTo] = useState<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -268,7 +270,9 @@ export default function VendasClient({ user }: { user: any }) {
         authorId: user.id,
         mediaUrl,
         mediaType,
-        fileName
+        fileName,
+        quotedMessageId: replyingTo?.whatsappId || replyingTo?.id,
+        quotedMessageContent: replyingTo?.content
       });
     }
 
@@ -294,6 +298,7 @@ export default function VendasClient({ user }: { user: any }) {
           });
         }
 
+        setReplyingTo(null);
         setNewMessage("");
         setSelectedFile(null);
         setFilePreview(null);
@@ -1052,20 +1057,27 @@ export default function VendasClient({ user }: { user: any }) {
                           "flex gap-1.5 mt-1 transition-all", 
                           "md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 opacity-100"
                         )}>
-                           <button 
-                            onClick={(e) => { e.stopPropagation(); handleStartEdit(msg); }} 
-                            className="p-2 md:p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 border border-slate-100 transition-all flex items-center justify-center shadow-indigo-100"
-                            title="Editar"
-                           >
-                            <Pencil size={14}/>
-                           </button>
-                           <button 
-                            onClick={(e) => { e.stopPropagation(); handleDeleteMessage(msg); }} 
-                            className="p-2 md:p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-red-500 border border-slate-100 transition-all flex items-center justify-center shadow-red-100"
-                            title="Excluir"
-                           >
-                            <Trash2 size={14}/>
-                           </button>
+                             <button 
+                              onClick={(e) => { e.stopPropagation(); setReplyingTo(msg); }} 
+                              className="p-2 md:p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 border border-slate-100 transition-all flex items-center justify-center shadow-indigo-100"
+                              title="Responder"
+                             >
+                              <Reply size={14}/>
+                             </button>
+                             <button 
+                              onClick={(e) => { e.stopPropagation(); handleStartEdit(msg); }} 
+                              className="p-2 md:p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 border border-slate-100 transition-all flex items-center justify-center shadow-indigo-100"
+                              title="Editar"
+                             >
+                              <Pencil size={14}/>
+                             </button>
+                             <button 
+                              onClick={(e) => { e.stopPropagation(); handleDeleteMessage(msg); }} 
+                              className="p-2 md:p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-red-500 border border-slate-100 transition-all flex items-center justify-center shadow-red-100"
+                              title="Excluir"
+                             >
+                              <Trash2 size={14}/>
+                             </button>
                         </div>
                       )}
                     </div>
@@ -1152,6 +1164,27 @@ export default function VendasClient({ user }: { user: any }) {
 
                 <form onSubmit={handleSendMessage} className="flex-1 flex flex-col md:flex-row items-end gap-2 relative">
                   <div className="flex-1 relative w-full">
+                    {/* Banner de Citação (Reply Preview) */}
+                    {replyingTo && (
+                      <div className="absolute bottom-full mb-3 left-0 right-0 bg-white/95 backdrop-blur-sm border-l-4 border-l-indigo-600 rounded-xl p-3 shadow-xl animate-in slide-in-from-bottom flex justify-between items-start z-[80] group overflow-hidden border border-slate-100">
+                        <div className="flex-1 min-w-0 pr-4">
+                           <div className="text-[9px] font-black uppercase text-indigo-600 tracking-widest mb-1 flex items-center gap-1.5">
+                             <Reply size={10} />
+                             Respondendo a {replyingTo.author?.name || "Cliente"}
+                           </div>
+                           <p className="text-[11px] text-slate-500 line-clamp-1 italic font-medium">"{replyingTo.content}"</p>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => setReplyingTo(null)} 
+                          className="p-1 px-2.5 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-lg transition-all"
+                        >
+                          <X size={14} />
+                        </button>
+                        <div className="absolute right-0 top-0 bottom-0 w-1 bg-indigo-500/10"></div>
+                      </div>
+                    )}
+
                     {/* Menu de Gatilhos */}
                     {isGatilhoOpen && (
                       <div className="absolute bottom-full mb-2 left-0 right-0 bg-white shadow-2xl rounded-2xl p-2 flex flex-col gap-1 border border-slate-100 animate-in slide-in-from-bottom duration-200 z-[70] max-h-[280px] overflow-y-auto">

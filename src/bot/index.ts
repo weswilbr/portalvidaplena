@@ -497,7 +497,9 @@ setInterval(async () => {
           }
         } else {
           console.log(`⚠️ Enviando apenas texto para ${om.to} (mídia não carregada)`);
-          const sentMsg = await client.sendMessage(`${om.to}@c.us`, om.body);
+          const sentMsg = await client.sendMessage(`${om.to}@c.us`, om.body, {
+            quotedMessageId: om.quotedMessageId || undefined
+          });
           if (sentMsg && sentMsg.id && sentMsg.id._serialized) {
              await (prisma as any).message.updateMany({
                 where: { content: om.body, leadId: om.leadId, whatsappId: null, createdAt: { gte: new Date(Date.now() - 60000) } },
@@ -506,7 +508,9 @@ setInterval(async () => {
           }
         }
       } else {
-        const sentMsg = await client.sendMessage(`${om.to}@c.us`, om.body);
+        const sentMsg = await client.sendMessage(`${om.to}@c.us`, om.body, {
+          quotedMessageId: om.quotedMessageId || undefined
+        });
         if (sentMsg && sentMsg.id && sentMsg.id._serialized) {
            await (prisma as any).message.updateMany({
               where: { content: om.body, leadId: om.leadId, whatsappId: null, createdAt: { gte: new Date(Date.now() - 60000) } },

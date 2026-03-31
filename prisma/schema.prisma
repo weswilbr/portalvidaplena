@@ -80,6 +80,8 @@ model OutgoingMessage {
   authorId    String?
   actionType  String   @default("SEND") // SEND ou DELETE
   whatsappId  String?  // Necessário para ação de DELETE
+  quotedMessageId String?
+  quotedMessageContent String?
   createdAt   DateTime @default(now())
 }
 
