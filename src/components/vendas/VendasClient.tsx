@@ -1052,18 +1052,23 @@ export default function VendasClient({ user }: { user: any }) {
                       </div>
 
                       {/* Ações (visíveis no mobile ao tocar, desktop ao hover) */}
-                      {isMe && !msg.isSystem && (
-                        <div className={cn(
-                          "flex gap-1.5 mt-1 transition-all", 
-                          "md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 opacity-100"
-                        )}>
-                             <button 
-                              onClick={(e) => { e.stopPropagation(); setReplyingTo(msg); }} 
-                              className="p-2 md:p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 border border-slate-100 transition-all flex items-center justify-center shadow-indigo-100"
-                              title="Responder"
-                             >
-                              <Reply size={14}/>
-                             </button>
+                      <div className={cn(
+                        "flex gap-1.5 mt-1 transition-all", 
+                        "md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 opacity-100",
+                        !isMe && "flex-row-reverse self-start"
+                      )}>
+                         {/* Botão de Responder (Livre p/ todos) */}
+                         <button 
+                          onClick={(e) => { e.stopPropagation(); setReplyingTo(msg); }} 
+                          className="p-2 md:p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 border border-slate-100 transition-all flex items-center justify-center shadow-indigo-100"
+                          title="Responder"
+                         >
+                          <Reply size={14}/>
+                         </button>
+
+                         {/* Botão de Editar/Excluir (Só p/ quem enviou) */}
+                         {isMe && !msg.isSystem && (
+                           <>
                              <button 
                               onClick={(e) => { e.stopPropagation(); handleStartEdit(msg); }} 
                               className="p-2 md:p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 border border-slate-100 transition-all flex items-center justify-center shadow-indigo-100"
@@ -1078,8 +1083,9 @@ export default function VendasClient({ user }: { user: any }) {
                              >
                               <Trash2 size={14}/>
                              </button>
-                        </div>
-                      )}
+                           </>
+                         )}
+                      </div>
                     </div>
                   );
                 })}
