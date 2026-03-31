@@ -988,30 +988,36 @@ export default function VendasClient({ user }: { user: any }) {
                               <img 
                                 src={msg.mediaUrl} 
                                 alt="imagem" 
-                                className="rounded-xl max-w-full h-auto cursor-pointer border border-black/5 hover:scale-[1.02] active:scale-95 transition-all" 
+                                className="rounded-xl max-w-full h-auto cursor-pointer border border-black/5 hover:scale-[1.02] active:scale-95 transition-all shadow-sm" 
                                 onClick={() => setPreviewImage(msg.mediaUrl)} 
                               />
                             ) : msg.mediaType === 'video' || msg.mediaUrl.startsWith('data:video') ? (
-                              <video src={msg.mediaUrl} controls className="rounded-xl max-w-full h-auto border border-black/5" />
+                              <video src={msg.mediaUrl} controls className="rounded-xl max-w-full h-auto border border-black/5 shadow-sm" />
                             ) : msg.mediaType === 'audio' || msg.mediaUrl.startsWith('data:audio') ? (
-                              <div className="flex flex-col gap-1.5 p-2 bg-slate-50/50 dark:bg-black/5 rounded-2xl border border-black/5 min-w-[220px] max-w-[280px]">
-                                <div className="flex items-center gap-3">
-                                  <div className="p-2 bg-indigo-500 text-white rounded-full shadow-sm animate-pulse-slow">
-                                    <Volume2 size={16} />
-                                  </div>
-                                  <audio src={msg.mediaUrl} controls className="h-8 flex-1 min-w-0 opacity-90 hover:opacity-100 transition-opacity" />
+                              <div className={cn(
+                                "flex items-center gap-2 p-2 rounded-[1.25rem] border shadow-sm min-w-[240px] max-w-full",
+                                isMe ? "bg-white/30 border-white/20" : "bg-slate-50 border-slate-100"
+                              )}>
+                                <div className={cn(
+                                  "w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm",
+                                  isMe ? "bg-white/40 text-black/60" : "bg-indigo-600 text-white"
+                                )}>
+                                  <Volume2 size={20} />
                                 </div>
-                                <div className="flex justify-between items-center px-1">
-                                  <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Voz Recebida</span>
-                                  <a href={msg.mediaUrl} download className="text-[8px] font-black uppercase text-indigo-500 hover:text-indigo-700 tracking-widest">Baixar</a>
+                                <audio src={msg.mediaUrl} controls className="h-8 flex-1 min-w-0 opacity-80 scale-90 -ml-3" />
+                                <div className="flex flex-col pr-2">
+                                   <span className="text-[7px] font-black uppercase text-slate-400 tracking-tighter">Áudio</span>
+                                   <a href={msg.mediaUrl} download className="text-[8px] font-black uppercase text-indigo-500 hover:scale-110 transition-all">Salvar</a>
                                 </div>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-2 p-2.5 bg-white/50 rounded-xl border border-black/5 min-w-[160px]">
-                                <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg"><FileText size={18} /></div>
-                                <div className="truncate flex-1">
-                                  <p className="text-[11px] font-bold truncate text-slate-800">Documento</p>
-                                  <a href={msg.mediaUrl} target="_blank" className="text-[10px] text-indigo-600 underline font-bold">Abrir / Download</a>
+                              <div className="flex items-center gap-3 p-3 bg-white/60 rounded-2xl border border-black/5 shadow-sm backdrop-blur-sm min-w-[180px]">
+                                <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shadow-inner border border-indigo-100 flex-shrink-0">
+                                   <FileText size={20} />
+                                </div>
+                                <div className="truncate flex-1 min-w-0">
+                                  <p className="text-[11px] font-black truncate text-slate-800 leading-tight">Documento</p>
+                                  <a href={msg.mediaUrl} target="_blank" className="text-[9px] text-indigo-600 font-bold hover:underline flex items-center gap-1 mt-0.5">🚀 Abrir Arquivo</a>
                                 </div>
                               </div>
                             )}
@@ -1048,14 +1054,14 @@ export default function VendasClient({ user }: { user: any }) {
                         )}>
                            <button 
                             onClick={(e) => { e.stopPropagation(); handleStartEdit(msg); }} 
-                            className="p-2 md:p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 border border-slate-100 transition-all flex items-center justify-center"
+                            className="p-2 md:p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 border border-slate-100 transition-all flex items-center justify-center shadow-indigo-100"
                             title="Editar"
                            >
                             <Pencil size={14}/>
                            </button>
                            <button 
                             onClick={(e) => { e.stopPropagation(); handleDeleteMessage(msg); }} 
-                            className="p-2 md:p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-red-500 border border-slate-100 transition-all flex items-center justify-center"
+                            className="p-2 md:p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-red-500 border border-slate-100 transition-all flex items-center justify-center shadow-red-100"
                             title="Excluir"
                            >
                             <Trash2 size={14}/>
