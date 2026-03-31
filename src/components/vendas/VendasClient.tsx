@@ -1037,6 +1037,16 @@ export default function VendasClient({ user }: { user: any }) {
                           </div>
                         )}
 
+                        {/* Citação (Reply) renderizada na bolha */}
+                        {msg.quotedMessageContent && (
+                          <div className={cn(
+                            "mb-2 p-2 rounded-lg border-l-4 bg-black/5 text-[11px] opacity-80 line-clamp-2 italic",
+                            isMe ? "border-l-indigo-400" : "border-l-slate-400"
+                          )}>
+                             {msg.quotedMessageContent}
+                          </div>
+                        )}
+
                         {editingMessageId === msg.id ? (
                            <div className="flex flex-col gap-2 mt-1">
                               <textarea 
