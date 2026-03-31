@@ -54,6 +54,7 @@ model Message {
   mediaUrl      String?  // URL do anexo (upload ou link WhatsApp)
   mediaType     String?  // image, video, document, audio
   transcription String?  // Texto transcrito de áudio (AI)
+  whatsappId    String?  // ID único da mensagem no WhatsApp (para exclusão)
   createdAt     DateTime @default(now())
 }
 
@@ -73,11 +74,13 @@ model OutgoingMessage {
   mediaUrl  String?
   mediaType String?
   fileName  String?
-  status    String   @default("PENDING") // PENDING, SENT, FAILED
-  errorMsg  String?
-  leadId    String?
-  authorId  String?
-  createdAt DateTime @default(now())
+  status      String   @default("PENDING") // PENDING, SENT, FAILED
+  errorMsg    String?
+  leadId      String?
+  authorId    String?
+  actionType  String   @default("SEND") // SEND ou DELETE
+  whatsappId  String?  // Necessário para ação de DELETE
+  createdAt   DateTime @default(now())
 }
 
 model Customer {

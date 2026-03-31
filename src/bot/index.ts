@@ -366,7 +366,8 @@ client.on('message', async (msg: any) => {
         isSystem: false,
         mediaUrl: savedMediaUrl,
         mediaType: savedMediaType,
-        transcription: transcription
+        transcription: transcription,
+        whatsappId: msg.id._serialized // Guarda o RG da mensagem para exclusão futura
       }
     });
 
@@ -403,6 +404,29 @@ setInterval(async () => {
 
     for (const om of pending) {
       try {
+        // Se for uma ação de DELETE, o bot apaga no WhatsApp
+        if (om.actionType === 'DELETE' && om.whatsappId) {
+          console.log(`🗑️ Pedido de exclusão para mensagem: ${om.whatsappId}`);
+          try {
+             // Tenta buscar a mensagem no histórico do WhatsApp Web
+             const msgToDelete = await client.getMessageById(om.whatsappId).catch(() => null);
+             if (msgToDelete) {
+                await msgToDelete.delete(true); // TRUE = para todos
+                console.log(`✅ Mensagem excluída do WhatsApp para todos.`);
+             } else {
+                console.log(`⚠️ Mensagem não encontrada para deleção ou antiga demais.`);
+             }
+          } catch(e) {
+             console.error(`Erro ao deletar msg:`, e);
+          }
+          
+          await (prisma as any).outgoingMessage.update({
+             where: { id: om.id },
+             data: { status: 'SENT' }
+          });
+          continue;
+        }
+
         if (om.mediaUrl) {
           // Se tiver URL de mídia, envia como mídia
           let media;
@@ -453,18 +477,38 @@ setInterval(async () => {
                }
             }
 
-            await client.sendMessage(`${om.to}@c.us`, media, { 
-              caption: om.body || undefined,
-              sendAudioAsVoice: isAudio,
-              sendMediaAsDocument: isDocument
-            });
-          } else {
-            console.log(`⚠️ Enviando apenas texto para ${om.to} (mídia não carregada)`);
-            await client.sendMessage(`${om.to}@c.us`, om.body);
+          const sentMsg = await client.sendMessage(`${om.to}@c.us`, media, { 
+            caption: om.body || undefined,
+            sendAudioAsVoice: isAudio,
+            sendMediaAsDocument: isDocument
+          });
+          
+          if (sentMsg && sentMsg.id && sentMsg.id._serialized) {
+             // Atualiza no banco CRM o ID do WhatsApp para permitir que o vendedor delete depois
+             await (prisma as any).message.updateMany({
+                where: { content: om.body, leadId: om.leadId, whatsappId: null },
+                data: { whatsappId: sentMsg.id._serialized }
+             }).catch(() => null);
           }
         } else {
-          await client.sendMessage(`${om.to}@c.us`, om.body);
+          console.log(`⚠️ Enviando apenas texto para ${om.to} (mídia não carregada)`);
+          const sentMsg = await client.sendMessage(`${om.to}@c.us`, om.body);
+          if (sentMsg && sentMsg.id && sentMsg.id._serialized) {
+             await (prisma as any).message.updateMany({
+                where: { content: om.body, leadId: om.leadId, whatsappId: null, createdAt: { gte: new Date(Date.now() - 60000) } },
+                data: { whatsappId: sentMsg.id._serialized }
+             }).catch(() => null);
+          }
         }
+      } else {
+        const sentMsg = await client.sendMessage(`${om.to}@c.us`, om.body);
+        if (sentMsg && sentMsg.id && sentMsg.id._serialized) {
+           await (prisma as any).message.updateMany({
+              where: { content: om.body, leadId: om.leadId, whatsappId: null, createdAt: { gte: new Date(Date.now() - 60000) } },
+              data: { whatsappId: sentMsg.id._serialized }
+           }).catch(() => null);
+        }
+      }
 
         // Tenta atualizar o status no banco. Se falhar (ex: cota), apenas logamos e seguimos.
         try {

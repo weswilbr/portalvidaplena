@@ -35,7 +35,8 @@ import {
   Tag,
   History,
   Info,
-  Edit2
+  Edit2,
+  AlertTriangle
 } from "lucide-react";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import axios, { type AxiosProgressEvent } from "axios";
@@ -110,6 +111,8 @@ export default function VendasClient({ user }: { user: any }) {
   const [editingQR, setEditingQR] = useState<any>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState<any>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -383,11 +386,18 @@ export default function VendasClient({ user }: { user: any }) {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleDeleteMessage = async (messageId: string) => {
-    if (!confirm("Tem certeza que deseja apagar esta mensagem?")) return;
-    const res = await deleteMessage(messageId);
+  const handleDeleteMessage = (message: any) => {
+    setMessageToDelete(message);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async (forEveryone: boolean) => {
+    if (!messageToDelete) return;
+    
+    setDeleteModalOpen(false);
+    const res = await deleteMessage(messageToDelete.id, forEveryone);
     if (res.success) {
-      refreshData();
+      refreshData(true);
     } else {
       alert(res.error);
     }
@@ -1044,7 +1054,7 @@ export default function VendasClient({ user }: { user: any }) {
                             <Pencil size={14}/>
                            </button>
                            <button 
-                            onClick={(e) => { e.stopPropagation(); handleDeleteMessage(msg.id); }} 
+                            onClick={(e) => { e.stopPropagation(); handleDeleteMessage(msg); }} 
                             className="p-2 md:p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-red-500 border border-slate-100 transition-all flex items-center justify-center"
                             title="Excluir"
                            >
@@ -1378,10 +1388,49 @@ export default function VendasClient({ user }: { user: any }) {
         </div>
       )}
 
+      {/* Modal de Confirmação de Exclusão - Whats-Style */}
+      {deleteModalOpen && messageToDelete && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setDeleteModalOpen(false)}></div>
+          <div className="relative bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-2">
+                <Trash2 size={32} />
+              </div>
+              <h3 className="text-xl font-black text-slate-900 leading-tight">Apagar mensagem para todos?</h3>
+              <p className="text-sm font-semibold text-slate-500 leading-relaxed px-4">
+                Os contatos que virem esta mensagem deixarão de vê-la.
+              </p>
+              
+              <div className="flex flex-col w-full gap-3 pt-6">
+                <button 
+                  onClick={() => confirmDelete(true)}
+                  className="w-full py-4 bg-red-600 text-white rounded-2xl font-black shadow-lg shadow-red-100 hover:bg-red-700 active:scale-[0.98] transition-all"
+                >
+                  APAGAR PARA TODOS
+                </button>
+                <button 
+                  onClick={() => confirmDelete(false)}
+                  className="w-full py-4 bg-slate-100 text-slate-600 rounded-2xl font-black hover:bg-slate-200 active:scale-[0.98] transition-all"
+                >
+                  APAGAR APENAS PARA MIM
+                </button>
+                <button 
+                  onClick={() => setDeleteModalOpen(false)}
+                  className="w-full py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-all"
+                >
+                  CANCELAR
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal Visualizador de Imagem - Lightbox */}
       {previewImage && (
         <div 
-          className="fixed inset-0 z-[200] bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-300"
+          className="fixed inset-0 z-[300] bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-4 md:p-10 animate-in fade-in duration-300"
           onClick={() => setPreviewImage(null)}
         >
           <button className="absolute top-6 right-6 p-4 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all">

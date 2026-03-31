@@ -328,8 +328,27 @@ export async function pullLead(leadId: string, currentUserId: string) {
   }
 }
 
-export async function deleteMessage(messageId: string) {
+export async function deleteMessage(messageId: string, deleteForEveryone: boolean = false) {
   try {
+    const msg = await (prisma as any).message.findUnique({
+      where: { id: messageId },
+      include: { lead: true }
+    });
+
+    if (deleteForEveryone && msg?.whatsappId && msg.lead?.phone) {
+      // Cria o comando para o bot apagar no WhatsApp oficial
+      await (prisma as any).outgoingMessage.create({
+        data: {
+          to: msg.lead.phone,
+          body: "Deleção de mensagem solicitada via CRM",
+          actionType: "DELETE",
+          whatsappId: msg.whatsappId,
+          status: "PENDING",
+          leadId: msg.leadId
+        }
+      });
+    }
+
     await (prisma as any).message.delete({
       where: { id: messageId }
     });
