@@ -361,7 +361,12 @@ client.on('message', async (msg: any) => {
 
     await (prisma as any).message.create({
       data: {
-        content: finalContent || '[Mensagem]',
+        content: finalContent || (
+          savedMediaType === 'audio' ? '🎙️ Áudio' :
+          savedMediaType === 'image' ? '📸 Imagem' :
+          savedMediaType === 'video' ? '🎬 Vídeo' :
+          savedMediaType === 'document' ? '📄 Documento' : '[Mensagem]'
+        ),
         leadId: lead.id,
         isSystem: false,
         mediaUrl: savedMediaUrl,

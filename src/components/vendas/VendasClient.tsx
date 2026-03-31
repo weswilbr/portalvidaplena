@@ -983,17 +983,17 @@ export default function VendasClient({ user }: { user: any }) {
                       )}>
                         {/* Renderização de Mídia */}
                         {msg.mediaUrl && (
-                          <div className="mb-2">
-                            {msg.mediaType === 'image' || msg.mediaUrl.startsWith('data:image') ? (
+                          <div className="mb-2 text-left">
+                            {msg.mediaType?.toLowerCase() === 'image' || msg.mediaUrl.startsWith('data:image') ? (
                               <img 
                                 src={msg.mediaUrl} 
                                 alt="imagem" 
                                 className="rounded-xl max-w-full h-auto cursor-pointer border border-black/5 hover:scale-[1.02] active:scale-95 transition-all shadow-sm" 
                                 onClick={() => setPreviewImage(msg.mediaUrl)} 
                               />
-                            ) : msg.mediaType === 'video' || msg.mediaUrl.startsWith('data:video') ? (
+                            ) : msg.mediaType?.toLowerCase() === 'video' || msg.mediaUrl.startsWith('data:video') ? (
                               <video src={msg.mediaUrl} controls className="rounded-xl max-w-full h-auto border border-black/5 shadow-sm" />
-                            ) : msg.mediaType === 'audio' || msg.mediaUrl.startsWith('data:audio') ? (
+                            ) : msg.mediaType?.toLowerCase() === 'audio' || msg.mediaUrl.startsWith('data:audio') ? (
                               <div className={cn(
                                 "flex items-center gap-2 p-2 rounded-[1.25rem] border shadow-sm min-w-[240px] max-w-full",
                                 isMe ? "bg-white/30 border-white/20" : "bg-slate-50 border-slate-100"
@@ -1016,8 +1016,8 @@ export default function VendasClient({ user }: { user: any }) {
                                    <FileText size={20} />
                                 </div>
                                 <div className="truncate flex-1 min-w-0">
-                                  <p className="text-[11px] font-black truncate text-slate-800 leading-tight">Documento</p>
-                                  <a href={msg.mediaUrl} target="_blank" className="text-[9px] text-indigo-600 font-bold hover:underline flex items-center gap-1 mt-0.5">🚀 Abrir Arquivo</a>
+                                  <p className="text-[11px] font-black tracking-tighter truncate text-slate-800 leading-tight">Arquivo Recebido</p>
+                                  <a href={msg.mediaUrl} target="_blank" className="text-[9px] text-indigo-600 font-bold hover:underline flex items-center gap-1 mt-0.5">🚀 Abrir / Download</a>
                                 </div>
                               </div>
                             )}
