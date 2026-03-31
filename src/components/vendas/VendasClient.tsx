@@ -734,7 +734,6 @@ export default function VendasClient({ user }: { user: any }) {
                           <span className={cn("px-3 py-1 md:px-4 md:py-1.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-wider shadow-sm w-fit", statusStyles[lead.status as keyof typeof statusStyles])}>
                             {statusLabels[lead.status as keyof typeof statusLabels]}
                           </span>
-                          {/* Cronômetro de Estágio - com Tooltip para hora exata */}
                           <div 
                             className="flex items-center gap-1 text-[8px] md:text-[9px] font-black text-slate-400 pl-1 uppercase tracking-widest italic cursor-help"
                             title={`Entrou neste estágio em: ${new Date(lead.updatedAt).toLocaleString('pt-BR')}`}
@@ -748,10 +747,10 @@ export default function VendasClient({ user }: { user: any }) {
                                const diffHours = Math.floor(diffMin / 60);
                                const diffDays = Math.floor(diffHours / 24);
 
-                               if (diffMin < 60) return `no estágio há ${diffMin} min`;
-                               if (diffHours < 24) return `no estágio há ${diffHours}h`;
-                               return `no estágio há ${diffDays} dias`;
-                             })()}
+                               if (diffMin < 60) return `${diffMin} min atrás`;
+                               if (diffHours < 24) return `${diffHours} horas atrás`;
+                               return `${diffDays} dias atrás`;
+                             })() as React.ReactNode}
                           </div>
                         </div>
                       </td>
@@ -765,8 +764,15 @@ export default function VendasClient({ user }: { user: any }) {
                            </button>
                          )}
                          <button 
+                          onClick={() => { setSelectedLead(lead); setIsDetailsOpen(true); setIsTransferring(true); }}
+                          className="px-3 py-1.5 md:px-4 md:py-2 bg-slate-900 text-white rounded-xl font-bold text-[10px] md:text-xs hover:bg-slate-800 transition-all shadow-lg flex items-center gap-1.5"
+                         >
+                           <ArrowRightLeft size={14} />
+                           Ações
+                         </button>
+                         <button 
                           onClick={() => { setSelectedLead(lead); setIsDetailsOpen(true); }}
-                          className="px-3 py-1.5 md:px-4 md:py-2 bg-slate-50 text-slate-600 rounded-xl font-bold text-[10px] md:text-xs hover:bg-slate-200 transition-all shadow-sm"
+                          className="px-3 py-1.5 md:px-4 md:py-2 bg-slate-50 text-slate-600 border border-slate-200 rounded-xl font-bold text-[10px] md:text-xs hover:bg-slate-200 transition-all shadow-sm"
                          >
                            Chat
                          </button>
@@ -815,8 +821,9 @@ export default function VendasClient({ user }: { user: any }) {
                 <button 
                   onClick={() => setIsTransferring(!isTransferring)}
                   className={cn("p-3 rounded-2xl transition-all text-xs font-bold", isTransferring ? "bg-indigo-600 text-white" : "text-indigo-600 hover:bg-indigo-50")}
+                  title="Ações e Transferência"
                 >
-                  <Info size={24} />
+                  <ArrowRightLeft size={24} />
                 </button>
               </div>
             </header>
