@@ -174,36 +174,67 @@ export async function sendWhatsAppMessage(data: {
     const lead = await (prisma as any).lead.findUnique({ where: { id: data.leadId } });
     if (!lead?.phone) return { success: false, error: "Lead sem número de telefone" };
 
-    // Salva no histórico do CRM como mensagem WhatsApp enviada
-    await (prisma as any).message.create({
-      data: {
-        content: data.content,
-        authorId: data.authorId,
-        leadId: data.leadId,
-        isSystem: false,
-        isNote: false,
-        mediaUrl: data.mediaUrl,
-        mediaType: data.mediaType,
-        quotedMessageId: data.quotedMessageId,
-        quotedMessageContent: data.quotedMessageContent
-      }
-    });
+    // Salva no histórico do CRM como mensagem WhatsApp enviada (com tentativa resiliente)
+    try {
+      await (prisma as any).message.create({
+        data: {
+          content: data.content,
+          authorId: data.authorId,
+          leadId: data.leadId,
+          isSystem: false,
+          isNote: false,
+          mediaUrl: data.mediaUrl,
+          mediaType: data.mediaType,
+          quotedMessageId: data.quotedMessageId,
+          quotedMessageContent: data.quotedMessageContent
+        }
+      });
+    } catch (msgErr) {
+      console.warn("⚠️ Banco não aceitou citação no histórico. Tentando envio simples.");
+      await (prisma as any).message.create({
+        data: {
+          content: data.content,
+          authorId: data.authorId,
+          leadId: data.leadId,
+          isSystem: false,
+          isNote: false,
+          mediaUrl: data.mediaUrl,
+          mediaType: data.mediaType
+        }
+      });
+    }
 
-    // Cria registro na fila de saída para o bot enviar via WhatsApp
-    await (prisma as any).outgoingMessage.create({
-      data: {
-        to: lead.phone,
-        body: data.content,
-        mediaUrl: data.mediaUrl,
-        mediaType: data.mediaType,
-        fileName: data.fileName,
-        leadId: data.leadId,
-        authorId: data.authorId,
-        status: "PENDING",
-        quotedMessageId: data.quotedMessageId,
-        quotedMessageContent: data.quotedMessageContent
-      }
-    });
+    // Cria registro na fila de saída para o bot enviar via WhatsApp (com tentativa resiliente)
+    try {
+      await (prisma as any).outgoingMessage.create({
+        data: {
+          to: lead.phone,
+          body: data.content,
+          mediaUrl: data.mediaUrl,
+          mediaType: data.mediaType,
+          fileName: data.fileName,
+          leadId: data.leadId,
+          authorId: data.authorId,
+          status: "PENDING",
+          quotedMessageId: data.quotedMessageId,
+          quotedMessageContent: data.quotedMessageContent
+        }
+      });
+    } catch (omErr) {
+      console.warn("⚠️ Banco não aceitou citação na fila. Revertendo para envio básico.");
+      await (prisma as any).outgoingMessage.create({
+        data: {
+          to: lead.phone,
+          body: data.content,
+          mediaUrl: data.mediaUrl,
+          mediaType: data.mediaType,
+          fileName: data.fileName,
+          leadId: data.leadId,
+          authorId: data.authorId,
+          status: "PENDING"
+        }
+      });
+    }
 
     // Removido revalidatePath para performance no client
     return { success: true };
