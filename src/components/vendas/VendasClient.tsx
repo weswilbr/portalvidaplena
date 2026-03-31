@@ -987,13 +987,29 @@ export default function VendasClient({ user }: { user: any }) {
                         <span className="text-[10px] font-black text-slate-400 ml-2 mb-0.5 uppercase tracking-widest">{msg.author.name}</span>
                       )}
 
-                      <div className={cn(
-                        "px-3 py-2 rounded-2xl text-sm font-medium shadow-sm leading-relaxed relative",
-                        isClient ? "bg-white text-slate-800 rounded-tl-none" : 
-                        msg.isNote ? "bg-[#fef3c7] border border-amber-200 text-amber-900 rounded-tr-none" : 
-                        isMe ? "bg-[#d9fdd3] text-[#111b21] rounded-tr-none" : 
-                        "bg-white text-[#111b21] rounded-tl-none"
-                      )}>
+                      <div 
+                        className={cn(
+                          "max-w-[85%] md:max-w-[70%] p-3 md:p-4 rounded-2xl md:rounded-[1.25rem] shadow-sm relative group transition-all cursor-pointer select-none overflow-hidden",
+                          msg.isNote ? "bg-[#fef3c7] border border-amber-200 text-amber-900 rounded-tr-none" : 
+                          isMe ? "bg-[#d9fdd3] text-[#111b21] rounded-tr-none" : 
+                          "bg-white text-[#111b21] rounded-tl-none"
+                        )}
+                        onDoubleClick={() => setReplyingTo(msg)}
+                        onTouchStart={(e) => {
+                           const touch = e.touches[0];
+                           (e.currentTarget as any)._startX = touch.clientX;
+                        }}
+                        onTouchEnd={(e) => {
+                           const touch = e.changedTouches[0];
+                           const startX = (e.currentTarget as any)._startX || 0;
+                           const diff = touch.clientX - startX;
+                           if (diff > 80) {
+                              setReplyingTo(msg);
+                              e.currentTarget.classList.add('translate-x-4');
+                              setTimeout(() => e.currentTarget.classList.remove('translate-x-4'), 150);
+                           }
+                        }}
+                      >
                         {/* Renderização de Mídia */}
                         {msg.mediaUrl && (
                           <div className="mb-2 text-left">
@@ -1040,10 +1056,15 @@ export default function VendasClient({ user }: { user: any }) {
                         {/* Citação (Reply) renderizada na bolha */}
                         {msg.quotedMessageContent && (
                           <div className={cn(
-                            "mb-2 p-2 rounded-lg border-l-4 bg-black/5 text-[11px] opacity-80 line-clamp-2 italic",
-                            isMe ? "border-l-indigo-400" : "border-l-slate-400"
+                            "mb-1 pb-1 flex flex-col gap-0.5 opacity-80 border-l-2 pl-2 rounded",
+                            isMe ? "border-indigo-400 bg-white/30" : "border-slate-300 bg-black/5"
                           )}>
-                             {msg.quotedMessageContent}
+                             <div className="text-[8px] font-black uppercase tracking-widest flex items-center gap-1 text-slate-500">
+                               <Reply size={8} /> Respondendo a
+                             </div>
+                             <div className="text-[10px] line-clamp-1 italic font-medium leading-tight">
+                               {msg.quotedMessageContent}
+                             </div>
                           </div>
                         )}
 
