@@ -264,16 +264,23 @@ export default function LeadsClient({ user }: { user: any }) {
                 {filteredLeads.map((lead) => (
                   <tr key={lead.id} className="hover:bg-indigo-50/30 transition-all group">
                     <td className="px-8 py-5">
-                      <div className="flex items-center gap-3">
-                        <div className="flex flex-col relative">
-                          <div className="font-bold text-slate-900 text-sm md:text-base flex items-center gap-2">
-                             {lead.name}
-                             {lead.unreadCount > 0 && (
-                               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-black text-white shadow-lg animate-in zoom-in duration-300">
-                                 {lead.unreadCount}
-                               </span>
-                             )}
+                      <div className="flex items-center gap-4">
+                        {lead.profilePic ? (
+                          <img src={lead.profilePic} alt={lead.name} className="w-10 h-10 md:w-11 md:h-11 rounded-full object-cover border border-slate-200 shadow-sm" />
+                        ) : (
+                          <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-black border border-slate-200 text-xs">
+                            {lead.name?.charAt(0) || 'L'}
                           </div>
+                        )}
+                        <div className="flex flex-col relative">
+                           <div className="font-black text-slate-900 text-sm md:text-base flex items-center gap-2">
+                              {lead.name}
+                              {lead.unreadCount > 0 && (
+                                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-black text-white shadow-lg animate-in zoom-in duration-300">
+                                  {lead.unreadCount}
+                                </span>
+                              )}
+                           </div>
                           <span className="text-xs text-slate-400 flex items-center gap-1 mt-1">
                             <Phone size={12} /> {lead.phone}
                           </span>

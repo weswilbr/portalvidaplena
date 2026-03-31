@@ -14,7 +14,8 @@ import {
   Zap,
   Info,
   X,
-  ChevronRight
+  ChevronRight,
+  Trophy
 } from "lucide-react";
 import { getDashboardData } from "@/app/actions/dashboard";
 import { createLead } from "@/app/actions/leads";
@@ -78,7 +79,8 @@ export default function DashboardClient() {
     { label: "Leads Novos (Mês)", value: data?.stats?.newLeadsMonthly || 0, icon: Users, color: "bg-blue-500" },
     { label: "Life Points (LP)", value: data?.stats?.totalLP.toLocaleString("pt-BR") || 0, icon: TrendingUp, color: "bg-green-500" },
     { label: `Meta ${data?.mainGoal?.title}`, value: `${Math.round(data?.stats?.goalProgress || 0)}%`, icon: Target, color: "bg-indigo-600" },
-    { label: "Bônus Construtor", value: data?.stats?.bonusPhase || "Fase 1", icon: Zap, color: "bg-amber-500" },
+    { label: "Taxa de Conversão", value: `${data?.conversionRate || 0}%`, icon: Zap, color: "bg-emerald-500" },
+    { label: "Bônus Construtor", value: data?.stats?.bonusPhase || "Fase 1", icon: Sparkles, color: "bg-amber-500" },
   ];
 
   return (
@@ -98,13 +100,17 @@ export default function DashboardClient() {
             </p>
           </div>
           <div className="flex -space-x-4">
-             {[1,2,3,4].map(i => (
-               <div key={i} className="w-14 h-14 rounded-full border-4 border-white/30 overflow-hidden bg-white/10 flex items-center justify-center">
-                  <Users size={20} className="text-white/50" />
+             {data?.recentLeads?.slice(0, 4).map((lead: any) => (
+               <div key={lead.id} className="w-14 h-14 rounded-full border-4 border-white/30 overflow-hidden bg-white/10 flex items-center justify-center shadow-lg transition-transform hover:scale-110 hover:z-20 cursor-pointer" title={lead.name}>
+                  {lead.profilePic ? (
+                    <img src={lead.profilePic} alt={lead.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-white font-black text-sm">{lead.name?.charAt(0) || 'L'}</span>
+                  )}
                </div>
              ))}
-             <div className="w-14 h-14 rounded-full border-4 border-white bg-indigo-500 flex items-center justify-center text-sm font-bold shadow-lg">
-               +{data?.stats?.newLeadsMonthly > 4 ? data.stats.newLeadsMonthly - 4 : 0}
+             <div className="w-14 h-14 rounded-full border-4 border-white bg-indigo-500 flex items-center justify-center text-[10px] font-black shadow-lg">
+                +{Math.max((data?.stats?.totalLeads || 0) - 4, 0)}
              </div>
           </div>
         </div>
@@ -169,6 +175,40 @@ export default function DashboardClient() {
                   <div className="text-[10px] font-black text-slate-400 mt-6 text-center uppercase tracking-widest">D{item.day}</div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm p-10 relative overflow-hidden">
+            <h3 className="text-2xl font-black tracking-tight flex items-center gap-3 mb-8">
+              <Trophy className="text-amber-500" size={28} />
+              Performance por Atendente
+            </h3>
+            
+            <div className="space-y-10">
+              {data?.sellerPerformance?.map((seller: any, i: number) => (
+                <div key={i} className="space-y-4">
+                  <div className="flex justify-between items-end">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-black text-slate-400">#0{i+1}</span>
+                      <span className="font-bold text-slate-800 text-lg">{seller.name}</span>
+                    </div>
+                    <span className="text-sm font-black text-indigo-600 uppercase tracking-widest">{seller.rate}% Conversão</span>
+                  </div>
+                  <div className="h-4 bg-slate-100 rounded-full overflow-hidden p-1 border border-slate-50 shadow-inner">
+                    <div 
+                      className="h-full bg-gradient-to-r from-indigo-600 to-blue-500 rounded-full transition-all duration-1000"
+                      style={{ width: `${seller.rate}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">
+                    <span>{seller.leads} Leads Atendidos</span>
+                    <span className="text-emerald-500">{seller.converted} Vendas Fechadas</span>
+                  </div>
+                </div>
+              ))}
+              {(!data?.sellerPerformance || data.sellerPerformance.length === 0) && (
+                <p className="text-center text-slate-400 font-bold py-10 uppercase tracking-widest text-xs">Aguardando primeiras conversões...</p>
+              )}
             </div>
           </div>
 

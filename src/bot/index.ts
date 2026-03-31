@@ -79,7 +79,7 @@ async function convertAudioToVoice(inputPath: string): Promise<string> {
         '-c:a libopus',
         '-b:a 64k',
         '-ac 1',
-        '-ar 48000'
+        '-ar 16000'
       ])
       .on('error', (err: any) => {
         console.error('Erro na conversão de áudio:', err);
@@ -171,8 +171,8 @@ async function scanProfilePhotos() {
            console.log(`📸 Foto capturada com sucesso para: ${lead.name}`);
         }
         
-        // Delay de 3 segundos entre cada consulta por segurança
-        await new Promise(r => setTimeout(r, 3000));
+        // Delay de 5 segundos entre cada consulta por segurança absoluta contra bloqueio
+        await new Promise(r => setTimeout(r, 5000));
       } catch (e) {
         // Avança silenciosamente se o contato for privado ou inválido
       }
@@ -191,8 +191,11 @@ client.on('ready', async () => {
     data: { status: 'CONNECTED', qrCode: null }
   });
 
-  // Dispara a varredura em background após 10 segundos da conexão (DESATIVADO PARA ESTABILIDADE)
-  // setTimeout(() => scanProfilePhotos(), 10000);
+  // Dispara a varredura inicial em background após 15 segundos da conexão
+  setTimeout(() => scanProfilePhotos(), 15000);
+
+  // Mantém um vigilante de fotos a cada 2 horas p/ leads novos (importados/manuais)
+  setInterval(() => scanProfilePhotos(), 1000 * 60 * 60 * 2);
 });
 
 client.on('auth_failure', async (msg: string) => {
@@ -444,9 +447,9 @@ setInterval(async () => {
                const absPath = path.join(process.cwd(), 'public', 'uploads', filename || '');
                if (fs.existsSync(absPath)) {
                   const voicePath = await convertAudioToVoice(absPath);
-                  // FORÇAR MIMETYPE OGG NOVO PARA MENSAGEM DE VOZ
+                  // PADRÃO WHATSAPP OGG (SEM ESPECIFICAR CODECS NA STRING)
                   const data = fs.readFileSync(voicePath).toString('base64');
-                  media = new MessageMedia('audio/ogg; codecs=opus', data, 'voice.ogg');
+                  media = new MessageMedia('audio/ogg', data, 'voice.ogg');
                }
             }
 

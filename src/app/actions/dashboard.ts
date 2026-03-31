@@ -75,6 +75,44 @@ export async function getDashboardData() {
     const closedLeads = await prisma.lead.count({ where: { status: "CLOSED" } });
     const conversionRate = totalLeads > 0 ? (closedLeads / totalLeads) * 100 : 0;
 
+    // 5. Recent Leads (para os avatares do Dashboard)
+    const recentLeads = await prisma.lead.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: {
+          id: true,
+          name: true,
+          profilePic: true,
+          status: true
+      }
+    });
+
+    // 6. Seller Performance
+    const sellersPerformance = await prisma.user.findMany({
+      where: { role: { in: ["SELLER", "ADMIN"] } },
+      select: {
+          id: true,
+          name: true,
+          leads: {
+              select: {
+                  status: true
+              }
+          }
+      }
+    });
+
+    const sellerPerformance = sellersPerformance.map(seller => {
+        const total = seller.leads.length;
+        const closed = seller.leads.filter((l: any) => l.status === "CLOSED").length;
+        const conversion = total > 0 ? (closed / total) * 100 : 0;
+        return {
+            name: seller.name?.split(' ')[0] || "Atendente",
+            leads: total,
+            converted: closed,
+            rate: Math.round(conversion)
+        };
+    }).sort((a, b) => b.rate - a.rate).slice(0, 5); // Top 5 vendedores
+
     return {
       stats: {
         newLeadsMonthly: monthlyLeads,
@@ -100,6 +138,10 @@ export async function getDashboardData() {
         category: item.category,
       })),
       latestMetric,
+      recentLeads,
+      sellerPerformance,
+      totalLeads,
+      conversionRate: Math.round(conversionRate)
     };
   } catch (error) {
     console.error("Error fetching dashboard data:", error);

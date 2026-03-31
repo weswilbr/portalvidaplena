@@ -17,6 +17,7 @@ import {
   ArrowRightLeft,
   CheckCircle2,
   User,
+  Clock,
   Paperclip,
   Smile,
   ImageIcon,
@@ -81,6 +82,8 @@ const statusLabels: Record<string, string> = {
 export default function VendasClient({ user }: { user: any }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [sellerFilter, setSellerFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("ALL");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [leads, setLeads] = useState<any[]>([]);
@@ -192,9 +195,22 @@ export default function VendasClient({ user }: { user: any }) {
         (lead.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
         (lead.phone || "").includes(searchTerm);
       const matchesStatus = statusFilter === "" || lead.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesSeller = sellerFilter === "" || lead.assignedToId === sellerFilter;
+      
+      let matchesDate = true;
+      if (dateFilter !== "ALL") {
+        const leadDate = new Date(lead.createdAt);
+        const now = new Date();
+        const diffDays = Math.floor((now.getTime() - leadDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (dateFilter === "TODAY") matchesDate = diffDays === 0;
+        else if (dateFilter === "YESTERDAY") matchesDate = diffDays === 1;
+        else if (dateFilter === "WEEK") matchesDate = diffDays <= 7;
+      }
+
+      return matchesSearch && matchesStatus && matchesSeller && matchesDate;
     });
-  }, [searchTerm, statusFilter, leads]);
+  }, [searchTerm, statusFilter, sellerFilter, dateFilter, leads]);
 
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -614,6 +630,41 @@ export default function VendasClient({ user }: { user: any }) {
             <option key={key} value={key}>{label}</option>
           ))}
         </select>
+
+        <select 
+          className="w-full md:w-auto px-6 py-3 rounded-2xl bg-slate-50 md:bg-white border-none md:border-solid md:border-slate-100 outline-none cursor-pointer font-bold text-slate-600 text-sm"
+          value={sellerFilter}
+          onChange={(e) => setSellerFilter(e.target.value)}
+        >
+          <option value="">Vendedor: Todos</option>
+          {sellers.map((s) => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+
+        <select 
+          className="w-full md:w-auto px-6 py-3 rounded-2xl bg-slate-50 md:bg-white border-none md:border-solid md:border-slate-100 outline-none cursor-pointer font-bold text-slate-600 text-sm"
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+        >
+          <option value="ALL">Período: Tudo</option>
+          <option value="TODAY">Hoje</option>
+          <option value="YESTERDAY">Ontem</option>
+          <option value="WEEK">Últimos 7 dias</option>
+        </select>
+
+        {user?.role === 'SELLER' && (
+          <button 
+            onClick={() => setSellerFilter(sellerFilter === user.id ? "" : user.id)}
+            className={cn(
+              "px-6 py-3 rounded-2xl font-black text-xs flex items-center gap-2 transition-all shrink-0 uppercase tracking-widest",
+              sellerFilter === user.id ? "bg-indigo-600 text-white shadow-lg" : "bg-white border border-slate-100 text-slate-600 hover:bg-slate-50"
+            )}
+          >
+            <User size={14} />
+            <span>{sellerFilter === user.id ? "Vendo Meus Leads" : "Meus Leads"}</span>
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -679,9 +730,30 @@ export default function VendasClient({ user }: { user: any }) {
                         )}
                       </td>
                       <td className="px-6 md:px-8 py-4 md:py-5">
-                        <span className={cn("px-3 py-1 md:px-4 md:py-1.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-wider shadow-sm", statusStyles[lead.status as keyof typeof statusStyles])}>
-                          {statusLabels[lead.status as keyof typeof statusLabels]}
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          <span className={cn("px-3 py-1 md:px-4 md:py-1.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-wider shadow-sm w-fit", statusStyles[lead.status as keyof typeof statusStyles])}>
+                            {statusLabels[lead.status as keyof typeof statusLabels]}
+                          </span>
+                          {/* Cronômetro de Estágio - com Tooltip para hora exata */}
+                          <div 
+                            className="flex items-center gap-1 text-[8px] md:text-[9px] font-black text-slate-400 pl-1 uppercase tracking-widest italic cursor-help"
+                            title={`Entrou neste estágio em: ${new Date(lead.updatedAt).toLocaleString('pt-BR')}`}
+                          >
+                             <Clock size={10} className="text-slate-300" />
+                             {(() => {
+                               const now = new Date();
+                               const updated = new Date(lead.updatedAt);
+                               const diffSec = Math.floor((now.getTime() - updated.getTime()) / 1000);
+                               const diffMin = Math.floor(diffSec / 60);
+                               const diffHours = Math.floor(diffMin / 60);
+                               const diffDays = Math.floor(diffHours / 24);
+
+                               if (diffMin < 60) return `no estágio há ${diffMin} min`;
+                               if (diffHours < 24) return `no estágio há ${diffHours}h`;
+                               return `no estágio há ${diffDays} dias`;
+                             })()}
+                          </div>
+                        </div>
                       </td>
                       <td className="px-6 md:px-8 py-4 md:py-5 text-left md:text-right flex justify-start md:justify-end gap-2">
                          {(!lead.assignedTo || (lead.assignedTo.id !== user.id && user.role === 'ADMIN')) && (
@@ -728,10 +800,15 @@ export default function VendasClient({ user }: { user: any }) {
                 )}
                 <div className="min-w-0 flex-1">
                   <h3 className="text-base font-black text-slate-900 leading-tight truncate">{selectedLead.name}</h3>
-                  <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                    WhatsApp Online
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                      WhatsApp Online
+                    </span>
+                    <span className="text-[10px] font-medium text-slate-400 flex items-center gap-1 border-l pl-3 border-slate-200">
+                      <Clock size={10} /> {new Date(selectedLead.updatedAt).toLocaleDateString('pt-BR')} às {new Date(selectedLead.updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
@@ -900,9 +977,17 @@ export default function VendasClient({ user }: { user: any }) {
                             ) : msg.mediaType === 'video' || msg.mediaUrl.startsWith('data:video') ? (
                               <video src={msg.mediaUrl} controls className="rounded-xl max-w-full h-auto border border-black/5" />
                             ) : msg.mediaType === 'audio' || msg.mediaUrl.startsWith('data:audio') ? (
-                              <div className="flex items-center gap-2 p-2 bg-black/5 rounded-xl border border-black/5 min-w-[180px]">
-                                <div className="p-1.5 bg-[#d9fdd3] rounded-full"><Volume2 size={16} /></div>
-                                <audio src={msg.mediaUrl} controls className="h-7 flex-1 min-w-0" />
+                              <div className="flex flex-col gap-1.5 p-2 bg-slate-50/50 dark:bg-black/5 rounded-2xl border border-black/5 min-w-[220px] max-w-[280px]">
+                                <div className="flex items-center gap-3">
+                                  <div className="p-2 bg-indigo-500 text-white rounded-full shadow-sm animate-pulse-slow">
+                                    <Volume2 size={16} />
+                                  </div>
+                                  <audio src={msg.mediaUrl} controls className="h-8 flex-1 min-w-0 opacity-90 hover:opacity-100 transition-opacity" />
+                                </div>
+                                <div className="flex justify-between items-center px-1">
+                                  <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Voz Recebida</span>
+                                  <a href={msg.mediaUrl} download className="text-[8px] font-black uppercase text-indigo-500 hover:text-indigo-700 tracking-widest">Baixar</a>
+                                </div>
                               </div>
                             ) : (
                               <div className="flex items-center gap-2 p-2.5 bg-white/50 rounded-xl border border-black/5 min-w-[160px]">
