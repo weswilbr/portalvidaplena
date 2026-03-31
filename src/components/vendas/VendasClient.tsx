@@ -124,6 +124,7 @@ export default function VendasClient({ user }: { user: any }) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     refreshData();
@@ -170,6 +171,13 @@ export default function VendasClient({ user }: { user: any }) {
     const interval = setInterval(fetchOnlyLead, 1500);
     return () => clearInterval(interval);
   }, [isDetailsOpen, selectedLead?.id, selectedLead?.unreadCount]);
+
+  // Foco automático ao responder
+  useEffect(() => {
+    if (replyingTo && messageInputRef.current) {
+      setTimeout(() => messageInputRef.current?.focus(), 100);
+    }
+  }, [replyingTo]);
 
   const refreshData = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -1228,6 +1236,7 @@ export default function VendasClient({ user }: { user: any }) {
                       </div>
                     ) : (
                       <textarea 
+                        ref={messageInputRef}
                         placeholder={isNoteMode ? "Nota interna..." : "Mensagem..."}
                         className={cn(
                           "w-full px-4 py-3 rounded-2xl text-sm font-medium border-none outline-none focus:ring-2 focus:ring-indigo-200 transition-all resize-none min-h-[44px] max-h-[160px] overflow-y-auto pt-3",
