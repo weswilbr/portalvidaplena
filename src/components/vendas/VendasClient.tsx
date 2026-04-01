@@ -296,7 +296,9 @@ export default function VendasClient({ user }: { user: any }) {
           author: { id: user.id, name: user.name },
           authorId: user.id,
           isSystem: false,
-          isNote: isNoteMode
+          isNote: isNoteMode,
+          quotedMessageId: replyingTo?.whatsappId || replyingTo?.id,
+          quotedMessageContent: replyingTo?.content
         };
 
         if (selectedLead.messages) {

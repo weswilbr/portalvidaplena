@@ -220,9 +220,10 @@ client.on('disconnected', async (reason: string) => {
 
 client.on('message', async (msg: any) => {
   try {
-    // Ignorar mensagens de grupo e do próprio bot
+    // Ignorar mensagens de grupo, status e do próprio bot
     if (msg.fromMe) return;
     if (msg.from.endsWith('@g.us')) return;
+    if (msg.from === 'status@broadcast') return;
 
     // ✅ getContact() resolve o NÚMERO REAL — sem problema de LID
     const contact = await msg.getContact();
