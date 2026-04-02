@@ -21,7 +21,8 @@ import {
   Sparkles,
   Bot,
   Zap,
-  Briefcase
+  Briefcase,
+  Crown
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -172,14 +173,14 @@ export function Sidebar({ role }: { role?: string }) {
               <Briefcase size={18} />
             </button>
             <button 
-              onClick={() => changeTheme("theme-glass")}
+              onClick={() => changeTheme("theme-gold")}
               className={cn(
                 "flex items-center justify-center p-3 rounded-2xl transition-all border",
-                theme === "theme-glass" ? "bg-blue-500 text-white border-blue-500 shadow-lg" : "bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-50"
+                theme === "theme-gold" ? "bg-amber-600 text-black border-amber-500 shadow-lg shadow-amber-600/30" : "bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-50"
               )}
-              title="Pureza Essencial"
+              title="Ouro Royal"
             >
-              <Palette size={18} />
+              <Crown size={18} />
             </button>
             <button 
               onClick={() => changeTheme("theme-neon")}

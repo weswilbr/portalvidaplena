@@ -187,53 +187,51 @@
   box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2) !important;
 }
 
-/* ❄️ ESTILO: PUREZA ESSENCIAL (Verdadeiro Glassmorphism MacOS) */
-@keyframes glassBg {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+/* 👑 ESTILO: OURO ROYAL (Black & Gold Premium) */
+.theme-gold {
+  background-color: #000000 !important;
+  background-image: radial-gradient(circle at 100% 0%, rgba(212, 175, 55, 0.08), transparent 40%) !important;
+  color: #FFFFFF !important;
 }
 
-.theme-glass {
-  background: linear-gradient(-45deg, #1e3c72, #2a5298, #6441A5, #8a2387) !important;
-  background-size: 400% 400% !important;
-  animation: glassBg 20s ease infinite !important;
-  background-attachment: fixed !important;
-  color: white !important;
+.theme-gold .bg-white,
+.theme-gold .bg-slate-50,
+.theme-gold .bg-slate-100,
+.theme-gold .bg-slate-900,
+.theme-gold .bg-indigo-50,
+.theme-gold [class*="bg-white"],
+.theme-gold header {
+  background-color: #0A0A0A !important;
+  border: 1px solid rgba(212, 175, 55, 0.3) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), inset 0 0 15px rgba(212, 175, 55, 0.03) !important;
+  color: #FFFFFF !important;
 }
 
-.theme-glass .bg-white,
-.theme-glass .bg-slate-50,
-.theme-glass .bg-slate-100,
-.theme-glass .bg-slate-900,
-.theme-glass .bg-indigo-50,
-.theme-glass [class*="bg-white"],
-.theme-glass header {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-  backdrop-filter: blur(24px) !important;
-  -webkit-backdrop-filter: blur(24px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
-  color: white !important;
+.theme-gold .text-slate-900,
+.theme-gold .text-slate-800,
+.theme-gold .text-slate-700 {
+  color: #FBBF24 !important; /* Texto de Títulos em Ouro Cítrico */
 }
 
-.theme-glass .text-slate-900,
-.theme-glass .text-slate-800,
-.theme-glass .text-slate-700,
-.theme-glass .text-slate-500,
-.theme-glass .text-slate-400 {
-  color: rgba(255, 255, 255, 0.9) !important;
+.theme-gold .text-slate-500,
+.theme-gold .text-slate-400 {
+  color: #A1A1AA !important; /* Light gray para leitura base */
 }
 
-.theme-glass .text-indigo-600 {
-  color: oklch(0.9 0.1 220) !important;
+.theme-gold .text-indigo-600 {
+  color: #FBBF24 !important;
 }
 
-.theme-glass .bg-indigo-600 {
-  background-color: rgba(255, 255, 255, 0.2) !important;
-  backdrop-filter: blur(10px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.4) !important;
-  color: white !important;
+.theme-gold .bg-indigo-600,
+.theme-gold .bg-indigo-700,
+.theme-gold .bg-blue-500,
+.theme-gold .bg-indigo-500,
+.theme-gold .bg-amber-500,
+.theme-gold .bg-emerald-500 {
+  background: linear-gradient(135deg, #B48608, #FBBF24) !important;
+  color: #000000 !important;
+  border: none !important;
+  box-shadow: 0 4px 15px rgba(251, 191, 36, 0.25) !important;
 }
 
 /* ⚡ ESTILO: NEON CYBER (Modernidade e Contraste Máximo) */
