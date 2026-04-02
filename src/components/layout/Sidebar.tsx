@@ -20,7 +20,8 @@ import {
   Palette,
   Sparkles,
   Bot,
-  Zap
+  Zap,
+  Briefcase
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -161,14 +162,14 @@ export function Sidebar({ role }: { role?: string }) {
               <Sun size={18} />
             </button>
             <button 
-              onClick={() => changeTheme("theme-gold")}
+              onClick={() => changeTheme("theme-navy")}
               className={cn(
                 "flex items-center justify-center p-3 rounded-2xl transition-all border",
-                theme === "theme-gold" ? "bg-amber-500 text-white border-amber-500 shadow-lg" : "bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-50"
+                theme === "theme-navy" ? "bg-blue-800 text-white border-blue-700 shadow-lg shadow-blue-900/50" : "bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-50"
               )}
-              title="Imunidade de Ouro"
+              title="Marinho Executivo"
             >
-              <Sparkles size={18} />
+              <Briefcase size={18} />
             </button>
             <button 
               onClick={() => changeTheme("theme-glass")}

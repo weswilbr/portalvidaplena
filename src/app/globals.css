@@ -141,49 +141,50 @@
   }
 }
 
-/* 💎 ESTILO: IMUNIDADE DE OURO (Premium Dark Gold) */
-.theme-gold {
-  background-color: oklch(0.12 0.02 240) !important;
-  color: oklch(0.95 0.01 60) !important;
+/* 🌊 ESTILO: MARINHO EXECUTIVO (Premium Navy & Silver) */
+.theme-navy {
+  background-color: #060d1f !important;
+  color: #F8FAFC !important;
 }
 
-.theme-gold .bg-white,
-.theme-gold .bg-slate-50,
-.theme-gold .bg-slate-100,
-.theme-gold .bg-slate-900,
-.theme-gold .bg-indigo-50 {
-  background-color: oklch(0.16 0.03 240) !important;
-  border-color: oklch(0.25 0.05 75 / 0.4) !important;
-  color: oklch(0.95 0.01 60) !important;
+.theme-navy .bg-white,
+.theme-navy .bg-slate-50,
+.theme-navy .bg-slate-100,
+.theme-navy .bg-slate-900,
+.theme-navy .bg-indigo-50,
+.theme-navy [class*="bg-white"],
+.theme-navy header {
+  background-color: #0f1c3a !important;
+  border: 1px solid rgba(59, 130, 246, 0.25) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+  color: #F8FAFC !important;
 }
 
-.theme-gold .text-slate-900,
-.theme-gold .text-slate-800,
-.theme-gold .text-slate-700 {
-  color: oklch(0.95 0.01 60) !important;
+.theme-navy .text-slate-900,
+.theme-navy .text-slate-800,
+.theme-navy .text-slate-700 {
+  color: #FFFFFF !important;
 }
 
-.theme-gold .text-slate-500,
-.theme-gold .text-slate-400 {
-  color: oklch(0.75 0.15 75) !important;
+.theme-navy .text-slate-500,
+.theme-navy .text-slate-400 {
+  color: #94A3B8 !important;
 }
 
-.theme-gold .bg-indigo-600,
-.theme-gold .bg-indigo-700,
-.theme-gold .bg-blue-500,
-.theme-gold .bg-indigo-500 {
-  background-color: oklch(0.75 0.15 75) !important;
-  color: oklch(0.12 0.02 240) !important;
+.theme-navy .text-indigo-600 {
+  color: #60A5FA !important;
 }
 
-.theme-gold .text-indigo-600 {
-  color: oklch(0.75 0.15 75) !important;
-}
-
-.theme-gold .border-slate-100, 
-.theme-gold .border-slate-200,
-.theme-gold .border-white\/10 {
-  border-color: oklch(0.25 0.05 75 / 0.3) !important;
+.theme-navy .bg-indigo-600,
+.theme-navy .bg-indigo-700,
+.theme-navy .bg-blue-500,
+.theme-navy .bg-indigo-500,
+.theme-navy .bg-amber-500,
+.theme-navy .bg-emerald-500 {
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2) !important;
 }
 
 /* ❄️ ESTILO: PUREZA ESSENCIAL (Verdadeiro Glassmorphism MacOS) */
