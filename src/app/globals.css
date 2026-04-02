@@ -137,6 +137,37 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-500;
   }
+}
+
+/* 💎 ESTILO: IMUNIDADE DE OURO (Premium Dark Gold) */
+.theme-gold {
+  --background: oklch(0.12 0.02 240);
+  --foreground: oklch(0.95 0.01 60);
+  --card: oklch(0.16 0.03 240);
+  --card-foreground: oklch(0.95 0.01 60);
+  --primary: oklch(0.75 0.15 75); /* DOURADO 4Life */
+  --primary-foreground: oklch(0.12 0.02 240);
+  --border: oklch(0.25 0.05 75 / 0.3);
+  --accent: oklch(0.75 0.15 75 / 0.1);
+  --accent-foreground: oklch(0.75 0.15 75);
+}
+
+/* ❄️ ESTILO: PUREZA ESSENCIAL (Modern Glass Light) */
+.theme-glass {
+  --background: oklch(0.98 0.01 220);
+  --foreground: oklch(0.15 0.08 220);
+  --card: oklch(1 0 0 / 0.7);
+  --card-foreground: oklch(0.15 0.08 220);
+  --primary: oklch(0.55 0.18 220); /* AZUL CIENTÍFICO */
+  --primary-foreground: oklch(1 0 0);
+  --border: oklch(0.9 0.02 220);
+  --accent: oklch(0.55 0.18 220 / 0.08);
+  --accent-foreground: oklch(0.55 0.18 220);
+}
+
+.theme-glass .card, .theme-glass [class*="bg-white"] {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
