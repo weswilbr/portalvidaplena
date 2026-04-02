@@ -101,7 +101,12 @@ export function Sidebar({ role }: { role?: string }) {
               <span className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent italic tracking-tight">
                 Vida Plena
               </span>
-              <span className="text-xl inline-block mt-0.5 shadow-sm" title="Operação Brasil">🇧🇷</span>
+              <img 
+                src="https://flagcdn.com/br.svg" 
+                alt="Operação Brasil" 
+                title="Operação Brasil" 
+                className="w-5 h-[14px] object-cover rounded-[2px] shadow-sm shadow-black/20" 
+              />
             </div>
           )}
           
