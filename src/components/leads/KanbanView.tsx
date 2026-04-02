@@ -39,6 +39,7 @@ const statusColumns = [
   { id: "CONTACTED", label: "QUALIFICAÇÃO E DIAGNÓSTICO", color: "bg-indigo-600" },
   { id: "PRESENTED", label: "SOLUÇÃO E FECHAMENTO", color: "bg-orange-500" },
   { id: "CLOSED", label: "CLIENTE ATIVADO", color: "bg-emerald-500" },
+  { id: "LOST", label: "OPORTUNIDADES PERDIDAS", color: "bg-slate-500" },
 ];
 
 export default function KanbanView({ leads, onEdit, onDelete, onStatusChange }: KanbanViewProps) {
