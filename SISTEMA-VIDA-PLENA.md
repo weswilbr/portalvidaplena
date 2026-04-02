@@ -1,64 +1,97 @@
-# 🛡️ Mapa do Sistema - Portal Vida Plena (CRM & WhatsApp)
+# 📖 Documentação Técnica - Portal Vida Plena (CRM & WhatsApp)
 
-Este documento serve como a **"Memória de Longo Prazo"** do projeto para o assistente AI. Se a conversa resetar, leia este arquivo primeiro.
-
-## 🚀 Arquitetura Geral
-- **Frontend/Backend**: Next.js 14+ (App Router).
-- **Banco de Dados**: PostgreSQL (Supabase) via Prisma ORM.
-- **Bot WhatsApp**: `whatsapp-web.js` rodando via PM2 na VPS. Casos de LID vs Phone já resolvidos.
-- **Estilo**: TailwindCSS + Lucide Icons + Shadcn/UI (Design Premium).
-- **Infra (VPS)**: Sistema rodando em Ubuntu na porta 3000 (Site) e processo separado para o Bot (`zabot`).
+Este documento é a referência definitiva para o funcionamento do **Portal Vida Plena**. Foi projetado para que qualquer desenvolvedor ou inteligência artificial possa entender, manter e expandir o sistema sem perda de contexto histórico.
 
 ---
 
-## 🤖 Configurações do Robô (`src/bot/index.ts`)
-- **Áudio (WhatsApp Nativo)**: 
-  - Conversão obrigatória para **OGG OPUS 16kHz Mono**.
-  - Somente este formato é lido pelo player oficial do WhatsApp (Leads) e pelo player customizado do Painel.
-- **Radar de Fotos (Profile Pix)**:
-  - Varredura inicial 15s após ligar.
-  - Varredura recorrente a cada 2 horas.
-  - Delay de 5s entre cada consulta para evitar banimento pelo WhatsApp.
-- **Vídeos**: Compressão h264 integrada para envio leve de mídias.
+## 1. 🏗️ Arquitetura do Sistema
+
+O sistema é uma aplicação híbrida composta por um portal de gestão (CRM) e um motor de automação de mensagens (Bot).
+
+- **Framework**: [Next.js 14+](https://nextjs.org/) (App Router).
+- **Linguagem**: TypeScript (Strict Mode).
+- **Banco de Dados**: PostgreSQL hospedado no Supabase.
+- **ORM**: [Prisma](https://www.prisma.io/).
+- **Estilização**: TailwindCSS (v4).
+- **Componentes**: Radix UI + Shadcn/UI + Lucide Icons.
+- **Autenticação**: Cookies de sessão via Server Actions.
+- **Bot Engine**: [whatsapp-web.js](https://wwebjs.dev/) rodando em processo separado.
 
 ---
 
-## 🎨 Interface & UX (CRM)
-- **Sistema de Skins Dinâmico (Temas)**:
-  - **Marinho Executivo (Briefcase 💼)**: Fundo azul noturno com fontes platinadas (Elegância e Autoridade).
-  - **Ouro Royal (Crown 👑)**: Fundo preto absoluto (#000000) com detalhes em dourado metálico (Luxo e Exclusividade).
-  - **Neon Cyber (Zap ⚡)**: Alto contraste, fundos escuros e brilho ciano/magenta (Foco e Modernidade).
-  - **Padrão/Moderno (Sun ☀️)**: Interface limpa e clara para uso diário.
-- **Identidade Visual**:
-  - Nova logo "Vida Plena" com gradiente azul/indigo.
-  - **Insignia BR 🇧🇷**: Bandeira do Brasil em SVG de alta resolução ao lado da logo para marcar a operação oficial.
-- **Funil de Vendas Estratégico (4Life)**:
-  - Nomenclatura corporativa para alta conversão: `LEADS ENTRANTES`, `QUALIFICAÇÃO E DIAGNÓSTICO`, `SOLUÇÃO E FECHAMENTO`, `CLIENTE ATIVADO`, `OPORTUNIDADES PERDIDAS`.
-- **Mobile-First**: 
-  - Chat em tela cheia (Full-Screen) no mobile.
-  - Botões de áudio e gatilhos no canto esquerdo (polegar).
-  - Seletor de temas consolidado na Sidebar.
-- **Filtros (Gestão de Vendas)**:
-  - Filtro de **Vendedor (AssignedTo)** ativo.
-  - Filtro de **Status** (Novo, Em Atendimento, Carrinho Aberto, Concluído, Perdido).
+## 2. 🗄️ Estrutura de Dados (Prisma Schema)
+
+O banco de dados é centrado na figura do **Lead** e sua interação com o **User** (Vendedor).
+
+- **User**: Gerencia o acesso (ADMIN/SELLER). Possui relacionamento `1:N` com leads.
+- **Lead**: Armazena dados de contato e status no funil.
+  - `status`: `NEW`, `CONTACTED`, `PRESENTED`, `CLOSED`, `LOST`.
+  - `phone`: Armazena o ID único do WhatsApp (incluindo LIDs para compatibilidade).
+- **Message**: Histórico de conversas.
+  - `isNote`: Se `true`, é uma anotação interna do CRM (não visível no WhatsApp).
+  - `mediaUrl/mediaType`: Suporte a imagens, vídeos, áudios e documentos.
+- **OutgoingMessage**: Fila de mensagens para envio. O Bot monitora esta tabela para disparar mensagens.
+- **BotConfig**: Status da conexão (`CONNECTED`, `QR_READY`, etc) e configurações de Round Robin (distribuição automática de leads).
 
 ---
 
-## ☁️ Deploy & Manutenção (VPS)
-- **Caminho**: `~/portalvidaplena`
-- **Domínio**: `portalfvp.duckdns.org` (Proxy reverso Caddy porta 3000).
-- **Comandos de Atualização Turbo**:
-  ```bash
-  cd ~/portalvidaplena && git fetch origin && git reset --hard origin/main && npm run build && pm2 restart all
-  ```
+## 3. 🤖 O Motor do Bot (`src/bot/index.ts`)
+
+O bot opera como um serviço de background orquestrado pelo PM2.
+
+### Fluxos Principais:
+1. **Conexão**: Utiliza `LocalAuth` para persistir a sessão na pasta `./wwebjs_auth`.
+2. **Recepção de Leads**: Ao receber uma mensagem de um número novo, o bot cria o Lead e, se o `isRoundRobin` estiver ativo, atribui automaticamente ao próximo vendedor disponível.
+3. **Mídia & Performance**:
+   - **Áudio**: Converte automaticamente para **OGG Opus (16kHz Mono)** usando FFmpeg para que apareça como "Voz" no WhatsApp.
+   - **Vídeo**: Comprime usando **libx264 (CRF 28)** para garantir envio rápido e baixo consumo de dados.
+4. **Coleta de Fotos**: Realiza varreduras (`scanProfilePhotos`) a cada 2 horas para buscar fotos de perfil de leads que ainda estão sem avatar, com delay de 5s entre consultas para evitar banimento.
 
 ---
 
-## 📌 Próximos Desafios / Backlog
-1. **Filtro de Data**: Adicionar por período (Hoje, Ontem, 7 dias) na Gestão de Vendas.
-2. **Dashboard Avançado**: Gráficos de conversão por vendedor/vendas concluídas.
-3. **Análise de Performance**: Monitorar o carregamento dos SVGs e mídias do Bot.
+## 4. 🎨 Design System & Skins (Premium UX)
+
+O portal utiliza um sistema de **Super Overrides de CSS** localizado em `src/app/globals.css`.
+
+- **Seletor de Temas**: Persistido no `localStorage` e aplicado como classe no `<body>`.
+- **Temas Disponíveis**:
+  - `default`: Visual clean padrão.
+  - `theme-gold`: Fundo preto absoluto com destaques em Ouro Royal (#FBBF24). Estética Black Card.
+  - `theme-navy`: Azul Marinho profundo (#060d1f) com elementos prateados. Foco executivo.
+  - `theme-neon`: Visual Cyberpunk com sombras neon ciano/magenta.
+- **Componentes Customizados**:
+  - `KanbanView.tsx`: Abstração de abas para mobile, evitando scroll lateral infinito.
+  - `Sidebar.tsx`: Centraliza navegação e controle de temas.
 
 ---
 
-*Última atualização do sistema: 02/04/2026 - Skins Premium (Ouro, Marinho, Neon), Funil Estratégico e Logo BR 100% OK.* 🚀💎🇧🇷
+## 5. 🚀 Guia de Manutenção na VPS
+
+### Comandos de Sobrevivência:
+
+```bash
+# Sincronização e Build (Caminho: ~/portalvidaplena)
+cd ~/portalvidaplena && git fetch origin && git reset --hard origin/main && npm run build && pm2 restart all
+
+# Logs do Bot
+pm2 logs zabot
+
+# Logs do Site
+pm2 logs portal
+```
+
+### Variáveis de Ambiente (`.env`):
+- `DATABASE_URL`: String de conexão PostgreSQL.
+- `NEXT_PUBLIC_APP_URL`: URL base do portal.
+- `JWT_SECRET`: Para criptografia de sessões.
+
+---
+
+## 📌 Histórico de Correções Importantes (Knowledge Base)
+
+1. **LID vs Phone**: O sistema trata IDs longos do WhatsApp (`:12345...`) removendo o sufixo após os dois pontos para gerar links de chat (`wa.me`) corretos.
+2. **Contraste Kanban**: Corrigido via seletores exatos (`[class~=...]`) para evitar que modifiers de hover do Tailwind pintassem tabelas inteiras de dourado.
+3. **Windows Emoji Fix**: Bandeira do Brasil substituída de Emoji para **SVG oficial** via URL para garantir renderização em navegadores Windows.
+
+---
+*Assinado: Antigravity AI - 02/04/2026*
