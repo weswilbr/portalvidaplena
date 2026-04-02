@@ -97,46 +97,122 @@
   --border: oklch(0.922 0.04 249.221);
   --input: oklch(0.922 0.04 249.221);
   --ring: oklch(0.708 0.04 249.221);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
   --radius: 0.5rem;
 }
 
-/* 💎 ESTILO: IMUNIDADE DE OURO (Premium Dark Gold) - PRIORIDADE MÁXIMA */
-body.theme-gold {
-  --background: oklch(0.18 0.02 240) !important;
-  --foreground: oklch(0.95 0.01 60) !important;
-  --card: oklch(0.22 0.03 240) !important;
-  --card-foreground: oklch(0.95 0.01 60) !important;
-  --primary: oklch(0.75 0.15 75) !important; /* DOURADO 4Life */
-  --primary-foreground: oklch(0.12 0.02 240) !important;
-  --border: oklch(0.35 0.05 75 / 0.4) !important;
-  --accent: oklch(0.75 0.15 75 / 0.15) !important;
-  --accent-foreground: oklch(0.75 0.15 75) !important;
-  --muted: oklch(0.25 0.03 240) !important;
-  --muted-foreground: oklch(0.7 0.02 240) !important;
+.dark {
+  --background: oklch(0.145 0.05 249.221);
+  --foreground: oklch(0.985 0.02 249.221);
+  --card: oklch(0.145 0.05 249.221);
+  --card-foreground: oklch(0.985 0.02 249.221);
+  --popover: oklch(0.145 0.05 249.221);
+  --popover-foreground: oklch(0.985 0.02 249.221);
+  --primary: oklch(0.985 0.02 249.221);
+  --primary-foreground: oklch(0.205 0.05 249.221);
+  --secondary: oklch(0.269 0.05 249.221);
+  --secondary-foreground: oklch(0.985 0.02 249.221);
+  --muted: oklch(0.269 0.05 249.221);
+  --muted-foreground: oklch(0.708 0.04 249.221);
+  --accent: oklch(0.269 0.05 249.221);
+  --accent-foreground: oklch(0.985 0.02 249.221);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0.05 249.221);
+  --input: oklch(0.269 0.05 249.221);
+  --ring: oklch(0.439 0.04 249.221);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
 }
 
-/* ❄️ ESTILO: PUREZA ESSENCIAL (Modern Glass Light) - PRIORIDADE MÁXIMA */
-body.theme-glass {
-  --background: oklch(0.98 0.01 220) !important;
-  --foreground: oklch(0.15 0.08 220) !important;
-  --card: oklch(1 0 0 / 0.7) !important;
-  --card-foreground: oklch(0.15 0.08 220) !important;
-  --primary: oklch(0.55 0.18 220) !important; /* AZUL CIENTÍFICO */
-  --primary-foreground: oklch(1 0 0) !important;
-  --border: oklch(0.85 0.05 220) !important;
-  --accent: oklch(0.55 0.18 220 / 0.1) !important;
-  --accent-foreground: oklch(0.55 0.18 220) !important;
-  --muted: oklch(0.95 0.02 220) !important;
-  --muted-foreground: oklch(0.45 0.05 220) !important;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground transition-colors duration-500;
+  }
 }
 
-body.theme-glass {
-  background-image: radial-gradient(at 0% 0%, oklch(0.95 0.02 220) 0px, transparent 50%),
-                    radial-gradient(at 100% 0%, oklch(0.92 0.05 200) 0px, transparent 50%);
+/* 💎 ESTILO: IMUNIDADE DE OURO (Premium Dark Gold) */
+.theme-gold {
+  background-color: oklch(0.12 0.02 240) !important;
+  color: oklch(0.95 0.01 60) !important;
 }
 
-.theme-glass .card, .theme-glass [class*="bg-white"], .theme-glass aside {
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  background-color: var(--card) !important;
+.theme-gold .bg-white,
+.theme-gold .bg-slate-50,
+.theme-gold .bg-slate-100,
+.theme-gold .bg-slate-900,
+.theme-gold .bg-indigo-50 {
+  background-color: oklch(0.16 0.03 240) !important;
+  border-color: oklch(0.25 0.05 75 / 0.4) !important;
+  color: oklch(0.95 0.01 60) !important;
+}
+
+.theme-gold .text-slate-900,
+.theme-gold .text-slate-800,
+.theme-gold .text-slate-700 {
+  color: oklch(0.95 0.01 60) !important;
+}
+
+.theme-gold .text-slate-500,
+.theme-gold .text-slate-400 {
+  color: oklch(0.75 0.15 75) !important;
+}
+
+.theme-gold .bg-indigo-600,
+.theme-gold .bg-indigo-700,
+.theme-gold .bg-blue-500,
+.theme-gold .bg-indigo-500 {
+  background-color: oklch(0.75 0.15 75) !important;
+  color: oklch(0.12 0.02 240) !important;
+}
+
+.theme-gold .text-indigo-600 {
+  color: oklch(0.75 0.15 75) !important;
+}
+
+.theme-gold .border-slate-100, 
+.theme-gold .border-slate-200,
+.theme-gold .border-white\/10 {
+  border-color: oklch(0.25 0.05 75 / 0.3) !important;
+}
+
+/* ❄️ ESTILO: PUREZA ESSENCIAL (Modern Glass Light) */
+.theme-glass {
+  background: linear-gradient(135deg, oklch(0.97 0.02 220), oklch(0.9 0.05 240), oklch(0.95 0.05 280)) !important;
+  background-attachment: fixed !important;
+  color: oklch(0.15 0.08 220) !important;
+}
+
+.theme-glass .bg-white,
+.theme-glass .bg-slate-50,
+.theme-glass .bg-slate-100,
+.theme-glass .bg-slate-900,
+.theme-glass .bg-indigo-50 {
+  background-color: rgba(255, 255, 255, 0.4) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05) !important;
+  color: oklch(0.15 0.08 220) !important;
+}
+
+.theme-glass .text-slate-900,
+.theme-glass .text-white {
+  color: oklch(0.15 0.08 220) !important;
+}
+
+.theme-glass .bg-indigo-600 {
+  background-color: rgba(79, 70, 229, 0.7) !important;
+  backdrop-filter: blur(10px) !important;
+  color: white !important;
 }
