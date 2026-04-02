@@ -35,10 +35,10 @@ interface KanbanViewProps {
 }
 
 const statusColumns = [
-  { id: "NEW", label: "🌊 NOVOS INTERESSADOS", color: "bg-blue-500" },
-  { id: "CONTACTED", label: "📋 TRIAGEM DE PERFIL", color: "bg-indigo-600" },
-  { id: "PRESENTED", label: "🛍️ APRESENTAÇÃO/CARRINHO", color: "bg-orange-500" },
-  { id: "CLOSED", label: "💎 VIDA PLENA ATIVADA", color: "bg-emerald-500" },
+  { id: "NEW", label: "LEADS ENTRANTES", color: "bg-blue-500" },
+  { id: "CONTACTED", label: "QUALIFICAÇÃO E DIAGNÓSTICO", color: "bg-indigo-600" },
+  { id: "PRESENTED", label: "SOLUÇÃO E FECHAMENTO", color: "bg-orange-500" },
+  { id: "CLOSED", label: "CLIENTE ATIVADO", color: "bg-emerald-500" },
 ];
 
 export default function KanbanView({ leads, onEdit, onDelete, onStatusChange }: KanbanViewProps) {
