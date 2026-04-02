@@ -216,3 +216,51 @@
   backdrop-filter: blur(10px) !important;
   color: white !important;
 }
+
+/* ⚡ ESTILO: NEON CYBER (Modernidade e Contraste Máximo) */
+.theme-neon {
+  background-color: oklch(0.12 0.02 280) !important;
+  background-image: radial-gradient(circle at 50% 0%, oklch(0.2 0.1 300 / 0.15), transparent 50%) !important;
+  color: oklch(0.98 0 0) !important;
+}
+
+.theme-neon .bg-white,
+.theme-neon .bg-slate-50,
+.theme-neon .bg-slate-100,
+.theme-neon .bg-slate-900,
+.theme-neon .bg-indigo-50,
+.theme-neon [class*="bg-white"] {
+  background-color: oklch(0.15 0.03 285) !important;
+  border: 1px solid oklch(0.6 0.25 310 / 0.6) !important;
+  box-shadow: 0 0 15px oklch(0.6 0.25 310 / 0.15), inset 0 0 20px oklch(0.8 0.18 195 / 0.05) !important;
+  color: oklch(0.98 0 0) !important;
+}
+
+.theme-neon .text-slate-900,
+.theme-neon .text-slate-800,
+.theme-neon .text-slate-700 {
+  color: oklch(0.98 0 0) !important;
+  text-shadow: 0 0 8px oklch(0.98 0 0 / 0.2) !important;
+}
+
+.theme-neon .text-slate-500,
+.theme-neon .text-slate-400 {
+  color: oklch(0.7 0.1 240) !important;
+}
+
+.theme-neon .text-indigo-600 {
+  color: oklch(0.8 0.18 195) !important; /* Ciano Brilhante na fonte */
+  text-shadow: 0 0 10px oklch(0.8 0.18 195 / 0.5) !important;
+}
+
+.theme-neon .bg-indigo-600,
+.theme-neon .bg-indigo-700,
+.theme-neon .bg-blue-500,
+.theme-neon .bg-indigo-500,
+.theme-neon .bg-amber-500,
+.theme-neon .bg-emerald-500 {
+  background: linear-gradient(135deg, oklch(0.6 0.25 310), oklch(0.8 0.18 195)) !important;
+  color: oklch(0.12 0.02 280) !important;
+  border: none !important;
+  box-shadow: 0 0 20px oklch(0.6 0.25 310 / 0.4) !important;
+}

@@ -19,7 +19,8 @@ import {
   Sun,
   Palette,
   Sparkles,
-  Bot
+  Bot,
+  Zap
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -147,7 +148,7 @@ export function Sidebar({ role }: { role?: string }) {
           )}
           <div className={cn(
              "grid gap-2",
-             (isCollapsed && !isMobileOpen) ? "grid-cols-1" : "grid-cols-3"
+             (isCollapsed && !isMobileOpen) ? "grid-cols-1" : "grid-cols-4"
           )}>
             <button 
               onClick={() => changeTheme("default")}
@@ -155,6 +156,7 @@ export function Sidebar({ role }: { role?: string }) {
                 "flex items-center justify-center p-3 rounded-2xl transition-all border",
                 theme === "default" ? "bg-indigo-600 text-white border-indigo-600 shadow-lg" : "bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-50"
               )}
+              title="Clássico Moderno"
             >
               <Sun size={18} />
             </button>
@@ -164,6 +166,7 @@ export function Sidebar({ role }: { role?: string }) {
                 "flex items-center justify-center p-3 rounded-2xl transition-all border",
                 theme === "theme-gold" ? "bg-amber-500 text-white border-amber-500 shadow-lg" : "bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-50"
               )}
+              title="Imunidade de Ouro"
             >
               <Sparkles size={18} />
             </button>
@@ -173,8 +176,19 @@ export function Sidebar({ role }: { role?: string }) {
                 "flex items-center justify-center p-3 rounded-2xl transition-all border",
                 theme === "theme-glass" ? "bg-blue-500 text-white border-blue-500 shadow-lg" : "bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-50"
               )}
+              title="Pureza Essencial"
             >
               <Palette size={18} />
+            </button>
+            <button 
+              onClick={() => changeTheme("theme-neon")}
+              className={cn(
+                "flex items-center justify-center p-3 rounded-2xl transition-all border",
+                theme === "theme-neon" ? "bg-fuchsia-600 text-white border-fuchsia-500 shadow-lg shadow-fuchsia-500/40" : "bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-50"
+              )}
+              title="Neon Cyber"
+            >
+              <Zap size={18} />
             </button>
           </div>
         </div>
