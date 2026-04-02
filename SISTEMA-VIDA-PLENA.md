@@ -24,26 +24,32 @@ Este documento serve como a **"Memória de Longo Prazo"** do projeto para o assi
 ---
 
 ## 🎨 Interface & UX (CRM)
+- **Sistema de Skins Dinâmico (Temas)**:
+  - **Marinho Executivo (Briefcase 💼)**: Fundo azul noturno com fontes platinadas (Elegância e Autoridade).
+  - **Ouro Royal (Crown 👑)**: Fundo preto absoluto (#000000) com detalhes em dourado metálico (Luxo e Exclusividade).
+  - **Neon Cyber (Zap ⚡)**: Alto contraste, fundos escuros e brilho ciano/magenta (Foco e Modernidade).
+  - **Padrão/Moderno (Sun ☀️)**: Interface limpa e clara para uso diário.
+- **Identidade Visual**:
+  - Nova logo "Vida Plena" com gradiente azul/indigo.
+  - **Insignia BR 🇧🇷**: Bandeira do Brasil em SVG de alta resolução ao lado da logo para marcar a operação oficial.
+- **Funil de Vendas Estratégico (4Life)**:
+  - Nomenclatura corporativa para alta conversão: `LEADS ENTRANTES`, `QUALIFICAÇÃO E DIAGNÓSTICO`, `SOLUÇÃO E FECHAMENTO`, `CLIENTE ATIVADO`, `OPORTUNIDADES PERDIDAS`.
 - **Mobile-First**: 
   - Chat em tela cheia (Full-Screen) no mobile.
   - Botões de áudio e gatilhos no canto esquerdo (polegar).
-  - FAB (Botão de Cadastro) flutuante no Dashboard de Leads.
+  - Seletor de temas consolidado na Sidebar.
 - **Filtros (Gestão de Vendas)**:
   - Filtro de **Vendedor (AssignedTo)** ativo.
   - Filtro de **Status** (Novo, Em Atendimento, Carrinho Aberto, Concluído, Perdido).
-  - Botão **"Meus Leads"** para vendedores focarem em seu próprio funil.
-- **Tabs no Kanban**: No mobile, o Kanban não faz scroll lateral; ele usa abas (carrossel) para melhor usabilidade.
 
 ---
 
 ## ☁️ Deploy & Manutenção (VPS)
 - **Caminho**: `~/portalvidaplena`
 - **Domínio**: `portalfvp.duckdns.org` (Proxy reverso Caddy porta 3000).
-- **Comandos Críticos**:
+- **Comandos de Atualização Turbo**:
   ```bash
-  git pull origin main
-  npm run build
-  pm2 restart all
+  cd ~/portalvidaplena && git fetch origin && git reset --hard origin/main && npm run build && pm2 restart all
   ```
 
 ---
@@ -51,8 +57,8 @@ Este documento serve como a **"Memória de Longo Prazo"** do projeto para o assi
 ## 📌 Próximos Desafios / Backlog
 1. **Filtro de Data**: Adicionar por período (Hoje, Ontem, 7 dias) na Gestão de Vendas.
 2. **Dashboard Avançado**: Gráficos de conversão por vendedor/vendas concluídas.
-3. **Segurança**: Ajustar `sslmode` no Prisma (`verify-full`).
+3. **Análise de Performance**: Monitorar o carregamento dos SVGs e mídias do Bot.
 
 ---
 
-*Última atualização do sistema: 31/03/2026 - Áudio, Radar Fotos, Filtros e Mobile-First 100% OK.* 🚀💎
+*Última atualização do sistema: 02/04/2026 - Skins Premium (Ouro, Marinho, Neon), Funil Estratégico e Logo BR 100% OK.* 🚀💎🇧🇷
