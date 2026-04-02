@@ -36,24 +36,12 @@ export default function DashboardClient() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [theme, setTheme] = useState<string>("default");
   const [randomQuote, setRandomQuote] = useState("");
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem("portal-theme") || "default";
-    setTheme(savedTheme);
-    document.body.className = savedTheme === "default" ? "" : savedTheme;
-    
     setRandomQuote(quotes[Math.floor(Math.random() * quotes.length)]);
     refreshData();
   }, []);
-
-  const changeTheme = (newTheme: string) => {
-    setTheme(newTheme);
-    localStorage.setItem("portal-theme", newTheme);
-    document.body.className = newTheme === "default" ? "" : newTheme;
-  };
-
   const refreshData = async () => {
     setLoading(true);
     const result = await getDashboardData();
@@ -137,35 +125,13 @@ export default function DashboardClient() {
           <h2 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 leading-none">Fala, Líder! 🚀</h2>
           <p className="text-slate-500 font-medium mt-2 text-sm md:text-base tracking-tight">Evolução em tempo real da sua estrutura 4Life.</p>
         </div>
-        <div className="flex items-center gap-3 bg-slate-100 dark:bg-white/5 p-1.5 rounded-2xl border border-slate-200 dark:border-white/10">
-          <button 
-            onClick={() => changeTheme("default")}
-            className={cn("p-2 rounded-xl transition-all", theme === "default" ? "bg-white dark:bg-white/10 shadow-sm text-indigo-600" : "text-slate-400 hover:text-slate-600")}
-            title="Padrão"
-          >
-            <Sun size={18} />
-          </button>
-          <button 
-            onClick={() => changeTheme("theme-gold")}
-            className={cn("p-2 rounded-xl transition-all", theme === "theme-gold" ? "bg-white dark:bg-white/10 shadow-sm text-amber-500" : "text-slate-400 hover:text-slate-600")}
-            title="Imunidade de Ouro"
-          >
-            <Sparkle size={18} />
-          </button>
-          <button 
-            onClick={() => changeTheme("theme-glass")}
-            className={cn("p-2 rounded-xl transition-all", theme === "theme-glass" ? "bg-white dark:bg-white/10 shadow-sm text-blue-500" : "text-slate-400 hover:text-slate-600")}
-            title="Pureza Essencial"
-          >
-            <Palette size={18} />
-          </button>
-          <div className="w-[1px] h-6 bg-slate-200 dark:bg-white/10 mx-1"></div>
+        <div className="flex gap-4">
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-black text-xs shadow-lg shadow-indigo-100 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-widest"
+            className="hidden md:flex items-center gap-2 bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all"
           >
-            <Plus size={16} />
-            Lead
+            <Plus size={20} />
+            Novo Lead
           </button>
         </div>
       </header>

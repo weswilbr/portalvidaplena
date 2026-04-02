@@ -14,9 +14,12 @@ import {
   ChevronRight,
   ShoppingBag,
   UserPlus,
-  Bot,
   Menu,
-  X
+  X,
+  Sun,
+  Palette,
+  Sparkles,
+  Bot
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -37,7 +40,21 @@ export function Sidebar({ role }: { role?: string }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  // Fecha a sidebar no mobile ao mudar de rota
+  const [theme, setTheme] = useState<string>("default");
+
+  // Load and Apply Theme
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("portal-theme") || "default";
+    setTheme(savedTheme);
+    document.body.className = savedTheme === "default" ? "" : savedTheme;
+  }, []);
+
+  const changeTheme = (newTheme: string) => {
+    setTheme(newTheme);
+    localStorage.setItem("portal-theme", newTheme);
+    document.body.className = newTheme === "default" ? "" : newTheme;
+  };
+
   useEffect(() => {
     setIsMobileOpen(false);
   }, [pathname]);
@@ -124,7 +141,45 @@ export function Sidebar({ role }: { role?: string }) {
           })}
         </nav>
 
-        <div className="p-6 md:p-4 mt-auto">
+        <div className="px-6 md:px-4 py-2 space-y-3">
+          {(!isCollapsed || isMobileOpen) && (
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1 px-1">Visual do Portal</p>
+          )}
+          <div className={cn(
+             "grid gap-2",
+             (isCollapsed && !isMobileOpen) ? "grid-cols-1" : "grid-cols-3"
+          )}>
+            <button 
+              onClick={() => changeTheme("default")}
+              className={cn(
+                "flex items-center justify-center p-3 rounded-2xl transition-all border",
+                theme === "default" ? "bg-indigo-600 text-white border-indigo-600 shadow-lg" : "bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-50"
+              )}
+            >
+              <Sun size={18} />
+            </button>
+            <button 
+              onClick={() => changeTheme("theme-gold")}
+              className={cn(
+                "flex items-center justify-center p-3 rounded-2xl transition-all border",
+                theme === "theme-gold" ? "bg-amber-500 text-white border-amber-500 shadow-lg" : "bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-50"
+              )}
+            >
+              <Sparkles size={18} />
+            </button>
+            <button 
+              onClick={() => changeTheme("theme-glass")}
+              className={cn(
+                "flex items-center justify-center p-3 rounded-2xl transition-all border",
+                theme === "theme-glass" ? "bg-blue-500 text-white border-blue-500 shadow-lg" : "bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-50"
+              )}
+            >
+              <Palette size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 md:p-4">
           <div className={cn(
             "bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] p-5 md:p-4 flex items-center gap-3 border border-slate-100 dark:border-slate-800 shadow-inner",
             (isCollapsed && !isMobileOpen) ? "justify-center" : "justify-between"
