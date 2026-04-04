@@ -179,6 +179,31 @@ export default function VendasClient({ user }: { user: any }) {
     }
   }, [replyingTo]);
 
+  // Suporte a colar imagens (Ctrl+V)
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf("image") !== -1) {
+          const blob = items[i].getAsFile();
+          if (blob) {
+            const file = new File([blob], `print-${Date.now()}.png`, { type: blob.type });
+            setSelectedFile(file);
+            
+            const reader = new FileReader();
+            reader.onload = (e) => setFilePreview(e.target?.result as string);
+            reader.readAsDataURL(file);
+          }
+        }
+      }
+    };
+
+    window.addEventListener("paste", handlePaste);
+    return () => window.removeEventListener("paste", handlePaste);
+  }, []);
+
   const refreshData = async (silent = false) => {
     if (!silent) setLoading(true);
     const [fetchedLeads, fetchedSellers, fetchedQR] = await Promise.all([
