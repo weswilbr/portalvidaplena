@@ -1238,21 +1238,38 @@ export default function VendasClient({ user }: { user: any }) {
                 </div>
               )}
 
-              {/* Preview de Arquivo */}
+              {/* Preview de Arquivo Expandido */}
               {selectedFile && (
-                <div className="mx-3 mt-3 bg-white p-3 rounded-2xl border border-slate-200 flex items-center justify-between shadow-sm animate-in slide-in-from-bottom duration-200">
-                  <div className="flex items-center gap-2 min-w-0">
-                    {filePreview ? (
-                      <img src={filePreview} className="w-12 h-12 rounded-lg object-cover border border-slate-100" alt="preview" />
-                    ) : (
-                      <div className="p-3 bg-slate-100 rounded-lg text-slate-500 border border-slate-200"><FileText size={22}/></div>
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-slate-800 truncate max-w-[160px]">{selectedFile.name}</p>
-                      <p className="text-[10px] font-black text-slate-400 uppercase">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                <div className="mx-3 mt-3 bg-white p-4 rounded-[2rem] border border-slate-200 shadow-xl animate-in slide-in-from-bottom duration-300 z-50">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                       <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em]">Prévia do Envio</span>
+                       <button onClick={() => { setSelectedFile(null); setFilePreview(null); }} className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-all"><X size={20}/></button>
+                    </div>
+                    
+                    <div className="flex flex-col md:flex-row gap-4 items-center md:items-start bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                      {filePreview ? (
+                        <div className="relative group">
+                          <img src={filePreview} className="max-h-64 md:max-h-80 w-auto rounded-xl object-contain border border-white shadow-md transition-transform" alt="preview" />
+                          <div className="absolute inset-0 bg-black/5 rounded-xl pointer-events-none"></div>
+                        </div>
+                      ) : (
+                        <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center border border-indigo-200 shadow-inner">
+                          <FileText size={40}/>
+                        </div>
+                      )}
+                      
+                      <div className="flex-1 min-w-0 text-center md:text-left py-2">
+                        <p className="text-sm font-black text-slate-800 truncate">{selectedFile.name}</p>
+                        <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">
+                          Tamanho: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                        <div className="mt-3 flex items-center justify-center md:justify-start gap-2">
+                           <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-[9px] font-black uppercase">Pronto para enviar</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <button onClick={() => { setSelectedFile(null); setFilePreview(null); }} className="p-2 hover:bg-red-50 text-red-400 rounded-xl transition-all shrink-0"><X size={18}/></button>
                 </div>
               )}
 
