@@ -211,16 +211,27 @@ export default function VendasClient({ user }: { user: any }) {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: "environment",
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } 
+      });
       setCameraStream(stream);
       setIsCameraOpen(true);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
     } catch (err) {
       alert("Não foi possível acessar a câmera. Verifique as permissões.");
     }
   };
+
+  // Garante que o stream seja conectado ao vídeo assim que o elemento for montado
+  useEffect(() => {
+    if (isCameraOpen && cameraStream && videoRef.current) {
+      videoRef.current.srcObject = cameraStream;
+      videoRef.current.play().catch(console.error);
+    }
+  }, [isCameraOpen, cameraStream]);
 
   const stopCamera = () => {
     if (cameraStream) {
