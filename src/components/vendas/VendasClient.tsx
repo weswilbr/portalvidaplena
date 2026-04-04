@@ -37,7 +37,8 @@ import {
   Info,
   Edit2,
   AlertTriangle,
-  Reply
+  Reply,
+  Camera
 } from "lucide-react";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import axios, { type AxiosProgressEvent } from "axios";
@@ -115,6 +116,8 @@ export default function VendasClient({ user }: { user: any }) {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [messageToDelete, setMessageToDelete] = useState<any>(null);
   const [replyingTo, setReplyingTo] = useState<any>(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -125,6 +128,8 @@ export default function VendasClient({ user }: { user: any }) {
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     refreshData();
@@ -203,6 +208,47 @@ export default function VendasClient({ user }: { user: any }) {
     window.addEventListener("paste", handlePaste);
     return () => window.removeEventListener("paste", handlePaste);
   }, []);
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      setCameraStream(stream);
+      setIsCameraOpen(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      alert("Não foi possível acessar a câmera. Verifique as permissões.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setIsCameraOpen(false);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx?.drawImage(video, 0, 0);
+      
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const file = new File([blob], `photo-${Date.now()}.jpg`, { type: "image/jpeg" });
+          setSelectedFile(file);
+          setFilePreview(canvas.toDataURL("image/jpeg"));
+          stopCamera();
+        }
+      }, "image/jpeg", 0.95);
+    }
+  };
 
   const refreshData = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -1227,6 +1273,14 @@ export default function VendasClient({ user }: { user: any }) {
                   </button>
                   <button 
                     type="button" 
+                    onClick={startCamera}
+                    className="p-2.5 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-white transition-all"
+                    title="Tirar Foto"
+                  >
+                    <Camera size={22} />
+                  </button>
+                  <button 
+                    type="button" 
                     onClick={() => setIsGatilhoOpen(!isGatilhoOpen)}
                     className={cn("p-2.5 rounded-xl text-slate-500 hover:text-amber-500 transition-all", isGatilhoOpen && "text-amber-500 bg-white shadow-sm")}
                   >
@@ -1554,6 +1608,37 @@ export default function VendasClient({ user }: { user: any }) {
             alt="Preview"
             onClick={(e) => e.stopPropagation()} 
           />
+        </div>
+      )}
+
+      {/* Interface da Câmera */}
+      {isCameraOpen && (
+        <div className="fixed inset-0 z-[400] bg-black flex flex-col items-center justify-center animate-in fade-in duration-300">
+          <header className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-10 bg-gradient-to-b from-black/60 to-transparent">
+             <span className="text-white font-black text-xs uppercase tracking-[0.2em]">Câmera ao Vivo</span>
+             <button onClick={stopCamera} className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all">
+                <X size={28} />
+             </button>
+          </header>
+
+          <div className="relative w-full h-full flex items-center justify-center">
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              playsInline 
+              className="max-w-full max-h-full object-contain"
+            />
+            <canvas ref={canvasRef} className="hidden" />
+          </div>
+
+          <footer className="absolute bottom-0 left-0 right-0 p-12 flex justify-center items-center bg-gradient-to-t from-black/60 to-transparent">
+             <button 
+              onClick={capturePhoto}
+              className="w-20 h-20 bg-white rounded-full border-8 border-white/30 flex items-center justify-center hover:scale-110 active:scale-90 transition-all shadow-2xl"
+             >
+                <div className="w-14 h-14 bg-white rounded-full border-2 border-slate-200"></div>
+             </button>
+          </footer>
         </div>
       )}
     </div>
