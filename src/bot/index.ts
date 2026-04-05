@@ -262,6 +262,24 @@ client.on('message', async (msg: any) => {
         if (sellers.length > 0) {
           const sortedSellers = sellers.sort((a: any, b: any) => a.leads.length - b.leads.length);
           assignedToId = sortedSellers[0].id;
+
+          // 🔔 ALERTA SILENCIOSO VIA WHATSAPP (Direto no Privado)
+          const targetSeller = sortedSellers[0];
+          if (targetSeller.notificationsEnabled && targetSeller.notificationPhone) {
+            try {
+               const sellerJid = targetSeller.notificationPhone.includes('@') 
+                 ? targetSeller.notificationPhone 
+                 : `${targetSeller.notificationPhone.replace(/\D/g, '')}@c.us`;
+               
+               const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://portalfvp.duckdns.org';
+               const alertMsg = `🔔 *Novo Lead Recebido!* \n\nOlá *${targetSeller.name}*, você acaba de receber o lead *${participantName}* no portal Vida Plena.\n\n🚀 *Acesse agora:* \n${appUrl}/dashboard/vendas`;
+               
+               await client.sendMessage(sellerJid, alertMsg);
+               console.log(`📡 Alerta enviado para o vendedor: ${targetSeller.name} via WhatsApp.`);
+            } catch (alertErr) {
+               console.error("❌ Falha ao enviar alerta para vendedor:", alertErr);
+            }
+          }
         }
       }
 
