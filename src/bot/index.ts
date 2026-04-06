@@ -1,10 +1,11 @@
+import { loadEnvConfig } from '@next/env';
+loadEnvConfig(process.cwd());
+
 import { Client, LocalAuth, MessageMedia } from 'whatsapp-web.js';
 import ffmpeg from 'fluent-ffmpeg';
 import { transcribeAudio } from '../lib/gemini';
 import * as QRCode from 'qrcode';
 import qrcodeTerminal from 'qrcode-terminal';
-import { loadEnvConfig } from '@next/env';
-loadEnvConfig(process.cwd());
 import prisma from '../lib/prisma';
 import * as path from 'path';
 import * as fs from 'fs';

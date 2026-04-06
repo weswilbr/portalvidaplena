@@ -1,12 +1,15 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+function getGenAI() {
+  return new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+}
 
 /**
  * Transcreve e resume um áudio enviado pelo WhatsApp
  */
 export async function transcribeAudio(base64Data: string, mimeType: string) {
   try {
+    const genAI = getGenAI();
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = "Você é um assistente de CRM. Transcreva este áudio do WhatsApp e faça um resumo curto do que o lead quer. Se for um áudio de saudação, apenas transcreva. Formate assim: [Transcrição]: ... \n [Resumo]: ...";
@@ -33,6 +36,7 @@ export async function transcribeAudio(base64Data: string, mimeType: string) {
  */
 export async function suggestReplies(chatHistory: string) {
   try {
+    const genAI = getGenAI();
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `Com base no histórico abaixo de um lead no CRM, sugira 3 respostas curtas e profissionais para o vendedor enviar. Retorne APENAS um array JSON de strings. Exemplo: ["Sim, claro!", "Pode me enviar seu e-mail?", "Vou verificar agora."]\n\nHistórico:\n${chatHistory}`;
