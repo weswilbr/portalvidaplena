@@ -306,6 +306,13 @@ client.on('message', async (msg: any) => {
             }
          }
 
+         try {
+            const dbUsers = await (prisma as any).user.findMany({
+               select: { name: true, role: true, notificationsEnabled: true, notificationPhone: true }
+            });
+            console.log(`🔎 [RAIO-X DO BANCO DE DADOS] Usuários reais na VPS:`, JSON.stringify(dbUsers));
+         } catch(e) { }
+
          console.log(`🤖 Filtro de Alertas concluído. Plantonistas elegíveis: ${targetUsers.length}`);
          
          if (targetUsers.length === 0) {
