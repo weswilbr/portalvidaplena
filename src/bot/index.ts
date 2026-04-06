@@ -285,20 +285,44 @@ client.on('message', async (msg: any) => {
 
       // 🔔 ALERTA SILENCIOSO VIA WHATSAPP (Atraso de 2s p/ estabilidade)
       setTimeout(async () => {
-         const targetSeller = sellers.find((s: any) => s.id === assignedToId);
-         if (targetSeller && targetSeller.notificationsEnabled && targetSeller.notificationPhone) {
+         let targetUsers: any[] = [];
+         
+         if (assignedToId) {
+            // Avisa o vendedor escolhido
+            const ts = sellers.find((s: any) => s.id === assignedToId);
+            if (ts) targetUsers.push(ts);
+         } else {
+            // Round-robin desligado ou falha: avisa administradores plantonistas
             try {
-               const rawPhone = targetSeller.notificationPhone.replace(/\D/g, '');
-               const sellerJid = `${rawPhone}@c.us`;
-               
-               const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://portalfvp.duckdns.org';
-               const alertMsg = `🔔 *Novo Lead:* ${participantName}\n\n🚀 *Ver no Portal:* \n${appUrl}/dashboard/vendas`;
-               
-               // Usa o client p/ enviar a msg silenciosa p/ o vendedor
-               await client.sendMessage(sellerJid, alertMsg);
-               console.log(`📡 Alerta entregue: ${targetSeller.name} (${rawPhone})`);
-            } catch (alertErr: any) {
-               console.error("❌ Erro ao alertar vendedor:", alertErr.message || alertErr);
+               const admins = await (prisma as any).user.findMany({
+                  where: { 
+                     role: 'ADMIN', 
+                     notificationsEnabled: true,
+                     notificationPhone: { not: null }
+                  }
+               });
+               targetUsers = admins;
+            } catch (e) {
+               console.error("Erro ao buscar admins para alerta:", e);
+            }
+         }
+
+         for (const user of targetUsers) {
+            if (user.notificationsEnabled && user.notificationPhone) {
+               try {
+                  const rawPhone = user.notificationPhone.replace(/\D/g, '');
+                  const sellerJid = `${rawPhone}@c.us`;
+                  
+                  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://portalfvp.duckdns.org';
+                  const alertMsg = assignedToId 
+                     ? `🔔 *Novo Lead na sua Carteira!*\n\nLead: *${participantName}*\n\n🚀 *Atenda agora:* \n${appUrl}/dashboard/vendas`
+                     : `🔔 *Lead na Fila Geral!*\n\nLead: *${participantName}*\nNenhum vendedor fixo.\n\n🚀 *Assuma o chat:* \n${appUrl}/dashboard/vendas`;
+                  
+                  await client.sendMessage(sellerJid, alertMsg);
+                  console.log(`📡 Alerta entregue para ${user.name} (${rawPhone})`);
+               } catch (alertErr: any) {
+                  console.error(`❌ Erro ao alertar ${user.name}:`, alertErr.message || alertErr);
+               }
             }
          }
       }, 2000);
