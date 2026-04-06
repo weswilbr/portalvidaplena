@@ -57,7 +57,7 @@ export default function LoginPage() {
           </div>
           
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Portal Vida Plena</h1>
-          <p className="text-slate-500 font-medium tracking-tight">Acesso para Vendedores e Parceiros 4Life</p>
+          <p className="text-slate-500 font-medium tracking-tight">Acesso para Vendedores e Parceiros Vida Plena</p>
         </div>
 
         <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-100 border border-slate-100 space-y-6">
@@ -120,7 +120,7 @@ export default function LoginPage() {
         </div>
 
         <div className="text-center">
-          <span className="text-slate-400 text-xs font-bold uppercase tracking-widest opacity-50">Distribuidor Independente 4Life</span>
+          <span className="text-slate-400 text-xs font-bold uppercase tracking-widest opacity-50">Distribuidor Independente Vida Plena</span>
         </div>
       </div>
     </div>

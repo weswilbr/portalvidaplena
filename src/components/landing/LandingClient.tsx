@@ -25,7 +25,7 @@ export default function LandingClient() {
 
   // Constants
   const WHATSAPP_NUMBER = "5527996872622"; // Número Oficial do CRM / Bot
-  const AFFILIATE_LINK = "https://brazil.4life.com/12866267/signup/PC";
+  const AFFILIATE_LINK = "https://brazil.Vida Plena.com/12866267/signup/PC";
 
   // Actions
   const handleLeadCapture = async (e?: React.FormEvent, type: "Form" | "WhatsApp" = "Form", interest_override?: string) => {
@@ -51,13 +51,13 @@ export default function LandingClient() {
         setTimeout(() => {
           const msg = interest === "Negócio" 
             ? `Olá! Sou ${formData.name}. Acabei de me cadastrar no Projeto Vida Plena e quero saber mais sobre o negócio.`
-            : `Olá! Sou ${formData.name}. Gostaria de saber mais sobre os produtos 4Life para minha saúde.`;
+            : `Olá! Sou ${formData.name}. Gostaria de saber mais sobre os produtos Vida Plena para minha saúde.`;
           openWhatsApp(WHATSAPP_NUMBER, msg);
         }, 1500);
       } else {
         const msg = interest === "Negócio"
-          ? "Olá! Vim da sua Landing Page e gostaria de saber mais sobre a oportunidade de negócio 4Life."
-          : "Olá! Vim da sua Landing Page e gostaria de saber mais sobre os produtos 4Life.";
+          ? "Olá! Vim da sua Landing Page e gostaria de saber mais sobre a oportunidade de negócio Vida Plena."
+          : "Olá! Vim da sua Landing Page e gostaria de saber mais sobre os produtos Vida Plena.";
         openWhatsApp(WHATSAPP_NUMBER, msg);
         setLoading(false);
       }
@@ -75,7 +75,7 @@ export default function LandingClient() {
           <div className="flex flex-col items-center text-center space-y-8 max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest animate-pulse border border-indigo-100">
               <Zap size={14} className="fill-indigo-600" />
-              Oportunidade Ouro Elite 4Life Brasil 2026
+              Oportunidade Ouro Elite Vida Plena 2026
             </div>
             
             <h1 className="text-4xl md:text-7xl font-black text-slate-900 tracking-tight leading-[1.1]">
@@ -257,7 +257,7 @@ export default function LandingClient() {
         <section className="container mx-auto px-6 py-10">
           <div className="max-w-4xl mx-auto p-12 bg-indigo-600 rounded-[3rem] text-center text-white space-y-8 shadow-2xl shadow-indigo-200 relative overflow-hidden group">
             <div className="relative z-10 space-y-6">
-              <h2 className="text-3xl md:text-4xl font-black">Já conhece a 4Life e quer se cadastrar direto?</h2>
+              <h2 className="text-3xl md:text-4xl font-black">Já conhece a Vida Plena e quer se cadastrar direto?</h2>
               <p className="text-indigo-100 text-lg font-medium">
                 Pule a consultoria e abra sua conta de afiliado independente agora mesmo no portal oficial.
               </p>
@@ -280,7 +280,7 @@ export default function LandingClient() {
       <footer className="bg-white border-t border-slate-100 pt-24 pb-12">
         <div className="container mx-auto px-6 space-y-12">
           <div className="flex flex-col md:flex-row items-center justify-center gap-12 grayscale opacity-40 hover:opacity-100 transition-opacity">
-             <div className="flex items-center gap-2 font-black text-2xl tracking-tighter text-slate-900 italic">4LIFE <span className="font-light not-italic text-sm tracking-widest ml-1 border-l pl-2 border-slate-300">BRASIL</span></div>
+             <div className="flex items-center gap-2 font-black text-2xl tracking-tighter text-slate-900 italic">Vida Plena <span className="font-light not-italic text-sm tracking-widest ml-1 border-l pl-2 border-slate-300">BRASIL</span></div>
              <div className="h-10 w-[1px] bg-slate-200 hidden md:block"></div>
              <div className="flex items-center gap-2 font-bold text-slate-900 uppercase tracking-widest text-sm">Prêmio Ciência Imunológica</div>
              <div className="h-10 w-[1px] bg-slate-200 hidden md:block"></div>
@@ -289,7 +289,7 @@ export default function LandingClient() {
 
           <div className="text-center space-y-4">
             <h2 className="text-sm font-bold text-slate-900 uppercase tracking-[0.3em]">Projeto Vida Plena</h2>
-            <p className="text-slate-400 text-sm font-medium">© 2026 Todos os direitos reservados. Projeto operado por Distribuidor Independente 4Life.</p>
+            <p className="text-slate-400 text-sm font-medium">© 2026 Todos os direitos reservados. Projeto operado por Distribuidor Independente Vida Plena.</p>
             <div className="flex justify-center flex-wrap gap-4 sm:gap-8 text-xs text-slate-400 underline underline-offset-4">
                <a href="#" className="hover:text-indigo-600 transition-colors">Política de Privacidade</a>
                <a href="#" className="hover:text-indigo-600 transition-colors">Termos de Uso</a>

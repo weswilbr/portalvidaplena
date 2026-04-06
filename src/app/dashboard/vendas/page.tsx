@@ -5,7 +5,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Vendas | Gestão de Tráfego Vida Plena",
-  description: "Gerencie suas vendas de produtos 4Life em tempo real.",
+  description: "Gerencie suas vendas de produtos Vida Plena em tempo real.",
 };
 
 export default async function VendasPage() {

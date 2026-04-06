@@ -4,7 +4,7 @@ import { Wallet, TrendingUp, TrendingDown, DollarSign, Calendar, Plus } from "lu
 import { cn } from "@/lib/utils";
 
 const transactions = [
-  { id: 1, type: "income", category: "Comissão 4Life", amount: 1250.00, date: "2026-03-14", status: "RECEIVED" },
+  { id: 1, type: "income", category: "Comissão Vida Plena", amount: 1250.00, date: "2026-03-14", status: "RECEIVED" },
   { id: 2, type: "outcome", category: "Marketing (Ads)", amount: 350.00, date: "2026-03-12", status: "PAID" },
   { id: 3, type: "income", category: "Venda Direta", amount: 480.00, date: "2026-03-10", status: "RECEIVED" },
 ];

@@ -143,7 +143,7 @@ export default function LeadsClient({ user }: { user: any }) {
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 leading-none">Gestão de Leads (Negócio)</h1>
-          <p className="text-slate-500 font-medium mt-2 text-sm md:text-base">Gerencie seus prospectos interessados no Projeto Vida Plena e 4Life.</p>
+          <p className="text-slate-500 font-medium mt-2 text-sm md:text-base">Gerencie seus prospectos interessados no Projeto Vida Plena e Vida Plena.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-full md:w-auto">

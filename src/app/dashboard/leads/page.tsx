@@ -5,7 +5,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Leads (Negócio) | Gestão Vida Plena",
-  description: "Gerencie prospectos para formação de equipe 4Life.",
+  description: "Gerencie prospectos para formação de equipe Vida Plena.",
 };
 
 export default async function LeadsPage() {

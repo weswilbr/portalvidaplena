@@ -123,7 +123,7 @@ export default function DashboardClient() {
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 leading-none">Fala, Líder! 🚀</h2>
-          <p className="text-slate-500 font-medium mt-2 text-sm md:text-base tracking-tight">Evolução em tempo real da sua estrutura 4Life.</p>
+          <p className="text-slate-500 font-medium mt-2 text-sm md:text-base tracking-tight">Evolução em tempo real da sua estrutura Vida Plena.</p>
         </div>
         <div className="flex gap-4">
           <button 
