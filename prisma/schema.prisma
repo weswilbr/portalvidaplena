@@ -92,7 +92,7 @@ model Customer {
   name        String
   phone       String?
   email       String?
-  idVida Plena     String?  // ID de cadastro na Vida Plena
+  idVidaPlena String?  // ID de cadastro na Vida Plena
   level       String?  // Associate, Builder, Diamond, etc.
   lpMonthly   Int      @default(0)
   createdAt   DateTime @default(now())
