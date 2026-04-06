@@ -53,3 +53,20 @@ export async function restartBotCommand() {
     return { success: false, message: "Falha ao enviar comando." };
   }
 }
+export async function requestPhotoScan() {
+  try {
+    const config = await (prisma as any).botConfig.findFirst();
+    if (config) {
+      await (prisma as any).botConfig.update({
+        where: { id: config.id },
+        data: { status: 'SCAN_REQUESTED' }
+      });
+      revalidatePath("/dashboard/bot");
+      return { success: true, message: "Varredura iniciada! O robô buscará as fotos faltantes em segundo plano." };
+    }
+    return { success: false, message: "Configuração não encontrada." };
+  } catch (error) {
+    console.error("Erro solicitando scan:", error);
+    return { success: false, message: "Falha ao enviar comando de scan." };
+  }
+}

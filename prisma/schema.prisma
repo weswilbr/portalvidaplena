@@ -101,7 +101,7 @@ model Customer {
 
 model Goal {
   id          String   @id @default(cuid())
-  title       String   @default("Ouro Elite")
+  title       String   @default("Vida Plena")
   targetLP    Int
   targetSignups Int
   currentLP   Int      @default(0)

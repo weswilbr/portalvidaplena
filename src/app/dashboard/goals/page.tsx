@@ -37,7 +37,7 @@ export default function GoalsPage() {
   }
 
   const goalData = {
-    rank: data?.mainGoal?.title || "Ouro Elite",
+    rank: data?.mainGoal?.title || "Vida Plena",
     progress: Math.round(data?.stats?.goalProgress || 0),
     metrics: [
       { label: "Life Points (LP) Diretos", current: data?.mainGoal?.currentLP || 0, target: data?.mainGoal?.targetLP || 5000, icon: Star, color: "text-amber-500" },

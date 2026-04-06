@@ -7,8 +7,8 @@ import { getSession } from "@/app/actions/auth";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Vida Plena - Projeto Vida Plena",
-  description: "Sistema de gestão para empreendedor Vida Plena",
+  title: "Portal Vida Plena",
+  description: "Sistema de Gestão Comercial e CRM - Vida Plena",
 };
 
 export default async function RootLayout({

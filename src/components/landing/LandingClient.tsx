@@ -75,7 +75,7 @@ export default function LandingClient() {
           <div className="flex flex-col items-center text-center space-y-8 max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest animate-pulse border border-indigo-100">
               <Zap size={14} className="fill-indigo-600" />
-              Oportunidade Ouro Elite Vida Plena 2026
+              Oportunidade Vida Plena Vida Plena 2026
             </div>
             
             <h1 className="text-4xl md:text-7xl font-black text-slate-900 tracking-tight leading-[1.1]">
@@ -157,7 +157,7 @@ export default function LandingClient() {
                 </h2>
                 <div className="space-y-6">
                   {[
-                    "Acesso exclusivo à mentoria Ouro Elite.",
+                    "Acesso exclusivo à mentoria Vida Plena.",
                     "Grupo VIP de treinamento e suporte.",
                     "Ferramentas de prospecção digital.",
                     "Guia 'Início Rápido' em PDF grátis."

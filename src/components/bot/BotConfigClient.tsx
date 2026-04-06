@@ -13,12 +13,14 @@ import {
   ShieldCheck,
   Server
 } from "lucide-react";
-import { getBotConfig, updateBotConfig, restartBotCommand } from "@/app/actions/bot";
+import { getBotConfig, updateBotConfig, restartBotCommand, requestPhotoScan } from "@/app/actions/bot";
+import { Camera } from "lucide-react";
 
 export default function BotConfigClient() {
   const [config, setConfig] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
     refreshConfig();
@@ -56,6 +58,13 @@ export default function BotConfigClient() {
       const res = await restartBotCommand();
       alert(res.message);
     }
+  };
+
+  const handleRequestScan = async () => {
+    setIsScanning(true);
+    const res = await requestPhotoScan();
+    alert(res.message);
+    setIsScanning(false);
   };
 
   if (loading) {
@@ -123,6 +132,15 @@ export default function BotConfigClient() {
                 </div>
                 <span className="font-bold text-emerald-500">OK</span>
               </div>
+
+              <button 
+                onClick={handleRequestScan}
+                disabled={isScanning}
+                className="w-full mt-4 p-4 border-2 border-dashed border-indigo-100 rounded-2xl flex items-center justify-center gap-3 text-indigo-600 font-black text-xs uppercase tracking-widest hover:bg-indigo-50 hover:border-indigo-200 transition-all active:scale-95 disabled:opacity-50"
+              >
+                {isScanning ? <RefreshCw size={18} className="animate-spin" /> : <Camera size={18} />}
+                {isScanning ? "Sincronizando..." : "Sincronizar Fotos"}
+              </button>
             </div>
 
             {config?.status === "QR_READY" && config?.qrCode && (

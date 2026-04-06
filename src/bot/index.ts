@@ -122,6 +122,13 @@ setInterval(async () => {
       });
       console.log('💥 Encerrando processo para PM2 reiniciar...');
       process.exit(1);
+    } else if (dbConfig?.status === 'SCAN_REQUESTED') {
+      console.log('📸 Pedido de Varredura de fotos recebido...');
+      await scanProfilePhotos();
+      await (prisma as any).botConfig.update({
+        where: { id: dbConfig.id },
+        data: { status: 'CONNECTED' }
+      });
     }
   } catch(e) {
     console.error('Erro no vigilante:', e);
@@ -158,8 +165,11 @@ async function scanProfilePhotos() {
 
     for (const lead of leadsWithoutPic) {
       try {
-        // Formata o ID do WhatsApp (remove : e cuida de LIDs se necessário)
-        const jid = lead.phone.includes('@') ? lead.phone : `${lead.phone.split(':')[0]}@c.us`;
+        // Formata o ID do WhatsApp — Limpa qualquer sobra e garante @c.us
+        const cleanNumber = lead.phone.replace(/\D/g, '').split(':')[0];
+        const jid = `${cleanNumber}@c.us`;
+        
+        console.log(`📸 Buscando foto para: ${lead.name} (${jid})...`);
         const contact = await client.getContactById(jid);
         const picUrl = await contact.getProfilePicUrl();
         
@@ -168,11 +178,11 @@ async function scanProfilePhotos() {
              where: { id: lead.id },
              data: { profilePic: picUrl }
            });
-           console.log(`📸 Foto capturada com sucesso para: ${lead.name}`);
+           console.log(`✅ Foto de ${lead.name} atualizada!`);
         }
         
-        // Delay de 5 segundos entre cada consulta por segurança absoluta contra bloqueio
-        await new Promise(r => setTimeout(r, 5000));
+        // Delay de 2 segundos entre cada consulta
+        await new Promise(r => setTimeout(r, 2000));
       } catch (e) {
         // Avança silenciosamente se o contato for privado ou inválido
       }
@@ -238,12 +248,16 @@ client.on('message', async (msg: any) => {
 
     const cfg = await (prisma as any).botConfig.findFirst();
 
-    // Busca foto de perfil (sempre tenta para manter atualizada)
+    // Busca foto de perfil com retry (WHATSAPP as vezes demora para liberar a URL na primeira msg)
     let profilePic: string | null = null;
     try {
-      profilePic = await contact.getProfilePicUrl() || null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        profilePic = await contact.getProfilePicUrl() || null;
+        if (profilePic) break;
+        await new Promise(r => setTimeout(r, 1000)); // Espera 1s entre tentativas
+      }
     } catch {
-      // Contato não tem foto pública
+      // Contato não tem foto pública ou erro de rede
     }
 
     // Checa se já existe lead com esse número
@@ -351,6 +365,21 @@ client.on('message', async (msg: any) => {
     } else {
       // Lead existente — atualiza foto e nome se mudaram
       const updates: Record<string, any> = {};
+
+      // Se não tem foto, tenta buscar agora que mandou msg (contato quente)
+      if (!lead.profilePic) {
+         try {
+           for (let attempt = 0; attempt < 3; attempt++) {
+             profilePic = await contact.getProfilePicUrl() || null;
+             if (profilePic) break;
+             await new Promise(r => setTimeout(r, 1000));
+           }
+           if (profilePic) {
+              updates.profilePic = profilePic;
+              console.log(`📸 Foto recuperada para lead existente: ${lead.name}`);
+           }
+         } catch(e) {}
+      }
 
       if (profilePic && profilePic !== lead.profilePic) {
         updates.profilePic = profilePic;

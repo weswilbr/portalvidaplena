@@ -37,7 +37,7 @@ const ALL_MENU_ITEMS = [
   { icon: UserPlus, label: "Leads (Negócio)", href: "/dashboard/leads", roles: ["ADMIN", "SELLER"] },
   { icon: ShoppingBag, label: "Vendas (Produtos)", href: "/dashboard/vendas", roles: ["ADMIN", "SELLER"] },
   { icon: Bot, label: "Bot WhatsApp", href: "/dashboard/bot", roles: ["ADMIN"] },
-  { icon: BarChart3, label: "Metas Ouro Elite", href: "/dashboard/goals", roles: ["ADMIN"] },
+  { icon: BarChart3, label: "Metas Vida Plena", href: "/dashboard/goals", roles: ["ADMIN"] },
   { icon: Calendar, label: "Agenda", href: "/dashboard/agenda", roles: ["ADMIN", "SELLER"] },
 ];
 

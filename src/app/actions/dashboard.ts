@@ -117,14 +117,14 @@ export async function getDashboardData() {
       stats: {
         newLeadsMonthly: monthlyLeads,
         totalLP: mainGoal?.currentLP || 0,
-        goalTitle: mainGoal?.title || "Ouro Elite",
+        goalTitle: mainGoal?.title || "Vida Plena",
         goalProgress: mainGoal ? (mainGoal.currentLP / mainGoal.targetLP) * 100 : 0,
         bonusPhase: "Fase 1",
         organizationLP: 15200, // This could be calculated from a more complex tree
         qualifiedLeaders: 3,   // This could be calculated from team status
       },
       mainGoal: mainGoal || {
-        title: "Ouro Elite",
+        title: "Vida Plena",
         currentLP: 0,
         targetLP: 5000,
         currentSignups: 0,
