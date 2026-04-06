@@ -307,6 +307,12 @@ client.on('message', async (msg: any) => {
             }
          }
 
+         console.log(`🤖 Filtro de Alertas concluído. Plantonistas elegíveis: ${targetUsers.length}`);
+         
+         if (targetUsers.length === 0) {
+            console.log(`⚠️ Nenhum administrador ou vendedor configurou o WhatsApp para receber alertas.`);
+         }
+
          for (const user of targetUsers) {
             if (user.notificationsEnabled && user.notificationPhone) {
                try {
@@ -318,10 +324,11 @@ client.on('message', async (msg: any) => {
                      ? `🔔 *Novo Lead na sua Carteira!*\n\nLead: *${participantName}*\n\n🚀 *Atenda agora:* \n${appUrl}/dashboard/vendas`
                      : `🔔 *Lead na Fila Geral!*\n\nLead: *${participantName}*\nNenhum vendedor fixo.\n\n🚀 *Assuma o chat:* \n${appUrl}/dashboard/vendas`;
                   
+                  console.log(`📡 Disparando alerta de novo lead para: ${user.name} (${rawPhone})...`);
                   await client.sendMessage(sellerJid, alertMsg);
-                  console.log(`📡 Alerta entregue para ${user.name} (${rawPhone})`);
+                  console.log(`✅ [ALERTA ENTREGUE] Mensagem recebida por ${user.name}!`);
                } catch (alertErr: any) {
-                  console.error(`❌ Erro ao alertar ${user.name}:`, alertErr.message || alertErr);
+                  console.error(`❌ [FALHA NO ALERTA] Erro ao enviar para ${user.name}:`, alertErr.message || alertErr);
                }
             }
          }
