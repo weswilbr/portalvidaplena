@@ -1,14 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-function getGenAI() {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) {
-    console.error("❌ ERRO CRÍTICO: GEMINI_API_KEY não encontrada!");
-    throw new Error("API Key ausente");
-  }
-  return new GoogleGenerativeAI(key);
-}
-
 /**
  * Transcreve e resume um áudio enviado pelo WhatsApp
  */
