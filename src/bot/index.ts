@@ -254,32 +254,17 @@ client.on('message', async (msg: any) => {
 
       // Lógica Round Robin
       let assignedToId: string | null = null;
+      let sellers: any[] = [];
+      
       if (cfg?.isRoundRobin) {
-        const sellers = await (prisma as any).user.findMany({
+        sellers = await (prisma as any).user.findMany({
           where: { role: 'SELLER' },
           include: { leads: { where: { status: 'CONTACTED' } } }
         });
+        
         if (sellers.length > 0) {
-          const sortedSellers = sellers.sort((a: any, b: any) => a.leads.length - b.leads.length);
+          const sortedSellers = [...sellers].sort((a: any, b: any) => a.leads.length - b.leads.length);
           assignedToId = sortedSellers[0].id;
-
-          // 🔔 ALERTA SILENCIOSO VIA WHATSAPP (Direto no Privado)
-          const targetSeller = sortedSellers[0];
-          if (targetSeller.notificationsEnabled && targetSeller.notificationPhone) {
-            try {
-               const sellerJid = targetSeller.notificationPhone.includes('@') 
-                 ? targetSeller.notificationPhone 
-                 : `${targetSeller.notificationPhone.replace(/\D/g, '')}@c.us`;
-               
-               const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://portalfvp.duckdns.org';
-               const alertMsg = `🔔 *Novo Lead Recebido!* \n\nOlá *${targetSeller.name}*, você acaba de receber o lead *${participantName}* no portal Vida Plena.\n\n🚀 *Acesse agora:* \n${appUrl}/dashboard/vendas`;
-               
-               await client.sendMessage(sellerJid, alertMsg);
-               console.log(`📡 Alerta enviado para o vendedor: ${targetSeller.name} via WhatsApp.`);
-            } catch (alertErr) {
-               console.error("❌ Falha ao enviar alerta para vendedor:", alertErr);
-            }
-          }
         }
       }
 
@@ -297,6 +282,26 @@ client.on('message', async (msg: any) => {
       // Envia mensagem de saudação
       const greeting = `${cfg?.welcomeMessage}\n\n${cfg?.transferMessage}`;
       await msg.reply(greeting);
+
+      // 🔔 ALERTA SILENCIOSO VIA WHATSAPP (Atraso de 2s p/ estabilidade)
+      setTimeout(async () => {
+         const targetSeller = sellers.find((s: any) => s.id === assignedToId);
+         if (targetSeller && targetSeller.notificationsEnabled && targetSeller.notificationPhone) {
+            try {
+               const rawPhone = targetSeller.notificationPhone.replace(/\D/g, '');
+               const sellerJid = `${rawPhone}@c.us`;
+               
+               const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://portalfvp.duckdns.org';
+               const alertMsg = `🔔 *Novo Lead:* ${participantName}\n\n🚀 *Ver no Portal:* \n${appUrl}/dashboard/vendas`;
+               
+               // Usa o client p/ enviar a msg silenciosa p/ o vendedor
+               await client.sendMessage(sellerJid, alertMsg);
+               console.log(`📡 Alerta entregue: ${targetSeller.name} (${rawPhone})`);
+            } catch (alertErr: any) {
+               console.error("❌ Erro ao alertar vendedor:", alertErr.message || alertErr);
+            }
+         }
+      }, 2000);
 
       await (prisma as any).message.create({
         data: {
