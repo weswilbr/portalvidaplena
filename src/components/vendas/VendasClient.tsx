@@ -38,13 +38,17 @@ import {
   Edit2,
   AlertTriangle,
   Reply,
-  Camera
+  Camera,
+  Thermometer,
+  Sparkles
 } from "lucide-react";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import axios, { type AxiosProgressEvent } from "axios";
 import { cn, openWhatsApp, getWhatsAppHref } from "@/lib/utils";
 import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead, sendWhatsAppMessage, addInternalNote, uploadMedia, deleteMessage, updateMessage, getQuickReplies, createQuickReply, deleteQuickReply, updateQuickReply, getLeadById } from "@/app/actions/leads";
 import { getSellers } from "@/app/actions/users";
+import { getLeadAnalysis, getConversationSummary, getReplySuggestions } from '@/app/actions/ai';
+import { toast } from 'sonner';
 import KanbanView from "@/components/leads/KanbanView";
 
 // Helper para formatar celular do Brasil
@@ -97,6 +101,11 @@ export default function VendasClient({ user }: { user: any }) {
   
   const [newMessage, setNewMessage] = useState("");
   const [isNoteMode, setIsNoteMode] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<{score:number, status:string, advice:string} | null>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [fullSummary, setFullSummary] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [transferUserId, setTransferUserId] = useState("");
   const [isTransferring, setIsTransferring] = useState(false);
@@ -616,6 +625,34 @@ export default function VendasClient({ user }: { user: any }) {
     refreshData();
   };
 
+  // Efeito para buscar análise da IA quando abre o chat
+  useEffect(() => {
+    if (isDetailsOpen && selectedLead) {
+      handleRefreshAI();
+    } else {
+      setAiAnalysis(null);
+      setAiSuggestions([]);
+      setFullSummary(null);
+    }
+  }, [isDetailsOpen, selectedLead?.id]);
+
+  const handleRefreshAI = async () => {
+    if (!selectedLead) return;
+    setIsAnalyzing(true);
+    try {
+      const [analysis, suggestions] = await Promise.all([
+        getLeadAnalysis(selectedLead.id),
+        getReplySuggestions(selectedLead.id)
+      ]);
+      setAiAnalysis(analysis);
+      setAiSuggestions(suggestions);
+    } catch (error) {
+      console.error("Erro na IA:", error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   const handleInterestChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newInterest = e.target.value;
     if (!selectedLead) return;
@@ -626,6 +663,19 @@ export default function VendasClient({ user }: { user: any }) {
     alert(`Foco atualizado! Se movido para Afiliados, ele aparecerá na aba Negócios.`);
     setIsDetailsOpen(false);
     refreshData();
+  };
+
+  const handleGenerateSummary = async () => {
+    if (!selectedLead) return;
+    setIsSummarizing(true);
+    try {
+      const summary = await getConversationSummary(selectedLead.id);
+      setFullSummary(summary);
+    } catch (error) {
+      toast.error("Erro ao gerar resumo.");
+    } finally {
+      setIsSummarizing(false);
+    }
   };
 
   const handleSaveLead = async (e: React.FormEvent) => {
@@ -937,20 +987,38 @@ export default function VendasClient({ user }: { user: any }) {
                     {selectedLead.name?.charAt(0) || '?'}
                   </div>
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 relative">
                   <h3 className="text-base font-black text-slate-900 leading-tight truncate">{selectedLead.name}</h3>
                   <div className="flex items-center gap-3">
                     <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                       WhatsApp Online
                     </span>
-                    <span className="text-[10px] font-medium text-slate-400 flex items-center gap-1 border-l pl-3 border-slate-200">
-                      <Clock size={10} /> {new Date(selectedLead.updatedAt).toLocaleDateString('pt-BR')} às {new Date(selectedLead.updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    {aiAnalysis && (
+                      <div className="flex items-center gap-2 border-l pl-3 border-slate-200">
+                        <div className={cn(
+                          "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm",
+                          aiAnalysis.status === 'QUENTE' ? "bg-orange-500 text-white" :
+                          aiAnalysis.status === 'MORNO' ? "bg-amber-400 text-white" : "bg-slate-200 text-slate-500"
+                        )}>
+                          <Thermometer size={10} className={aiAnalysis.status === 'QUENTE' ? "animate-pulse" : ""} />
+                          {aiAnalysis.status} ({aiAnalysis.score}%)
+                        </div>
+                        <span className="hidden md:block text-[9px] font-bold text-slate-400 italic">"{aiAnalysis.advice}"</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
+                <button 
+                  onClick={handleGenerateSummary}
+                  disabled={isSummarizing}
+                  className="p-3 rounded-2xl text-indigo-600 hover:bg-indigo-50 transition-all flex items-center gap-1.5"
+                  title="Resumir Conversa"
+                >
+                  {isSummarizing ? <Loader2 size={20} className="animate-spin" /> : <FileText size={20} />}
+                </button>
                 <button 
                   onClick={() => setIsTransferring(!isTransferring)}
                   className={cn("p-3 rounded-2xl transition-all text-xs font-bold", isTransferring ? "bg-indigo-600 text-white" : "text-indigo-600 hover:bg-indigo-50")}
@@ -960,6 +1028,24 @@ export default function VendasClient({ user }: { user: any }) {
                 </button>
               </div>
             </header>
+
+            {/* Modal de Resumo da IA */}
+            {fullSummary && (
+                <div className="absolute inset-0 z-50 bg-slate-900/40 backdrop-blur-sm p-4 flex items-center justify-center">
+                    <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl p-6 flex flex-col gap-4 animate-in zoom-in-95 duration-200 border border-indigo-100">
+                        <div className="flex items-center justify-between border-b pb-3">
+                            <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                                <Sparkles size={16} className="text-indigo-500" /> Resumo Inteligente da Conversa
+                            </h4>
+                            <button onClick={() => setFullSummary(null)} className="p-2 hover:bg-slate-100 rounded-xl transition-all text-slate-400"><X size={18} /></button>
+                        </div>
+                        <div className="text-xs font-medium text-slate-600 leading-relaxed max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar italic bg-indigo-50/50 p-4 rounded-2xl">
+                            {fullSummary}
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mt-2">Dica: Use estas informações para agilizar o atendimento.</p>
+                    </div>
+                </div>
+            )}
             {/* Barra de Status Rápida (Kanban) - Design Premium */}
             <div className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 p-2.5 flex flex-col gap-2 shrink-0">
                <div className="px-1 flex items-center justify-between">
@@ -1341,6 +1427,25 @@ export default function VendasClient({ user }: { user: any }) {
                     <Zap size={22} />
                   </button>
                 </div>
+                
+                {/* Sugestões da IA (Dicas Invisíveis para o Lead) */}
+                {!isRecording && aiSuggestions.length > 0 && !newMessage && !selectedFile && (
+                    <div className="absolute bottom-full mb-3 left-0 right-0 px-3 flex flex-wrap gap-2 animate-in slide-in-from-bottom duration-300">
+                        <div className="flex items-center gap-1.5 mb-1 w-full pl-2">
+                             <Sparkles size={12} className="text-indigo-500 animate-pulse" />
+                             <span className="text-[9px] font-black uppercase text-indigo-400 tracking-widest">IA Sugere:</span>
+                        </div>
+                        {aiSuggestions.map((suggestion, idx) => (
+                           <button 
+                             key={idx} 
+                             onClick={() => setNewMessage(suggestion)}
+                             className="bg-white/90 backdrop-blur-sm border border-indigo-100 px-4 py-2 rounded-2xl text-[11px] font-medium text-indigo-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm active:scale-95"
+                           >
+                             {suggestion}
+                           </button>
+                        ))}
+                    </div>
+                )}
 
                 <form onSubmit={handleSendMessage} className="flex-1 flex flex-col md:flex-row items-end gap-2 relative">
                   <div className="flex-1 relative w-full">
