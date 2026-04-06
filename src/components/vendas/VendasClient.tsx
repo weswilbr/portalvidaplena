@@ -802,13 +802,25 @@ export default function VendasClient({ user }: { user: any }) {
                   {filteredLeads.map(lead => (
                     <tr key={lead.id} className="hover:bg-indigo-50/30 transition-all group animate-in slide-in-from-bottom duration-300">
                       <td className="px-6 md:px-8 py-4 md:py-5 flex items-center gap-4">
-                        {lead.profilePic ? (
-                          <img src={lead.profilePic} alt={lead.name} className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border border-slate-200 shadow-sm" />
-                        ) : (
-                          <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold border border-slate-200">
+                        <div className="flex-shrink-0">
+                          {lead.profilePic ? (
+                            <img 
+                              src={lead.profilePic} 
+                              alt={lead.name} 
+                              className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border border-slate-200 shadow-sm"
+                              onError={(e) => {
+                                (e.target as any).style.display = 'none';
+                                (e.target as any).nextSibling.style.display = 'flex';
+                              }}
+                            />
+                          ) : null}
+                          <div 
+                            style={{ display: lead.profilePic ? 'none' : 'flex' }}
+                            className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold border border-slate-200"
+                          >
                             <User size={20}/>
                           </div>
-                        )}
+                        </div>
                         <div>
                           <div className="font-bold text-slate-900 text-sm md:text-base flex items-center gap-2">
                              {lead.name}
@@ -906,11 +918,25 @@ export default function VendasClient({ user }: { user: any }) {
                 >
                   <ChevronLeft size={28} />
                 </button>
-                {selectedLead.profilePic ? (
-                  <img src={selectedLead.profilePic} className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200 shrink-0" alt={selectedLead.name} />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-base shrink-0">{selectedLead.name?.charAt(0) || '?'}</div>
-                )}
+                <div className="flex-shrink-0">
+                  {selectedLead.profilePic ? (
+                    <img 
+                      src={selectedLead.profilePic} 
+                      className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200 shrink-0" 
+                      alt={selectedLead.name} 
+                      onError={(e) => {
+                        (e.target as any).style.display = 'none';
+                        (e.target as any).nextSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <div 
+                    style={{ display: selectedLead.profilePic ? 'none' : 'flex' }}
+                    className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-base shrink-0"
+                  >
+                    {selectedLead.name?.charAt(0) || '?'}
+                  </div>
+                </div>
                 <div className="min-w-0 flex-1">
                   <h3 className="text-base font-black text-slate-900 leading-tight truncate">{selectedLead.name}</h3>
                   <div className="flex items-center gap-3">

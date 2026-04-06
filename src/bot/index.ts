@@ -25,6 +25,34 @@ async function getOrCreateBotConfig() {
 }
 
 /**
+ * Baixa foto de perfil do WhatsApp p/ a VPS (Evita links expirados/CORS)
+ */
+async function downloadProfilePic(url: string, leadId: string): Promise<string | null> {
+  try {
+     const res = await fetch(url);
+     if (!res.ok) return null;
+     
+     const buffer = await res.arrayBuffer();
+     const avatarsDir = path.join(process.cwd(), 'public', 'avatars');
+     
+     if (!fs.existsSync(avatarsDir)) {
+       fs.mkdirSync(avatarsDir, { recursive: true });
+     }
+
+     const fileName = `${leadId}.jpg`;
+     const filePath = path.join(avatarsDir, fileName);
+     
+     fs.writeFileSync(filePath, Buffer.from(buffer));
+     console.log(`📸 Avatar salvo no disco: ${fileName}`);
+     
+     return `/avatars/${fileName}`;
+  } catch (err) {
+     console.error("❌ Falha ao baixar avatar:", err);
+     return null;
+  }
+}
+
+/**
  * Comprime vídeo usando h264 para ser ultra leve no WhatsApp
  */
 async function compressVideo(inputPath: string): Promise<string> {
@@ -100,11 +128,11 @@ const client = new Client({
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
-      '--disable-accelerated-2d-canvas',
       '--no-first-run',
       '--no-zygote',
       '--single-process',
-      '--disable-gpu'
+      '--disable-gpu',
+      '--disable-extensions'
     ],
     headless: true,
   }
@@ -165,24 +193,42 @@ async function scanProfilePhotos() {
 
     for (const lead of leadsWithoutPic) {
       try {
-        // Formata o ID do WhatsApp — Limpa qualquer sobra e garante @c.us
-        const cleanNumber = lead.phone.replace(/\D/g, '').split(':')[0];
-        const jid = `${cleanNumber}@c.us`;
+        // Formata o ID do WhatsApp — Limpa e garante @c.us
+        let cleanNumber = lead.phone.replace(/\D/g, '').split(':')[0];
+        let jid = `${cleanNumber}@c.us`;
         
         console.log(`📸 Buscando foto para: ${lead.name} (${jid})...`);
-        const contact = await client.getContactById(jid);
-        const picUrl = await contact.getProfilePicUrl();
         
-        if (picUrl) {
-           await (prisma as any).lead.update({
-             where: { id: lead.id },
-             data: { profilePic: picUrl }
-           });
-           console.log(`✅ Foto de ${lead.name} atualizada!`);
+        let picUrl = null;
+        try {
+           const contact = await client.getContactById(jid);
+           picUrl = await contact.getProfilePicUrl();
+           
+           // Se falhar e for BR com 13 dígitos, tenta sem o '9' (DDI 55 + DDD + 9 dígitos)
+           if (!picUrl && cleanNumber.startsWith('55') && cleanNumber.length === 13) {
+              const alternativeNumber = cleanNumber.slice(0, 4) + cleanNumber.slice(5);
+              const altJid = `${alternativeNumber}@c.us`;
+              console.log(`🔍 Tentando versão sem o '9': ${altJid}`);
+              const altContact = await client.getContactById(altJid);
+              picUrl = await altContact.getProfilePicUrl();
+           }
+        } catch (e) {
+           console.log(`❌ Contato ${lead.name} não localizado.`);
         }
         
-        // Delay de 2 segundos entre cada consulta
-        await new Promise(r => setTimeout(r, 2000));
+        if (picUrl) {
+           const localPath = await downloadProfilePic(picUrl, lead.id);
+           if (localPath) {
+              await (prisma as any).lead.update({
+                where: { id: lead.id },
+                data: { profilePic: localPath }
+              });
+              console.log(`✅ Foto de ${lead.name} SALVA LOCALMENTE!`);
+           }
+        }
+        
+        // Delay curto para evitar bloqueio mas manter fluidez
+        await new Promise(r => setTimeout(r, 1000));
       } catch (e) {
         // Avança silenciosamente se o contato for privado ou inválido
       }
@@ -286,12 +332,24 @@ client.on('message', async (msg: any) => {
         data: {
           name: participantName,
           phone: phoneOnly,
-          profilePic,
+          profilePic: null, // Será atualizado logo abaixo se houver foto
           source,
           status: assignedToId ? 'CONTACTED' : 'NEW',
           assignedToId
         }
       });
+
+      // Baixa foto agora que temos o ID do lead
+      if (profilePic) {
+         const localPath = await downloadProfilePic(profilePic, lead.id);
+         if (localPath) {
+            await (prisma as any).lead.update({
+               where: { id: lead.id },
+               data: { profilePic: localPath }
+            });
+            lead.profilePic = localPath;
+         }
+      }
 
       // Envia mensagem de saudação
       const greeting = `${cfg?.welcomeMessage}\n\n${cfg?.transferMessage}`;
@@ -375,15 +433,20 @@ client.on('message', async (msg: any) => {
              await new Promise(r => setTimeout(r, 1000));
            }
            if (profilePic) {
-              updates.profilePic = profilePic;
-              console.log(`📸 Foto recuperada para lead existente: ${lead.name}`);
+              const localPath = await downloadProfilePic(profilePic, lead.id);
+              if (localPath) {
+                 updates.profilePic = localPath;
+                 console.log(`📸 Foto recuperada e salva local para: ${lead.name}`);
+              }
            }
          } catch(e) {}
-      }
-
-      if (profilePic && profilePic !== lead.profilePic) {
-        updates.profilePic = profilePic;
-        console.log(`📸 Foto atualizada para ${lead.name}`);
+      } else if (profilePic && !profilePic.includes('/avatars/')) {
+        // Se mudou a foto e ainda é um link externo, baixa p/ o disco
+        const localPath = await downloadProfilePic(profilePic, lead.id);
+        if (localPath) {
+           updates.profilePic = localPath;
+           console.log(`📸 Foto atualizada e salva local para ${lead.name}`);
+        }
       }
       // Atualiza nome apenas se ainda está com o nome padrão
       if (lead.name === 'Cliente WhatsApp' && participantName !== 'Cliente WhatsApp') {
