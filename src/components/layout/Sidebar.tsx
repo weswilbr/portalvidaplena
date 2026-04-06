@@ -52,6 +52,7 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
   const [isAlertModalOpen, setIsAlertModalOpen] = useState(false);
   const [notifPhone, setNotifPhone] = useState("");
   const [notifEnabled, setNotifEnabled] = useState(true);
+  const [notifyNewMessages, setNotifyNewMessages] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   // Load and Apply Theme & Settings
@@ -68,6 +69,8 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
            if (settings) {
               setNotifPhone(settings.notificationPhone || "");
               setNotifEnabled(settings.notificationsEnabled ?? true);
+               setNotifyNewMessages(settings.notifyNewMessages ?? true); setNotifyNewMessages(settings.notifyNewMessages ?? true);
+               setNotifyNewMessages(settings.notifyNewMessages ?? true);
            }
          } catch(e) {}
        }
@@ -347,7 +350,7 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
                       }
 
                       setIsSaving(true);
-                      const res = await updateUserNotificationSettings(userId, { phone: notifPhone, enabled: notifEnabled });
+                      const res = await updateUserNotificationSettings(userId, { phone: notifPhone, enabled: notifEnabled, notifyNewMessages });
                       if (res.success) {
                          alert("🎉 Alerta Privado Ativado!\n\nA partir de agora seu WhatsApp receberá um aviso assim que um lead entrar para você.");
                          setIsAlertModalOpen(false);

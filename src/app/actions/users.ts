@@ -18,22 +18,23 @@ export async function getUserSettings(userId: string) {
   try {
     return await (prisma as any).user.findUnique({
       where: { id: userId },
-      select: { notificationPhone: true, notificationsEnabled: true }
+      select: { notificationPhone: true, notificationsEnabled: true, notifyNewMessages: true }
     });
   } catch (error) {
     return null;
   }
 }
 
-export async function updateUserNotificationSettings(userId: string, data: { phone: string, enabled: boolean }) {
-  console.log(`[USER_SETTINGS] Iniciando salvamento de configuração para usuário ID: ${userId} | Status: ${data.enabled} | Fone: ${data.phone}`);
+export async function updateUserNotificationSettings(userId: string, data: { phone: string, enabled: boolean, notifyNewMessages?: boolean }) {
+  console.log(`[USER_SETTINGS] Iniciando salvamento de configuração para usuário ID: ${userId} | Status: ${data.enabled} | Fone: ${data.phone} | NotifyMsgs: ${data.notifyNewMessages}`);
   
   try {
     const updatedUser = await (prisma as any).user.update({
       where: { id: userId },
       data: {
         notificationPhone: data.phone || null,
-        notificationsEnabled: data.enabled
+        notificationsEnabled: data.enabled,
+        notifyNewMessages: data.notifyNewMessages ?? true
       }
     });
     

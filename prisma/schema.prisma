@@ -18,7 +18,8 @@ model User {
   mustChangePassword Boolean  @default(false)
   role               String   @default("SELLER") // ADMIN, SELLER
   notificationPhone  String?  @unique
-  notificationsEnabled Boolean @default(true)
+  notificationsEnabled Boolean @default(true) // Alertas de NOVO lead
+  notifyNewMessages    Boolean @default(true)  // Alertas de nova mensagem de lead já atribuído
   leads              Lead[]   @relation("UserLeads")
   messages           Message[] @relation("UserMessages")
   quickReplies       QuickReply[]

@@ -461,6 +461,46 @@ client.on('message', async (msg: any) => {
           data: updates
         });
       }
+
+      // 🔔 Notifica o atendente sobre a nova mensagem (se configurado)
+      if (lead.assignedToId) {
+        setTimeout(async () => {
+          try {
+            const assignee = await (prisma as any).user.findUnique({
+              where: { id: lead.assignedToId },
+              select: { name: true, notificationPhone: true, notifyNewMessages: true }
+            });
+
+            if (assignee?.notifyNewMessages && assignee?.notificationPhone) {
+              const rawPhone = assignee.notificationPhone.replace(/\D/g, '');
+              const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://portalfvp.duckdns.org') + '?v=2';
+              const newMsgAlert = `💬 *Nova mensagem no CRM!*\n\nLead: *${lead.name}*\n\n👆 Toque para responder:\n${appUrl}/dashboard/vendas`;
+
+              const sendAlert = async (phone: string): Promise<void> => {
+                try {
+                  await client.sendMessage(`${phone}@c.us`, newMsgAlert);
+                  console.log(`🔔 Alerta de nova mensagem enviado para ${assignee.name}!`);
+                } catch (err: any) {
+                  const errMsg = err.message || '';
+                  if (errMsg.includes('LID') || errMsg.includes('contact')) {
+                    if (phone.startsWith('55') && phone.length === 13) {
+                      await sendAlert(phone.slice(0, 4) + phone.slice(5));
+                    } else if (phone.startsWith('55') && phone.length === 12) {
+                      await sendAlert(phone.slice(0, 4) + '9' + phone.slice(4));
+                    } else {
+                      console.error(`❌ Alerta de msg falhou para ${assignee.name}:`, errMsg);
+                    }
+                  }
+                }
+              };
+
+              await sendAlert(rawPhone);
+            }
+          } catch (e) {
+            // Silencia erros de notificação p/ não travar o bot
+          }
+        }, 3000);
+      }
     }
 
     // Salva a mensagem do cliente (texto e mídia se houver)
