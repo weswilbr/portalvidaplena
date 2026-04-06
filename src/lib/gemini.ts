@@ -3,33 +3,51 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 function getGenAI() {
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
-    console.error("❌ ERRO CRÍTICO: GEMINI_API_KEY não encontrada nas variáveis de ambiente!");
+    console.error("❌ ERRO CRÍTICO: GEMINI_API_KEY não encontrada!");
     throw new Error("API Key ausente");
   }
   return new GoogleGenerativeAI(key);
 }
 
+// Modelo mais compatível com todas as versões da biblioteca
+const MODEL = "gemini-pro-vision"; // fallback p/ versões antigas
+
 /**
  * Transcreve e resume um áudio enviado pelo WhatsApp
+ * Usa fetch direto na API REST do Google para máxima compatibilidade
  */
 export async function transcribeAudio(base64Data: string, mimeType: string) {
   try {
-    const genAI = getGenAI();
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) throw new Error("API Key ausente");
 
-    const prompt = "Você é um assistente de CRM. Transcreva este áudio do WhatsApp e faça um resumo curto do que o lead quer. Se for um áudio de saudação, apenas transcreva. Formate assim: [Transcrição]: ... \n [Resumo]: ...";
+    const prompt = "Você é um assistente de CRM. Transcreva este áudio do WhatsApp e faça um resumo curto do que o lead quer. Se for um áudio de saudação, apenas transcreva. Formate assim:\n[Transcrição]: ...\n[Resumo]: ...";
 
-    const result = await model.generateContent([
-      prompt,
+    // Chamada direta para a API REST v1 (ignora a versão da biblioteca)
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${key}`,
       {
-        inlineData: {
-          data: base64Data,
-          mimeType: mimeType
-        }
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: prompt },
+              { inline_data: { mime_type: mimeType, data: base64Data } }
+            ]
+          }]
+        })
       }
-    ]);
+    );
 
-    return result.response.text();
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("❌ Gemini API erro:", response.status, errText);
+      return null;
+    }
+
+    const data = await response.json();
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
   } catch (error) {
     console.error("Erro na transcrição Gemini:", error);
     return null;
@@ -41,19 +59,29 @@ export async function transcribeAudio(base64Data: string, mimeType: string) {
  */
 export async function suggestReplies(chatHistory: string) {
   try {
-    const genAI = getGenAI();
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    const key = process.env.GEMINI_API_KEY;
+    if (!key) return [];
 
     const prompt = `Com base no histórico abaixo de um lead no CRM, sugira 3 respostas curtas e profissionais para o vendedor enviar. Retorne APENAS um array JSON de strings. Exemplo: ["Sim, claro!", "Pode me enviar seu e-mail?", "Vou verificar agora."]\n\nHistórico:\n${chatHistory}`;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    
-    // Extrai o JSON da resposta (Gemini as vezes coloca ```json)
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${key}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      }
+    );
+
+    if (!response.ok) return [];
+
+    const data = await response.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
     const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
+    if (jsonMatch) return JSON.parse(jsonMatch[0]);
     return [];
   } catch (error) {
     console.error("Erro nas sugestões Gemini:", error);
