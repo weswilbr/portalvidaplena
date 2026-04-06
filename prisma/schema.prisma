@@ -20,6 +20,8 @@ model User {
   notificationPhone  String?  @unique
   notificationsEnabled Boolean @default(true) // Alertas de NOVO lead
   notifyNewMessages    Boolean @default(true)  // Alertas de nova mensagem de lead já atribuído
+  notificationInterval Int     @default(0)     // Intervalo em minutos entre notificações (0 = sem espera)
+  lastNotificationAt   DateTime?               // Registro do último alerta disparado
   leads              Lead[]   @relation("UserLeads")
   messages           Message[] @relation("UserMessages")
   quickReplies       QuickReply[]

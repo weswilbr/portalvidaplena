@@ -18,15 +18,15 @@ export async function getUserSettings(userId: string) {
   try {
     return await (prisma as any).user.findUnique({
       where: { id: userId },
-      select: { notificationPhone: true, notificationsEnabled: true, notifyNewMessages: true }
+      select: { notificationPhone: true, notificationsEnabled: true, notifyNewMessages: true, notificationInterval: true }
     });
   } catch (error) {
     return null;
   }
 }
 
-export async function updateUserNotificationSettings(userId: string, data: { phone: string, enabled: boolean, notifyNewMessages?: boolean }) {
-  console.log(`[USER_SETTINGS] Iniciando salvamento de configuração para usuário ID: ${userId} | Status: ${data.enabled} | Fone: ${data.phone} | NotifyMsgs: ${data.notifyNewMessages}`);
+export async function updateUserNotificationSettings(userId: string, data: { phone: string, enabled: boolean, notifyNewMessages?: boolean, interval?: number }) {
+  console.log(`[USER_SETTINGS] Iniciando salvamento de configuração para usuário ID: ${userId} | Status: ${data.enabled} | Fone: ${data.phone} | NotifyMsgs: ${data.notifyNewMessages} | Interval: ${data.interval}`);
   
   try {
     const updatedUser = await (prisma as any).user.update({
@@ -34,7 +34,8 @@ export async function updateUserNotificationSettings(userId: string, data: { pho
       data: {
         notificationPhone: data.phone || null,
         notificationsEnabled: data.enabled,
-        notifyNewMessages: data.notifyNewMessages ?? true
+        notifyNewMessages: data.notifyNewMessages ?? true,
+        notificationInterval: data.interval ?? 0
       }
     });
     

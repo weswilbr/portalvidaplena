@@ -121,6 +121,34 @@ async function convertAudioToVoice(inputPath: string): Promise<string> {
   });
 }
 
+/**
+ * Verifica se o usuário pode receber notificação (respeitando o intervalo)
+ */
+function canNotifyUser(user: any): boolean {
+  if (!user.notificationInterval || user.notificationInterval === 0) return true;
+  if (!user.lastNotificationAt) return true;
+
+  const now = new Date();
+  const last = new Date(user.lastNotificationAt);
+  const diffMinutes = (now.getTime() - last.getTime()) / (1000 * 60);
+
+  return diffMinutes >= user.notificationInterval;
+}
+
+/**
+ * Atualiza o timestamp da última notificação enviada
+ */
+async function markNotificationSent(userId: string) {
+  try {
+     await (prisma as any).user.update({
+        where: { id: userId },
+        data: { lastNotificationAt: new Date() }
+     });
+  } catch (e) {
+     console.error(`❌ Erro ao atualizar lastNotificationAt para ${userId}:`, e);
+  }
+}
+
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: './wwebjs_auth', clientId: 'zabot' }),
   puppeteer: {
@@ -370,7 +398,8 @@ client.on('message', async (msg: any) => {
                   where: { 
                      notificationsEnabled: true,
                      notificationPhone: { not: null }
-                  }
+                  },
+                  select: { id: true, name: true, notificationPhone: true, notificationsEnabled: true, lastNotificationAt: true, notificationInterval: true }
                });
                targetUsers = allActiveStaff;
             } catch (e) {
@@ -392,7 +421,16 @@ client.on('message', async (msg: any) => {
          }
 
          for (const user of targetUsers) {
+            // Se for Round Robin e o usuário direto for encontrado, pegamos os dados completos dele se necessário
+            // No caso de targetUsers da Fila Geral, já temos os dados pelo select acima.
+            
             if (user.notificationsEnabled && user.notificationPhone) {
+               // Verifica intervalo de "cooling"
+               if (!canNotifyUser(user)) {
+                  console.log(`⏳ [RESFRIAMENTO] Alerta de novo lead ignorado para ${user.name} (intervalo de ${user.notificationInterval}min)`);
+                  continue;
+               }
+
                try {
                   const rawPhone = user.notificationPhone.replace(/\D/g, '');
                   const sellerJid = `${rawPhone}@c.us`;
@@ -404,6 +442,7 @@ client.on('message', async (msg: any) => {
                   
                   console.log(`📡 Disparando alerta de novo lead para: ${user.name} (${rawPhone})...`);
                   await client.sendMessage(sellerJid, alertMsg);
+                  await markNotificationSent(user.id);
                   console.log(`✅ [ALERTA ENTREGUE] Mensagem recebida por ${user.name}!`);
                } catch (alertErr: any) {
                   console.error(`❌ [FALHA NO ALERTA] Erro ao enviar para ${user.name}:`, alertErr.message || alertErr);
@@ -468,10 +507,14 @@ client.on('message', async (msg: any) => {
           try {
             const assignee = await (prisma as any).user.findUnique({
               where: { id: lead.assignedToId },
-              select: { name: true, notificationPhone: true, notifyNewMessages: true }
+              select: { id: true, name: true, notificationPhone: true, notifyNewMessages: true, lastNotificationAt: true, notificationInterval: true }
             });
 
             if (assignee?.notifyNewMessages && assignee?.notificationPhone) {
+              if (!canNotifyUser(assignee)) {
+                console.log(`⏳ [RESFRIAMENTO] Alerta de mensagem ignorado para ${assignee.name}`);
+                return;
+              }
               const rawPhone = assignee.notificationPhone.replace(/\D/g, '');
               const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://portalfvp.duckdns.org') + '?v=2';
               const newMsgAlert = `💬 *Nova mensagem no CRM!*\n\nLead: *${lead.name}*\n\n👆 Toque para responder:\n${appUrl}/dashboard/vendas`;
@@ -495,6 +538,7 @@ client.on('message', async (msg: any) => {
               };
 
               await sendAlert(rawPhone);
+              await markNotificationSent(assignee.id);
             }
           } catch (e) {
             // Silencia erros de notificação p/ não travar o bot

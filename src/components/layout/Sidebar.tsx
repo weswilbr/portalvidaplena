@@ -53,6 +53,7 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
   const [notifPhone, setNotifPhone] = useState("");
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [notifyNewMessages, setNotifyNewMessages] = useState(true);
+  const [notifInterval, setNotifInterval] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
 
   // Load and Apply Theme & Settings
@@ -69,8 +70,8 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
            if (settings) {
               setNotifPhone(settings.notificationPhone || "");
               setNotifEnabled(settings.notificationsEnabled ?? true);
-               setNotifyNewMessages(settings.notifyNewMessages ?? true); setNotifyNewMessages(settings.notifyNewMessages ?? true);
-               setNotifyNewMessages(settings.notifyNewMessages ?? true);
+              setNotifyNewMessages(settings.notifyNewMessages ?? true);
+              setNotifInterval(settings.notificationInterval ?? 0);
            }
          } catch(e) {}
        }
@@ -98,7 +99,6 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
 
   return (
     <>
-      {/* Botão Sanduíche Flutuante (Apenas Mobile) */}
       <button 
         onClick={() => setIsMobileOpen(true)}
         className="md:hidden fixed top-6 right-6 z-40 p-3 bg-white/80 backdrop-blur-md rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100/50 text-indigo-600 hover:scale-105 active:scale-95 transition-all"
@@ -106,7 +106,6 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
         <Menu size={24} />
       </button>
 
-      {/* Fundo Escuro Mobile */}
       {isMobileOpen && (
         <div 
           className="md:hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 animate-in fade-in"
@@ -178,11 +177,9 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
           })}
         </nav>
 
-        {/* 🔔 BOTÃO DE ALERTAS WHATSAPP (Ajustado para Visão Total) */}
         <div className="px-4 py-2 mt-2">
             <button 
               onClick={() => {
-                // Força o carregamento de configurações ao abrir
                 setIsAlertModalOpen(true);
               }}
               className={cn(
@@ -298,7 +295,7 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
                     </div>
                     <div>
                        <h2 className="text-xl font-black text-slate-900">Configurar Alertas</h2>
-                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Receba novos leads no seu privado</p>
+                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Controle de notificações no WhatsApp</p>
                     </div>
                  </div>
                  <button onClick={() => setIsAlertModalOpen(false)} className="p-2 text-slate-300 hover:text-slate-500 transition-all"><X size={24}/></button>
@@ -317,10 +314,11 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
                     <p className="text-[9px] text-slate-400 italic px-1 font-medium">Use o formato 55 + DDD + Numero (Só números)</p>
                  </div>
 
+                 {/* NOVOS LEADS */}
                  <div className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-100">
                     <div>
-                       <p className="text-sm font-black text-slate-800">Modo Atendimento</p>
-                       <p className="text-[10px] font-bold text-emerald-600 uppercase">Alertar no meu WhatsApp</p>
+                       <p className="text-sm font-black text-slate-800">Novos Leads</p>
+                       <p className="text-[10px] font-bold text-emerald-600 uppercase">Alertar quando entrar lead</p>
                     </div>
                     <button 
                       onClick={() => setNotifEnabled(!notifEnabled)}
@@ -334,6 +332,44 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
                          notifEnabled ? "right-1" : "left-1"
                        )}></div>
                     </button>
+                 </div>
+
+                 {/* NOVAS MENSAGENS */}
+                 <div className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div>
+                       <p className="text-sm font-black text-slate-800">Mensagens</p>
+                       <p className="text-[10px] font-bold text-indigo-600 uppercase">Alertar novas msgs de leads</p>
+                    </div>
+                    <button 
+                      onClick={() => setNotifyNewMessages(!notifyNewMessages)}
+                      className={cn(
+                        "w-12 h-6 rounded-full transition-all relative",
+                        notifyNewMessages ? "bg-indigo-500" : "bg-slate-300"
+                      )}
+                    >
+                       <div className={cn(
+                         "absolute top-1 w-4 h-4 bg-white rounded-full transition-all shadow-md",
+                         notifyNewMessages ? "right-1" : "left-1"
+                       )}></div>
+                    </button>
+                 </div>
+
+                 {/* INTERVALO / RESFRIAMENTO */}
+                 <div className="space-y-3">
+                    <div className="flex items-center justify-between ml-1">
+                      <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Aguardar (minutos)</label>
+                      <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{notifInterval === 0 ? "Imediato" : `${notifInterval}m`}</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="60" 
+                      step="5"
+                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                      value={notifInterval}
+                      onChange={(e) => setNotifInterval(parseInt(e.target.value))}
+                    />
+                    <p className="text-[9px] text-slate-400 italic px-1 font-medium">Tempo de espera para enviar o próximo alerta e não poluir seu WhatsApp.</p>
                  </div>
 
                  <button 
@@ -350,9 +386,15 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
                       }
 
                       setIsSaving(true);
-                      const res = await updateUserNotificationSettings(userId, { phone: notifPhone, enabled: notifEnabled, notifyNewMessages });
+                      const res = await updateUserNotificationSettings(userId, { 
+                        phone: notifPhone, 
+                        enabled: notifEnabled, 
+                        notifyNewMessages,
+                        interval: notifInterval 
+                      });
+                      
                       if (res.success) {
-                         alert("🎉 Alerta Privado Ativado!\n\nA partir de agora seu WhatsApp receberá um aviso assim que um lead entrar para você.");
+                         alert("🎉 Configurações Salvas!\n\nSeus alertas de WhatsApp foram atualizados com sucesso.");
                          setIsAlertModalOpen(false);
                       } else {
                          alert(res.error || "Houve uma falha ao salvar suas configurações.");
