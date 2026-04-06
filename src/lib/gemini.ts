@@ -1,7 +1,12 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 function getGenAI() {
-  return new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) {
+    console.error("❌ ERRO CRÍTICO: GEMINI_API_KEY não encontrada nas variáveis de ambiente!");
+    throw new Error("API Key ausente");
+  }
+  return new GoogleGenerativeAI(key);
 }
 
 /**
@@ -10,7 +15,7 @@ function getGenAI() {
 export async function transcribeAudio(base64Data: string, mimeType: string) {
   try {
     const genAI = getGenAI();
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
     const prompt = "Você é um assistente de CRM. Transcreva este áudio do WhatsApp e faça um resumo curto do que o lead quer. Se for um áudio de saudação, apenas transcreva. Formate assim: [Transcrição]: ... \n [Resumo]: ...";
 
@@ -37,7 +42,7 @@ export async function transcribeAudio(base64Data: string, mimeType: string) {
 export async function suggestReplies(chatHistory: string) {
   try {
     const genAI = getGenAI();
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
     const prompt = `Com base no histórico abaixo de um lead no CRM, sugira 3 respostas curtas e profissionais para o vendedor enviar. Retorne APENAS um array JSON de strings. Exemplo: ["Sim, claro!", "Pode me enviar seu e-mail?", "Vou verificar agora."]\n\nHistórico:\n${chatHistory}`;
 
