@@ -292,18 +292,17 @@ client.on('message', async (msg: any) => {
             const ts = sellers.find((s: any) => s.id === assignedToId);
             if (ts) targetUsers.push(ts);
          } else {
-            // Round-robin desligado ou falha: avisa administradores plantonistas
+            // Fila Geral (Round-Robin Desativado): Avisa TODOS os plantonistas da equipe!
             try {
-               const admins = await (prisma as any).user.findMany({
+               const allActiveStaff = await (prisma as any).user.findMany({
                   where: { 
-                     role: 'ADMIN', 
                      notificationsEnabled: true,
                      notificationPhone: { not: null }
                   }
                });
-               targetUsers = admins;
+               targetUsers = allActiveStaff;
             } catch (e) {
-               console.error("Erro ao buscar admins para alerta:", e);
+               console.error("Erro ao buscar equipe para alerta:", e);
             }
          }
 
