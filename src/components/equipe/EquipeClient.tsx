@@ -18,6 +18,9 @@ import {
   Loader2
 } from "lucide-react";
 import { getSellersWithStats, createSeller, deleteSeller, updateUserProfile, forcePasswordReset } from "@/app/actions/equipe";
+import { getBotConfig, updateBotConfig } from "@/app/actions/bot";
+import { Bell, BellOff, MessageCircle, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function EquipeClient({ user }: { user: any }) {
   const [sellers, setSellers] = useState<any[]>([]);
@@ -27,7 +30,9 @@ export default function EquipeClient({ user }: { user: any }) {
   
   // For Editing
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [botConfig, setBotConfig] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [globalLoading, setGlobalLoading] = useState(false);
 
   useEffect(() => {
     refreshSellers();
@@ -35,9 +40,24 @@ export default function EquipeClient({ user }: { user: any }) {
 
   const refreshSellers = async () => {
     setLoading(true);
-    const data = await getSellersWithStats();
-    setSellers(data);
+    const [sellersData, configData] = await Promise.all([
+      getSellersWithStats(),
+      getBotConfig()
+    ]);
+    setSellers(sellersData);
+    setBotConfig(configData);
     setLoading(false);
+  };
+
+  const handleToggleGlobalNotifications = async () => {
+    if (!botConfig) return;
+    setGlobalLoading(true);
+    const newVal = !botConfig.globalNotificationsEnabled;
+    const res = await updateBotConfig(botConfig.id, { globalNotificationsEnabled: newVal });
+    if (res.success) {
+      setBotConfig({ ...botConfig, globalNotificationsEnabled: newVal });
+    }
+    setGlobalLoading(false);
   };
 
   const handleSaveSeller = async (e: React.FormEvent) => {
@@ -136,6 +156,47 @@ export default function EquipeClient({ user }: { user: any }) {
         </button>
       </header>
 
+      {/* BANNER DE CONTROLE GLOBAL */}
+      {botConfig && (
+        <div className={cn(
+          "p-6 rounded-[2rem] border animate-in slide-in-from-top duration-500 flex flex-col md:flex-row items-center justify-between gap-4",
+          botConfig.globalNotificationsEnabled 
+            ? "bg-emerald-50 border-emerald-100 text-emerald-800" 
+            : "bg-amber-50 border-amber-100 text-amber-800"
+        )}>
+          <div className="flex items-center gap-4">
+             <div className={cn(
+               "p-3 rounded-2xl shadow-sm",
+               botConfig.globalNotificationsEnabled ? "bg-emerald-500 text-white" : "bg-amber-500 text-white"
+             )}>
+                {botConfig.globalNotificationsEnabled ? <Bell size={24} className="animate-bounce" /> : <BellOff size={24} />}
+             </div>
+             <div>
+                <h3 className="text-lg font-black tracking-tight">
+                  {botConfig.globalNotificationsEnabled ? "Alertas Globais Ativos" : "Alertas Globais Pausados"}
+                </h3>
+                <p className="text-sm font-medium opacity-80">
+                  {botConfig.globalNotificationsEnabled 
+                    ? "O robô está enviando notificações para todos os atendentes configurados." 
+                    : "Todas as notificações de WhatsApp foram suspensas para toda a equipe pelo administrador."}
+                </p>
+             </div>
+          </div>
+          <button 
+            onClick={handleToggleGlobalNotifications}
+            disabled={globalLoading}
+            className={cn(
+              "px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-md active:scale-95 disabled:opacity-50",
+              botConfig.globalNotificationsEnabled 
+                ? "bg-white text-emerald-600 hover:bg-emerald-600 hover:text-white" 
+                : "bg-amber-600 text-white hover:bg-amber-700"
+            )}
+          >
+            {globalLoading ? "Processando..." : botConfig.globalNotificationsEnabled ? "Pausar Tudo" : "Ativar Tudo"}
+          </button>
+        </div>
+      )}
+
       <div className="p-1 px-4 bg-white rounded-[2rem] border border-slate-100 shadow-sm flex items-center min-h-[80px]">
         <Search className="text-slate-300 ml-4 mr-3" size={18} />
         <input 
@@ -152,6 +213,7 @@ export default function EquipeClient({ user }: { user: any }) {
           <thead className="bg-slate-50/80 border-b border-slate-100">
             <tr>
               <th className="px-8 py-5 font-black text-xs uppercase tracking-widest text-slate-400">Usuário / Permissão</th>
+              <th className="px-8 py-5 font-black text-xs uppercase tracking-widest text-slate-400 text-center">Configuração de Alertas</th>
               <th className="px-8 py-5 font-black text-xs uppercase tracking-widest text-slate-400 text-center">Atendimentos</th>
               <th className="px-8 py-5 font-black text-xs uppercase tracking-widest text-slate-400 text-center">Fechamentos</th>
               <th className="px-8 py-5 font-black text-xs uppercase tracking-widest text-slate-400 text-right">Ação</th>
@@ -186,6 +248,28 @@ export default function EquipeClient({ user }: { user: any }) {
                           <span>{seller.email}</span>
                         </div>
                       </div>
+                    </div>
+                  </td>
+                  <td className="px-8 py-5">
+                    <div className="flex flex-col items-center gap-2 justify-center">
+                       {seller.notificationPhone ? (
+                         <>
+                           <div className="flex items-center gap-3">
+                              <div title="Alertas de Novo Lead" className={cn("p-1.5 rounded-lg border", seller.notificationsEnabled ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-slate-50 border-slate-200 text-slate-400")}>
+                                 <AlertCircle size={14} />
+                              </div>
+                              <div title="Alertas de Mensagens" className={cn("p-1.5 rounded-lg border", seller.notifyNewMessages ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-slate-50 border-slate-200 text-slate-400")}>
+                                 <MessageCircle size={14} />
+                              </div>
+                           </div>
+                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ativo em: {seller.notificationPhone}</span>
+                         </>
+                       ) : (
+                         <div className="flex items-center gap-2 text-slate-300 italic text-[10px] font-bold">
+                            <BellOff size={12} />
+                            Sem alertas
+                         </div>
+                       )}
                     </div>
                   </td>
                   <td className="px-8 py-5 text-center">

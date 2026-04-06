@@ -424,6 +424,10 @@ client.on('message', async (msg: any) => {
 
       // 🔔 ALERTA SILENCIOSO VIA WHATSAPP (Atraso de 2s p/ estabilidade)
       setTimeout(async () => {
+         if (cfg?.globalNotificationsEnabled === false) {
+            console.log(`🔕 Notificações Globais desativadas no BotConfig.`);
+            return;
+         }
          let targetUsers: any[] = [];
          
          if (assignedToId) {
@@ -543,6 +547,7 @@ client.on('message', async (msg: any) => {
       // 🔔 Notifica o atendente sobre a nova mensagem (se configurado)
       if (lead.assignedToId) {
         setTimeout(async () => {
+          if (cfg?.globalNotificationsEnabled === false) return;
           try {
             const assignee = await (prisma as any).user.findUnique({
               where: { id: lead.assignedToId },

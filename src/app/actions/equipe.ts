@@ -13,6 +13,9 @@ export async function getSellersWithStats() {
         phone: true,
         role: true,
         createdAt: true,
+        notificationPhone: true,
+        notificationsEnabled: true,
+        notifyNewMessages: true,
         leads: {
           select: { status: true }
         }

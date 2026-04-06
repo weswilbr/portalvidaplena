@@ -141,6 +141,7 @@ model BotConfig {
   qrCode          String?  @db.Text
   welcomeMessage  String?  @db.Text
   transferMessage String?  @db.Text
+  globalNotificationsEnabled Boolean  @default(true) // Controle mestre para ligar/desligar todos os alertas
   isRoundRobin    Boolean  @default(true) // Se ativo, distribui leads automaticamente; se falso, envia para a fila geral
   updatedAt       DateTime @updatedAt
 }
