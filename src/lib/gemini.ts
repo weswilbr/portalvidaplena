@@ -41,7 +41,7 @@ export async function suggestReplies(chatHistory: string) {
     const text = result.response.text();
     
     // Extrai o JSON da resposta (Gemini as vezes coloca ```json)
-    const jsonMatch = text.match(/\[.*\]/s);
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
     }
