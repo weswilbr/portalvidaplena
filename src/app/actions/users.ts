@@ -26,17 +26,21 @@ export async function getUserSettings(userId: string) {
 }
 
 export async function updateUserNotificationSettings(userId: string, data: { phone: string, enabled: boolean }) {
+  console.log(`[USER_SETTINGS] Iniciando salvamento de configuração para usuário ID: ${userId} | Status: ${data.enabled} | Fone: ${data.phone}`);
+  
   try {
-    await (prisma as any).user.update({
+    const updatedUser = await (prisma as any).user.update({
       where: { id: userId },
       data: {
         notificationPhone: data.phone || null,
         notificationsEnabled: data.enabled
       }
     });
+    
+    console.log(`[USER_SETTINGS] ✅ SUCESSO! Configuração salva no banco para ${updatedUser.name}. Telefone: ${updatedUser.notificationPhone}`);
     return { success: true };
   } catch (error: any) {
-    console.error("Error updating settings:", error);
-    return { success: false, error: "Este número já pode estar em uso por outro vendedor." };
+    console.error(`[USER_SETTINGS] ❌ ERRO_FATAL ao salvar configurações de alertas para o usuário ${userId}:`, error.message || error);
+    return { success: false, error: "Falha ao salvar no banco. Pode ser que este número já exista." };
   }
 }
