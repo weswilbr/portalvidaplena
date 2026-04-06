@@ -1,5 +1,6 @@
 import { Client, LocalAuth, MessageMedia } from 'whatsapp-web.js';
 import ffmpeg from 'fluent-ffmpeg';
+import { transcribeAudio } from '../lib/gemini';
 import * as QRCode from 'qrcode';
 import qrcodeTerminal from 'qrcode-terminal';
 import { loadEnvConfig } from '@next/env';
@@ -598,6 +599,16 @@ client.on('message', async (msg: any) => {
           
           // Salva a URL da nossa API interna
           savedMediaUrl = `/api/media/${filename}`;
+
+          // ✨ Inteligência Artificial Gemini (Transcrição e Resumo)
+          if (savedMediaType === 'audio' && cfg?.aiEnabled) {
+             console.log(`🤖 IA: Transcrevendo áudio de ${participantName}...`);
+             const aiResult = await transcribeAudio(media.data, media.mimetype);
+             if (aiResult) {
+                finalContent = aiResult;
+                console.log(`✅ IA: Transcrição concluída com sucesso.`);
+             }
+          }
           
           console.log(`✅ Mídia (${savedMediaType}) salva em: ${filename}`);
           if (!finalContent) finalContent = `[Arquivo ${savedMediaType}]`;
@@ -609,18 +620,8 @@ client.on('message', async (msg: any) => {
       }
     }
 
-    // Transcrição de áudio se disponível
-    let transcription = null;
-    if (savedMediaType === 'audio' && savedMediaUrl && process.env.OPENAI_API_KEY) {
-      console.log("🎙️ Áudio detectado. Iniciando transcrição...");
-      try {
-        // Placeholder para chamada de transcrição (Whisper)
-        // transcription = await transcribeAudio(savedMediaUrl);
-        transcription = "[Transcrição automática em processamento...]"; 
-      } catch (err: any) {
-        console.error("Erro na transcrição:", err);
-      }
-    }
+    // Transcrição processada pela IA via Gemini (se ativo) no bloco de mídia acima.
+
 
     await (prisma as any).message.create({
       data: {
@@ -634,7 +635,6 @@ client.on('message', async (msg: any) => {
         isSystem: false,
         mediaUrl: savedMediaUrl,
         mediaType: savedMediaType,
-        transcription: transcription,
         whatsappId: msg.id._serialized // Guarda o RG da mensagem para exclusão futura
       }
     });

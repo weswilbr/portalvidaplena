@@ -142,6 +142,7 @@ model BotConfig {
   welcomeMessage  String?  @db.Text
   transferMessage String?  @db.Text
   globalNotificationsEnabled Boolean  @default(true) // Controle mestre para ligar/desligar todos os alertas
+  aiEnabled                   Boolean  @default(true) // Controle mestre da Inteligência Artificial (Gemini)
   isRoundRobin    Boolean  @default(true) // Se ativo, distribui leads automaticamente; se falso, envia para a fila geral
   updatedAt       DateTime @updatedAt
 }

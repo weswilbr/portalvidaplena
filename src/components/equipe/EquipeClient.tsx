@@ -15,7 +15,8 @@ import {
   Edit,
   KeyRound,
   Save,
-  Loader2
+  Loader2,
+  Sparkles
 } from "lucide-react";
 import { getSellersWithStats, createSeller, deleteSeller, updateUserProfile, forcePasswordReset } from "@/app/actions/equipe";
 import { getBotConfig, updateBotConfig } from "@/app/actions/bot";
@@ -56,6 +57,17 @@ export default function EquipeClient({ user }: { user: any }) {
     const res = await updateBotConfig(botConfig.id, { globalNotificationsEnabled: newVal });
     if (res.success) {
       setBotConfig({ ...botConfig, globalNotificationsEnabled: newVal });
+    }
+    setGlobalLoading(false);
+  };
+
+  const handleToggleAi = async () => {
+    if (!botConfig) return;
+    setGlobalLoading(true);
+    const newVal = !botConfig.aiEnabled;
+    const res = await updateBotConfig(botConfig.id, { aiEnabled: newVal });
+    if (res.success) {
+      setBotConfig({ ...botConfig, aiEnabled: newVal });
     }
     setGlobalLoading(false);
   };
@@ -156,44 +168,70 @@ export default function EquipeClient({ user }: { user: any }) {
         </button>
       </header>
 
-      {/* BANNER DE CONTROLE GLOBAL */}
+      {/* PAINEL DE CONFIGURAÇÕES GLOBAIS DO BOT */}
       {botConfig && (
-        <div className={cn(
-          "p-6 rounded-[2rem] border animate-in slide-in-from-top duration-500 flex flex-col md:flex-row items-center justify-between gap-4",
-          botConfig.globalNotificationsEnabled 
-            ? "bg-emerald-50 border-emerald-100 text-emerald-800" 
-            : "bg-amber-50 border-amber-100 text-amber-800"
-        )}>
-          <div className="flex items-center gap-4">
-             <div className={cn(
-               "p-3 rounded-2xl shadow-sm",
-               botConfig.globalNotificationsEnabled ? "bg-emerald-500 text-white" : "bg-amber-500 text-white"
-             )}>
-                {botConfig.globalNotificationsEnabled ? <Bell size={24} className="animate-bounce" /> : <BellOff size={24} />}
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm grid md:grid-cols-2 gap-6 animate-in slide-in-from-top duration-500">
+           {/* Notificações WhatsApp */}
+           <div className={cn(
+             "p-6 rounded-[2.5rem] border flex items-center justify-between gap-4 transition-all",
+             botConfig.globalNotificationsEnabled ? "bg-emerald-50/50 border-emerald-100" : "bg-slate-50 border-slate-100"
+           )}>
+             <div className="flex items-center gap-4">
+                <div className={cn("p-3 rounded-2xl shadow-sm", botConfig.globalNotificationsEnabled ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-400")}>
+                   {botConfig.globalNotificationsEnabled ? <Bell size={22} className="animate-bounce" /> : <BellOff size={22} />}
+                </div>
+                <div>
+                   <h3 className="font-black text-slate-800 tracking-tight">Alertas WhatsApp</h3>
+                   <div className="flex items-center gap-2">
+                      <div className={cn("w-2 h-2 rounded-full", botConfig.globalNotificationsEnabled ? "bg-emerald-500 animate-pulse" : "bg-slate-300")} />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        {botConfig.globalNotificationsEnabled ? "Sistema Ativo" : "Sistema Pausado"}
+                      </span>
+                   </div>
+                </div>
              </div>
-             <div>
-                <h3 className="text-lg font-black tracking-tight">
-                  {botConfig.globalNotificationsEnabled ? "Alertas Globais Ativos" : "Alertas Globais Pausados"}
-                </h3>
-                <p className="text-sm font-medium opacity-80">
-                  {botConfig.globalNotificationsEnabled 
-                    ? "O robô está enviando notificações para todos os atendentes configurados." 
-                    : "Todas as notificações de WhatsApp foram suspensas para toda a equipe pelo administrador."}
-                </p>
+             <button 
+               onClick={handleToggleGlobalNotifications} 
+               disabled={globalLoading} 
+               className={cn(
+                 "px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md",
+                 botConfig.globalNotificationsEnabled ? "bg-white text-emerald-600 hover:bg-emerald-600 hover:text-white" : "bg-slate-800 text-white"
+               )}
+             >
+                {globalLoading ? "..." : botConfig.globalNotificationsEnabled ? "Pausar" : "Ativar"}
+             </button>
+           </div>
+
+           {/* Inteligência Artificial (Gemini) */}
+           <div className={cn(
+             "p-6 rounded-[2.5rem] border flex items-center justify-between gap-4 transition-all",
+             botConfig.aiEnabled ? "bg-indigo-50/50 border-indigo-100" : "bg-slate-50 border-slate-100"
+           )}>
+             <div className="flex items-center gap-4">
+                <div className={cn("p-3 rounded-2xl shadow-sm", botConfig.aiEnabled ? "bg-indigo-500 text-white" : "bg-slate-200 text-slate-400")}>
+                   <Sparkles size={22} className={botConfig.aiEnabled ? "animate-pulse" : ""} />
+                </div>
+                <div>
+                   <h3 className="font-black text-slate-800 tracking-tight">IA Gemini 1.5</h3>
+                   <div className="flex items-center gap-2">
+                      <div className={cn("w-2 h-2 rounded-full", botConfig.aiEnabled ? "bg-indigo-500 animate-pulse" : "bg-slate-300")} />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        {botConfig.aiEnabled ? "Inteligência Ativa" : "IA Desativada"}
+                      </span>
+                   </div>
+                </div>
              </div>
-          </div>
-          <button 
-            onClick={handleToggleGlobalNotifications}
-            disabled={globalLoading}
-            className={cn(
-              "px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-md active:scale-95 disabled:opacity-50",
-              botConfig.globalNotificationsEnabled 
-                ? "bg-white text-emerald-600 hover:bg-emerald-600 hover:text-white" 
-                : "bg-amber-600 text-white hover:bg-amber-700"
-            )}
-          >
-            {globalLoading ? "Processando..." : botConfig.globalNotificationsEnabled ? "Pausar Tudo" : "Ativar Tudo"}
-          </button>
+             <button 
+               onClick={handleToggleAi} 
+               disabled={globalLoading} 
+               className={cn(
+                 "px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md",
+                 botConfig.aiEnabled ? "bg-white text-indigo-600 hover:bg-indigo-600 hover:text-white" : "bg-slate-800 text-white"
+               )}
+             >
+                {globalLoading ? "..." : botConfig.aiEnabled ? "Desativar" : "Ativar"}
+             </button>
+           </div>
         </div>
       )}
 
