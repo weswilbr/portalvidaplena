@@ -149,6 +149,45 @@ async function markNotificationSent(userId: string) {
   }
 }
 
+/**
+ * Tenta enviar a mensagem para vários formatos de número (com/sem 9 extra)
+ */
+async function sendSafeAlert(phone: string, msg: string, userName: string): Promise<void> {
+  const rawPhone = phone.replace(/\D/g, '');
+  
+  const attemptSend = async (jid: string): Promise<boolean> => {
+     try {
+        await client.sendMessage(jid, msg);
+        console.log(`🔔 [SUCESSO] Alerta enviado para ${userName} (${jid})`);
+        return true;
+     } catch (err: any) {
+        console.warn(`⚠️ [FALHA] Não foi possível enviar para ${jid} (${userName}): ${err.message}`);
+        return false;
+     }
+  };
+
+  // Tenta o JID original
+  if (await attemptSend(`${rawPhone}@c.us`)) return;
+
+  // Se falhar e for BR, tenta variações do 9º dígito
+  if (rawPhone.startsWith('55')) {
+     let alternativePhone = '';
+     if (rawPhone.length === 13) {
+        // Tem 9, tenta tirar
+        alternativePhone = rawPhone.slice(0, 4) + rawPhone.slice(5);
+     } else if (rawPhone.length === 12) {
+        // Não tem 9, tenta colocar
+        alternativePhone = rawPhone.slice(0, 4) + '9' + rawPhone.slice(4);
+     }
+
+     if (alternativePhone && alternativePhone !== rawPhone) {
+        if (await attemptSend(`${alternativePhone}@c.us`)) return;
+     }
+  }
+
+  console.error(`❌ [ALERTA DESISTIDO] Todas as tentativas de enviar para ${userName} falharam.`);
+}
+
 const client = new Client({
   authStrategy: new LocalAuth({ dataPath: './wwebjs_auth', clientId: 'zabot' }),
   puppeteer: {
@@ -440,8 +479,8 @@ client.on('message', async (msg: any) => {
                      ? `🔔 *Novo Lead na sua Carteira!*\n\nLead: *${participantName}*\n\n🚀 *Atenda agora:* \n${appUrl}/dashboard/vendas`
                      : `🔔 *Lead na Fila Geral!*\n\nLead: *${participantName}*\nNenhum vendedor fixo.\n\n🚀 *Assuma o chat:* \n${appUrl}/dashboard/vendas`;
                   
-                  console.log(`📡 Disparando alerta de novo lead para: ${user.name} (${rawPhone})...`);
-                  await client.sendMessage(sellerJid, alertMsg);
+                  console.log(`📡 Disparando alerta de novo lead para: ${user.name} (${user.notificationPhone})...`);
+                  await sendSafeAlert(user.notificationPhone, alertMsg, user.name);
                   await markNotificationSent(user.id);
                   console.log(`✅ [ALERTA ENTREGUE] Mensagem recebida por ${user.name}!`);
                } catch (alertErr: any) {
@@ -515,29 +554,10 @@ client.on('message', async (msg: any) => {
                 console.log(`⏳ [RESFRIAMENTO] Alerta de mensagem ignorado para ${assignee.name}`);
                 return;
               }
-              const rawPhone = assignee.notificationPhone.replace(/\D/g, '');
               const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://portalfvp.duckdns.org') + '?v=2';
               const newMsgAlert = `💬 *Nova mensagem no CRM!*\n\nLead: *${lead.name}*\n\n👆 Toque para responder:\n${appUrl}/dashboard/vendas`;
 
-              const sendAlert = async (phone: string): Promise<void> => {
-                try {
-                  await client.sendMessage(`${phone}@c.us`, newMsgAlert);
-                  console.log(`🔔 Alerta de nova mensagem enviado para ${assignee.name}!`);
-                } catch (err: any) {
-                  const errMsg = err.message || '';
-                  if (errMsg.includes('LID') || errMsg.includes('contact')) {
-                    if (phone.startsWith('55') && phone.length === 13) {
-                      await sendAlert(phone.slice(0, 4) + phone.slice(5));
-                    } else if (phone.startsWith('55') && phone.length === 12) {
-                      await sendAlert(phone.slice(0, 4) + '9' + phone.slice(4));
-                    } else {
-                      console.error(`❌ Alerta de msg falhou para ${assignee.name}:`, errMsg);
-                    }
-                  }
-                }
-              };
-
-              await sendAlert(rawPhone);
+              await sendSafeAlert(assignee.notificationPhone, newMsgAlert, assignee.name);
               await markNotificationSent(assignee.id);
             }
           } catch (e) {
