@@ -601,7 +601,7 @@ client.on('message', async (msg: any) => {
           // Salva a URL da nossa API interna
           savedMediaUrl = `/api/media/${filename}`;
 
-          // ✨ Inteligência Artificial Gemini (Transcrição e Resumo)
+/* ✨ Desativado: Transcrição automática p/ economizar API (O vendedor pode pedir via Painel se precisar)
           if (savedMediaType === 'audio' && cfg?.aiEnabled) {
              console.log(`🤖 IA: Transcrevendo áudio de ${participantName}...`);
              const aiResult = await transcribeAudio(media.data, media.mimetype);
@@ -610,6 +610,7 @@ client.on('message', async (msg: any) => {
                 console.log(`✅ IA: Transcrição concluída com sucesso.`);
              }
           }
+          */
           
           console.log(`✅ Mídia (${savedMediaType}) salva em: ${filename}`);
           if (!finalContent) finalContent = `[Arquivo ${savedMediaType}]`;

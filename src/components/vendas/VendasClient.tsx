@@ -47,7 +47,7 @@ import axios, { type AxiosProgressEvent } from "axios";
 import { cn, openWhatsApp, getWhatsAppHref } from "@/lib/utils";
 import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead, sendWhatsAppMessage, addInternalNote, uploadMedia, deleteMessage, updateMessage, getQuickReplies, createQuickReply, deleteQuickReply, updateQuickReply, getLeadById } from "@/app/actions/leads";
 import { getSellers } from "@/app/actions/users";
-import { getLeadAnalysis, getConversationSummary, getReplySuggestions } from '@/app/actions/ai';
+import { getLeadAnalysis, getConversationSummary, getReplySuggestions, transcribeMessage } from '@/app/actions/ai';
 import { toast } from 'sonner';
 import KanbanView from "@/components/leads/KanbanView";
 
@@ -678,6 +678,28 @@ export default function VendasClient({ user }: { user: any }) {
     }
   };
 
+  const handleTranscribe = async (messageId: string) => {
+    if (!selectedLead) return;
+    try {
+      const result = await transcribeMessage(messageId);
+      if (result) {
+        // Atualiza a mensagem no estado local para refletir a transcrição imediatamente
+        setSelectedLead({
+          ...selectedLead,
+          messages: selectedLead.messages.map((m: any) => 
+            m.id === messageId ? { ...m, transcription: result } : m
+          )
+        });
+        toast.success("Áudio transcrito com sucesso!");
+      } else {
+        toast.error("Não foi possível transcrever este áudio.");
+      }
+    } catch (error) {
+      toast.error("Erro ao transcrever.");
+    }
+  };
+
+
   const handleSaveLead = async (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
@@ -1220,21 +1242,41 @@ export default function VendasClient({ user }: { user: any }) {
                               <video src={msg.mediaUrl} controls className="rounded-xl max-w-full h-auto border border-black/5 shadow-sm" />
                             ) : msg.mediaType?.toLowerCase() === 'audio' || msg.mediaUrl.startsWith('data:audio') ? (
                               <div className={cn(
-                                "flex items-center gap-2 p-2 rounded-[1.25rem] border shadow-sm min-w-[240px] max-w-full",
+                                "flex flex-col gap-2 p-3 rounded-[1.25rem] border shadow-sm min-w-[240px] max-w-full",
                                 isMe ? "bg-white/30 border-white/20" : "bg-slate-50 border-slate-100"
                               )}>
-                                <div className={cn(
-                                  "w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm",
-                                  isMe ? "bg-white/40 text-black/60" : "bg-indigo-600 text-white"
-                                )}>
-                                  <Volume2 size={20} />
+                                <div className="flex items-center gap-2">
+                                  <div className={cn(
+                                    "w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm",
+                                    isMe ? "bg-white/40 text-black/60" : "bg-indigo-600 text-white"
+                                  )}>
+                                    <Volume2 size={20} />
+                                  </div>
+                                  <audio src={msg.mediaUrl} controls className="h-8 flex-1 min-w-0 opacity-80 scale-90 -ml-3" />
+                                  <div className="flex flex-col pr-2">
+                                     {!isMe && !msg.transcription && (
+                                       <button 
+                                         onClick={(e) => { e.stopPropagation(); handleTranscribe(msg.id); }}
+                                         className="flex items-center gap-1 px-2 py-1 bg-white border border-indigo-100 rounded-lg text-[9px] font-black uppercase text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm mb-1"
+                                       >
+                                         <Sparkles size={10} /> Transcrever
+                                       </button>
+                                     )}
+                                     <a href={msg.mediaUrl} download className="text-[8px] font-black uppercase text-indigo-500 hover:scale-110 transition-all text-center">Salvar</a>
+                                  </div>
                                 </div>
-                                <audio src={msg.mediaUrl} controls className="h-8 flex-1 min-w-0 opacity-80 scale-90 -ml-3" />
-                                <div className="flex flex-col pr-2">
-                                   <span className="text-[7px] font-black uppercase text-slate-400 tracking-tighter">Áudio</span>
-                                   <a href={msg.mediaUrl} download className="text-[8px] font-black uppercase text-indigo-500 hover:scale-110 transition-all">Salvar</a>
-                                </div>
+                                
+                                {msg.transcription && (
+                                  <div className="mt-1 p-2 bg-white/50 rounded-xl border border-black/5 animate-in slide-in-from-top duration-200">
+                                    <div className="flex items-center gap-1 mb-1">
+                                      <Sparkles size={10} className="text-indigo-500" />
+                                      <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Transcrição da IA</span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-700 italic leading-snug">{msg.transcription}</p>
+                                  </div>
+                                )}
                               </div>
+
                             ) : (
                               <div className="flex items-center gap-3 p-3 bg-white/60 rounded-2xl border border-black/5 shadow-sm backdrop-blur-sm min-w-[180px]">
                                 <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shadow-inner border border-indigo-100 flex-shrink-0">

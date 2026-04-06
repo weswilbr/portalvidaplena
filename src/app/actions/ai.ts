@@ -1,7 +1,59 @@
 'use server'
 
-import { analyzeConversion, suggestReplies, summarizeConversation } from "@/lib/gemini";
+import { analyzeConversion, suggestReplies, summarizeConversation, transcribeAudio } from "@/lib/gemini";
 import prisma from "@/lib/prisma";
+import * as fs from 'fs';
+import * as path from 'path';
+
+/**
+ * Transcreve uma mensagem de áudio específica (Sob Demanda)
+ */
+export async function transcribeMessage(messageId: string) {
+  try {
+    const msg = await (prisma as any).message.findUnique({
+      where: { id: messageId }
+    });
+
+    if (!msg || msg.mediaType !== 'audio' || !msg.mediaUrl) {
+      throw new Error("Mensagem não é um áudio válido");
+    }
+
+    // Se já foi transcrita antes, apenas retorna
+    if (msg.transcription) return msg.transcription;
+
+    // Extrai o nome do arquivo da URL (ex: /api/media/audio.ogg)
+    const filename = msg.mediaUrl.split('/').pop();
+    const filePath = path.join(process.cwd(), 'public', 'uploads', filename);
+
+    if (!fs.existsSync(filePath)) {
+      throw new Error("Arquivo de áudio não encontrado no servidor");
+    }
+
+    // Lê o arquivo e converte para base64
+    const audioBuffer = fs.readFileSync(filePath);
+    const base64Audio = audioBuffer.toString('base64');
+    
+    // Mimetype - Assumimos audio/ogg p/ WhatsApp mas podemos ser mais genéricos
+    const mimeType = filename.endsWith('.mp3') ? 'audio/mpeg' : 'audio/ogg';
+
+    console.log(`🤖 IA: Transcrevendo sob demanda: ${filename}...`);
+    const result = await transcribeAudio(base64Audio, mimeType);
+
+    if (result) {
+      // Atualiza o banco com a transcrição
+      await (prisma as any).message.update({
+        where: { id: messageId },
+        data: { transcription: result }
+      });
+      return result;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Erro na transcrição sob demanda:", error);
+    return null;
+  }
+}
 
 /**
  * Obtem análise de conversão (Termômetro)
