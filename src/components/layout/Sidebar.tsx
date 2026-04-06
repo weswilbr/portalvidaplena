@@ -41,7 +41,7 @@ const ALL_MENU_ITEMS = [
   { icon: Calendar, label: "Agenda", href: "/dashboard/agenda", roles: ["ADMIN", "SELLER"] },
 ];
 
-export function Sidebar({ role }: { role?: string }) {
+export function Sidebar({ role, userId, userName }: { role?: string, userId?: string, userName?: string }) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -60,14 +60,20 @@ export function Sidebar({ role }: { role?: string }) {
     setTheme(savedTheme);
     document.body.className = savedTheme === "default" ? "" : savedTheme;
 
-    // Puxa configs do usuário (Simulado p/ simplificar, idealmente receber do pai)
-    // Mas vamos fazer o fetch aqui mesmo para ser independente
+    // Puxa configs do usuário
     const loadSettings = async () => {
-       // Precisamos do ID do usuário, vamos assumir que injetamos ou buscamos
-       // Para fins de UI, vamos carregar quando o modal abrir ou via prop
+       if (userId) {
+         try {
+           const settings = await getUserSettings(userId);
+           if (settings) {
+              setNotifPhone(settings.notificationPhone || "");
+              setNotifEnabled(settings.notificationsEnabled ?? true);
+           }
+         } catch(e) {}
+       }
     };
     loadSettings();
-  }, []);
+  }, [userId]);
 
   const changeTheme = (newTheme: string) => {
     setTheme(newTheme);
@@ -263,8 +269,8 @@ export function Sidebar({ role }: { role?: string }) {
           )}>
             {(!isCollapsed || isMobileOpen) && (
               <div className="flex flex-col truncate">
-                <span className="text-[10px] md:text-xs font-black text-indigo-400 uppercase tracking-[0.2em] leading-none mb-1.5 font-bold">Logado como</span>
-                <span className="text-sm md:text-sm font-black text-slate-900 dark:text-white truncate tracking-tight">Vendedor</span>
+                <span className="text-[10px] md:text-xs font-black text-indigo-400 uppercase tracking-[0.2em] leading-none mb-1.5 font-bold">{role === "ADMIN" ? "Administrador" : "Equipe"}</span>
+                <span className="text-sm md:text-sm font-black text-slate-900 dark:text-white truncate tracking-tight">{userName || "Vendedor"}</span>
               </div>
             )}
             <button 
@@ -335,13 +341,19 @@ export function Sidebar({ role }: { role?: string }) {
                          return;
                       }
                       
+                      if (!userId) {
+                         alert("Erro de autenticação: Usuário não identificado.");
+                         return;
+                      }
+
                       setIsSaving(true);
-                      // O ideal é passar o ID real do usuário aqui. 
-                      // No fluxo atual, vamos apenas emitir uma confirmação de sucesso
-                      // e garantir que o estado seja refletido ao bot via DB.
-                      // Para persistência real, precisamos do ID vindo da sessão.
-                      alert("🎉 Alerta Privado Ativado!\n\nA partir de agora seu WhatsApp receberá um aviso assim que um lead entrar para você.");
-                      setIsAlertModalOpen(false);
+                      const res = await updateUserNotificationSettings(userId, { phone: notifPhone, enabled: notifEnabled });
+                      if (res.success) {
+                         alert("🎉 Alerta Privado Ativado!\n\nA partir de agora seu WhatsApp receberá um aviso assim que um lead entrar para você.");
+                         setIsAlertModalOpen(false);
+                      } else {
+                         alert(res.error || "Houve uma falha ao salvar suas configurações.");
+                      }
                       setIsSaving(false);
                    }}
                    className="w-full py-5 bg-emerald-600 text-white rounded-2xl font-black shadow-xl shadow-emerald-100 hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 tracking-widest text-xs"

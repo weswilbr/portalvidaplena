@@ -22,7 +22,7 @@ export default async function RootLayout({
     <html lang="pt-BR">
       <body className={`${inter.className} antialiased`}>
         <div className="flex bg-background">
-          {user && <Sidebar role={user.role} />}
+          {user && <Sidebar role={user.role} userId={user.id} userName={user.name} />}
           <main className="flex-1 h-screen overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50">
             {children}
           </main>
