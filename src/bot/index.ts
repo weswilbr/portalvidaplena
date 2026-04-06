@@ -397,7 +397,7 @@ client.on('message', async (msg: any) => {
                   const rawPhone = user.notificationPhone.replace(/\D/g, '');
                   const sellerJid = `${rawPhone}@c.us`;
                   
-                  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://portalfvp.duckdns.org';
+                  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://portalfvp.duckdns.org') + '?v=2';
                   const alertMsg = assignedToId 
                      ? `🔔 *Novo Lead na sua Carteira!*\n\nLead: *${participantName}*\n\n🚀 *Atenda agora:* \n${appUrl}/dashboard/vendas`
                      : `🔔 *Lead na Fila Geral!*\n\nLead: *${participantName}*\nNenhum vendedor fixo.\n\n🚀 *Assuma o chat:* \n${appUrl}/dashboard/vendas`;

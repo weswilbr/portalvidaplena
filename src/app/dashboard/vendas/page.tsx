@@ -4,8 +4,12 @@ import { redirect } from "next/navigation";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Vendas | Gestão de Tráfego Vida Plena",
-  description: "Gerencie suas vendas de produtos Vida Plena em tempo real.",
+  title: "Vendas | Projeto Vida Plena",
+  description: "Gerencie suas vendas exclusivas no Projeto Vida Plena.",
+  openGraph: {
+     title: "Projeto Vida Plena",
+     description: "Seu dashboard comercial oficial Vida Plena.",
+  }
 };
 
 export default async function VendasPage() {

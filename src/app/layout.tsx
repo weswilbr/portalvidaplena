@@ -7,8 +7,14 @@ import { getSession } from "@/app/actions/auth";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Portal Vida Plena",
-  description: "Sistema de Gestão Comercial e CRM - Vida Plena",
+  title: "Projeto Vida Plena",
+  description: "Gerencie seu sucesso comercial e leads da Vida Plena com o Novo CRM VIP.",
+  openGraph: {
+     title: "Projeto Vida Plena",
+     description: "Sistema de Gestão Comercial e CRM - Novo Portal Vida Plena",
+     type: "website",
+     locale: "pt_BR",
+  }
 };
 
 export default async function RootLayout({
