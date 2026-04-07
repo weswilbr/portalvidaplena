@@ -75,6 +75,7 @@ const statusStyles = {
   CONTACTED: "bg-blue-100 text-blue-700",
   PRESENTED: "bg-indigo-100 text-indigo-700",
   CLOSED: "bg-green-600 text-white",
+  REMARKETING: "bg-purple-100 text-purple-700",
   LOST: "bg-red-100 text-red-600",
 };
 
@@ -82,6 +83,7 @@ const statusLabels: Record<string, string> = {
   NEW: "Novo Lead",
   CONTACTED: "Em Atendimento",
   PRESENTED: "Carrinho Aberto",
+  REMARKETING: "Remarketing",
   CLOSED: "Venda Concluída",
   LOST: "Venda Perdida",
 };

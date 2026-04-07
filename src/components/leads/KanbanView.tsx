@@ -38,6 +38,7 @@ const statusColumns = [
   { id: "NEW", label: "LEADS ENTRANTES", color: "bg-blue-500" },
   { id: "CONTACTED", label: "QUALIFICAÇÃO E DIAGNÓSTICO", color: "bg-indigo-600" },
   { id: "PRESENTED", label: "SOLUÇÃO E FECHAMENTO", color: "bg-orange-500" },
+  { id: "REMARKETING", label: "REMARKETING ATIVO", color: "bg-purple-500" },
   { id: "CLOSED", label: "CLIENTE ATIVADO", color: "bg-emerald-500" },
   { id: "LOST", label: "OPORTUNIDADES PERDIDAS", color: "bg-slate-500" },
 ];
