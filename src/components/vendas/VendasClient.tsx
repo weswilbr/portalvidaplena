@@ -1663,21 +1663,45 @@ export default function VendasClient({ user }: { user: any }) {
                          {/* Lado Direito: Botão Deslizante ou Controles de Trava */}
                          <div className="flex items-center gap-2 z-20">
                             {isRecordingLocked ? (
-                              <div className="flex items-center gap-2">
+                              <div className="flex-1 flex items-center justify-between gap-4 px-2">
                                 <button 
                                   onClick={() => stopRecording(true)} 
-                                  className="p-2.5 bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500 rounded-full transition-all active:scale-90"
+                                  className="p-2 text-slate-900 hover:text-red-500 transition-all active:scale-90"
                                   title="Descartar"
                                 >
-                                  <Trash2 size={20} />
+                                  <Trash2 size={24} strokeWidth={1.5} />
                                 </button>
-                                <button 
-                                  onClick={() => stopRecording(false)} 
-                                  className="p-2.5 bg-emerald-500 text-white rounded-full shadow-lg hover:bg-emerald-600 transition-all active:scale-90"
-                                  title="Enviar Áudio"
-                                >
-                                  <Send size={20} className="ml-0.5" />
-                                </button>
+
+                                <div className="flex items-center gap-2">
+                                   <div className="w-2 h-2 rounded-full bg-[#d11336]"></div>
+                                   <span className="text-lg font-medium text-slate-800 tracking-tight font-mono">{formatTime(recordingTime)}</span>
+                                </div>
+
+                                {/* Waveform Dummy */}
+                                <div className="flex-1 flex items-center justify-center gap-0.5 px-4 h-6 opacity-30">
+                                   {[...Array(20)].map((_, i) => (
+                                      <motion.div 
+                                        key={i} 
+                                        animate={{ height: [4, Math.random() * 20 + 4, 4] }}
+                                        transition={{ repeat: Infinity, duration: 1, delay: i * 0.05 }}
+                                        className="w-[2px] bg-slate-900 rounded-full"
+                                      />
+                                   ))}
+                                </div>
+
+                                <div className="flex items-center gap-4">
+                                   <button type="button" className="text-[#d11336] hover:scale-110 active:scale-95 transition-all">
+                                      <Pause size={24} fill="currentColor" strokeWidth={0} />
+                                   </button>
+                                   
+                                   <button 
+                                     onClick={() => stopRecording(false)} 
+                                     className="w-12 h-12 bg-[#00a884] text-white rounded-full shadow-lg hover:bg-[#008f72] transition-all flex items-center justify-center active:scale-90"
+                                     title="Enviar Áudio"
+                                   >
+                                     <Send size={24} className="ml-1" fill="currentColor" strokeWidth={0} />
+                                   </button>
+                                </div>
                               </div>
                             ) : (
                               <div className="relative flex flex-col items-center">
