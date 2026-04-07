@@ -43,7 +43,10 @@ import {
   Sparkles,
   Settings,
   Lock,
-  ChevronUp
+  ChevronUp,
+  Minus,
+  Maximize2,
+  Minimize2
 } from "lucide-react";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import axios, { type AxiosProgressEvent } from "axios";
@@ -117,6 +120,8 @@ export default function VendasClient({ user }: { user: any }) {
   const [transferUserId, setTransferUserId] = useState("");
   const [isTransferring, setIsTransferring] = useState(false);
   const [isEmojiOpen, setIsEmojiOpen] = useState(false);
+  const [chatWindowState, setChatWindowState] = useState<'normal' | 'maximized' | 'minimized'>('normal');
+  const [lastNonMinimizedState, setLastNonMinimizedState] = useState<'normal' | 'maximized'>('normal');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -1033,15 +1038,28 @@ export default function VendasClient({ user }: { user: any }) {
         <div className="fixed inset-0 z-[60] flex justify-end">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsDetailsOpen(false)}></div>
           
-          <div className="relative w-full md:max-w-4xl bg-[#f0f2f5] h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            {/* Cabeçalho do Chat */}
+          <div 
+            className={cn(
+              "relative bg-[#f0f2f5] h-full shadow-2xl flex flex-col transition-all duration-300 ease-in-out",
+              chatWindowState === 'maximized' ? "w-full" : "w-full md:max-w-4xl",
+              chatWindowState === 'minimized' ? "translate-y-[calc(100%-64px)] overflow-hidden" : "translate-y-0",
+              isDetailsOpen ? "animate-in slide-in-from-right" : ""
+            )}
+          >
+            {/* Cabeçalho do Chat (Estilo Janela de Sistema) */}
             <header className="p-3 px-4 bg-white flex items-center justify-between border-b border-slate-200 shadow-sm z-10 sticky top-0">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <button 
-                  onClick={() => setIsDetailsOpen(false)} 
+                  onClick={() => {
+                    if (chatWindowState === 'minimized') {
+                      setChatWindowState(lastNonMinimizedState);
+                    } else {
+                      setIsDetailsOpen(false);
+                    }
+                  }} 
                   className="p-3 -ml-2 text-indigo-600 hover:bg-slate-100 rounded-2xl transition-all shrink-0"
                 >
-                  <ChevronLeft size={28} />
+                  {chatWindowState === 'minimized' ? <ChevronUp size={28} /> : <ChevronLeft size={28} />}
                 </button>
                 <div className="flex-shrink-0">
                   {selectedLead.profilePic ? (
@@ -1102,7 +1120,38 @@ export default function VendasClient({ user }: { user: any }) {
                 >
                   {isAnalyzing ? <Loader2 size={20} className="animate-spin" /> : <Thermometer size={20} />}
                 </button>
-                 <div className="w-10"></div> {/* Espaçador removendo botão de ação */}
+
+                 <div className="flex items-center gap-1.5 ml-2 pl-4 border-l border-slate-100">
+                    {/* Botão Minimizar */}
+                    <button 
+                      onClick={() => {
+                        setLastNonMinimizedState(chatWindowState === 'minimized' ? lastNonMinimizedState : (chatWindowState as any));
+                        setChatWindowState(chatWindowState === 'minimized' ? lastNonMinimizedState : 'minimized');
+                      }}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-indigo-600 transition-all"
+                      title={chatWindowState === 'minimized' ? "Restaurar" : "Minimizar"}
+                    >
+                      <Minus size={18} />
+                    </button>
+                    
+                    {/* Botão Maximizar / Restaurar */}
+                    <button 
+                      onClick={() => setChatWindowState(chatWindowState === 'maximized' ? 'normal' : 'maximized')}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-indigo-600 transition-all"
+                      title={chatWindowState === 'maximized' ? "Restaurar" : "Maximizar"}
+                    >
+                      {chatWindowState === 'maximized' ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                    </button>
+
+                    {/* Botão Fechar */}
+                    <button 
+                      onClick={() => setIsDetailsOpen(false)}
+                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all"
+                      title="Fechar"
+                    >
+                      <X size={18} />
+                    </button>
+                 </div>
               </div>
             </header>
 
