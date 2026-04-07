@@ -1219,8 +1219,18 @@ export default function VendasClient({ user }: { user: any }) {
 
                   return (
                     <div key={msg.id} className={cn("flex flex-col gap-0.5 relative group", isMe ? "items-end" : "items-start")} style={{maxWidth:'82%', alignSelf: isMe ? 'flex-end' : 'flex-start'}}>
-                      {!isClient && !msg.isSystem && !isMe && msg.author && (
-                        <span className="text-[10px] font-black text-slate-400 ml-2 mb-0.5 uppercase tracking-widest">{msg.author.name}</span>
+                      {!msg.isSystem && !isMe && (
+                        <div className="flex items-center gap-1.5 ml-2 mb-0.5 group-hover:translate-x-0.5 transition-transform">
+                          <span className={cn(
+                            "text-[9px] font-black uppercase tracking-[0.15em]",
+                            isClient ? "text-indigo-500" : "text-slate-400"
+                          )}>
+                            {isClient ? selectedLead.name : (msg.author?.name || "Vendedor")}
+                          </span>
+                          {isClient && (
+                            <div className="w-1 h-1 rounded-full bg-indigo-200 animate-pulse"></div>
+                          )}
+                        </div>
                       )}
 
                       <div 
@@ -1332,12 +1342,22 @@ export default function VendasClient({ user }: { user: any }) {
                                 className="w-full p-2 text-xs border rounded bg-white font-medium outline-none focus:ring-1 focus:ring-indigo-300 h-16 resize-none"
                               />
                               <div className="flex gap-2">
-                                 <button onClick={handleSaveEdit} className="text-[10px] font-bold bg-indigo-600 text-white px-3 py-1.5 rounded-lg">Salvar</button>
-                                 <button onClick={() => setEditingMessageId(null)} className="text-[10px] font-bold bg-slate-200 px-3 py-1.5 rounded-lg">Cancelar</button>
+                                 <button onClick={handleSaveEdit} className="text-[10px] font-bold bg-indigo-600 text-white px-3 py-1.5 rounded-lg shadow-sm">Salvar</button>
+                                 <button onClick={() => setEditingMessageId(null)} className="text-[10px] font-bold bg-slate-200 px-3 py-1.5 rounded-lg shadow-sm">Cancelar</button>
                               </div>
                            </div>
                         ) : (
-                          <p className="whitespace-pre-wrap text-sm pr-10">{msg.content}</p>
+                          <div className="flex flex-col gap-1.5">
+                            <p className="whitespace-pre-wrap text-sm pr-10 leading-snug">{msg.content}</p>
+                            {msg.isNote && (
+                              <div className="flex items-center gap-1.5 opacity-60 border-t border-amber-200 mt-1 pt-1.5 border-dashed">
+                                <div className="w-1 h-3 rounded-full bg-amber-500"></div>
+                                <span className="text-[9px] font-black uppercase text-amber-600 tracking-widest italic flex items-center gap-1">
+                                  <CalendarCheck size={10} /> Nota para o Time
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         )}
 
                         <div className="flex items-center gap-1 justify-end mt-1 opacity-60">
