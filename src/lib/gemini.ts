@@ -1,4 +1,4 @@
-const GEMINI_MODEL = "gemini-flash-latest";
+const GEMINI_MODEL = "gemini-2.5-flash-lite";
 
 /**
  * Transcreve e resume um áudio enviado pelo WhatsApp
