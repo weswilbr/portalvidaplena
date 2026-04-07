@@ -40,7 +40,8 @@ import {
   Reply,
   Camera,
   Thermometer,
-  Sparkles
+  Sparkles,
+  Settings
 } from "lucide-react";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import axios, { type AxiosProgressEvent } from "axios";
@@ -965,18 +966,12 @@ export default function VendasClient({ user }: { user: any }) {
                            </button>
                          )}
                          <button 
-                          onClick={() => { setSelectedLead(lead); setIsDetailsOpen(true); setIsTransferring(true); }}
-                          className="px-3 py-1.5 md:px-4 md:py-2 bg-slate-900 text-white rounded-xl font-bold text-[10px] md:text-xs hover:bg-slate-800 transition-all shadow-lg flex items-center gap-1.5"
-                         >
-                           <ArrowRightLeft size={14} />
-                           Ações
-                         </button>
-                         <button 
-                          onClick={() => { setSelectedLead(lead); setIsDetailsOpen(true); }}
-                          className="px-3 py-1.5 md:px-4 md:py-2 bg-slate-50 text-slate-600 border border-slate-200 rounded-xl font-bold text-[10px] md:text-xs hover:bg-slate-200 transition-all shadow-sm"
-                         >
-                           Chat
-                         </button>
+                           onClick={() => { setSelectedLead(lead); setIsDetailsOpen(true); }}
+                           className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-black text-[10px] md:text-sm hover:bg-indigo-700 transition-all shadow-lg flex items-center gap-2"
+                          >
+                            <MessageSquare size={16} />
+                            Abrir Chat
+                          </button>
                       </td>
                     </tr>
                   ))}
@@ -990,7 +985,7 @@ export default function VendasClient({ user }: { user: any }) {
         <div className="fixed inset-0 z-[60] flex justify-end">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsDetailsOpen(false)}></div>
           
-          <div className="relative w-full md:max-w-2xl bg-[#f0f2f5] h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="relative w-full md:max-w-4xl bg-[#f0f2f5] h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
             {/* Cabeçalho do Chat */}
             <header className="p-3 px-4 bg-white flex items-center justify-between border-b border-slate-200 shadow-sm z-10 sticky top-0">
               <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -1059,13 +1054,7 @@ export default function VendasClient({ user }: { user: any }) {
                 >
                   {isAnalyzing ? <Loader2 size={20} className="animate-spin" /> : <Thermometer size={20} />}
                 </button>
-                <button 
-                  onClick={() => setIsTransferring(!isTransferring)}
-                  className={cn("p-3 rounded-2xl transition-all text-xs font-bold", isTransferring ? "bg-indigo-600 text-white" : "text-indigo-600 hover:bg-indigo-50")}
-                  title="Ações e Transferência"
-                >
-                  <ArrowRightLeft size={24} />
-                </button>
+                 <div className="w-10"></div> {/* Espaçador removendo botão de ação */}
               </div>
             </header>
 
@@ -1233,13 +1222,13 @@ export default function VendasClient({ user }: { user: any }) {
                         </div>
                       )}
 
-                      <div 
-                        className={cn(
-                          "max-w-[85%] md:max-w-[70%] p-3 md:p-4 rounded-2xl md:rounded-[1.25rem] shadow-sm relative group transition-all cursor-pointer select-none overflow-hidden",
-                          msg.isNote ? "bg-[#fef3c7] border border-amber-200 text-amber-900 rounded-tr-none" : 
-                          isMe ? "bg-[#d9fdd3] text-[#111b21] rounded-tr-none" : 
-                          "bg-white text-[#111b21] rounded-tl-none"
-                        )}
+                        <div 
+                          className={cn(
+                            "max-w-[90%] md:max-w-[75%] p-3 md:p-4 rounded-2xl md:rounded-[1.25rem] shadow-sm relative group transition-all cursor-pointer select-none overflow-hidden",
+                            msg.isNote ? "bg-[#fef3c7] border border-amber-200 text-amber-900 rounded-tr-none" : 
+                            isMe ? "bg-[#e2ffc7] text-[#111b21] rounded-tr-none border border-emerald-100" : 
+                            "bg-[#e8f0fe] text-[#111b21] rounded-tl-none border border-indigo-100" // Client bubble in light indigo/blue
+                          )}
                         onDoubleClick={() => setReplyingTo(msg)}
                         onTouchStart={(e) => {
                            const touch = e.touches[0];
@@ -1465,48 +1454,32 @@ export default function VendasClient({ user }: { user: any }) {
                 </div>
               )}
 
-              {/* Toolbar de Ações */}
-              <div className="flex items-end gap-2 p-2 px-3">
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleFileChange} 
-                  className="hidden" 
-                  accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
-                />
-
-                {/* Botões de Ação (Emoji, Arquivo, Gatilho) */}
-                <div className="flex items-center gap-1 shrink-0">
-                  <button 
-                    type="button" 
-                    onClick={() => setIsEmojiOpen(!isEmojiOpen)}
-                    className={cn("p-2.5 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-white transition-all", isEmojiOpen && "text-indigo-600 bg-white shadow-sm")}
-                  >
-                    <Smile size={22} />
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-2.5 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-white transition-all"
-                  >
-                    <Paperclip size={22} />
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={startCamera}
-                    className="p-2.5 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-white transition-all"
-                    title="Tirar Foto"
-                  >
-                    <Camera size={22} />
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => setIsGatilhoOpen(!isGatilhoOpen)}
-                    className={cn("p-2.5 rounded-xl text-slate-500 hover:text-amber-500 transition-all", isGatilhoOpen && "text-amber-500 bg-white shadow-sm")}
-                  >
-                    <Zap size={22} />
-                  </button>
-                </div>
+                   <div className="flex flex-col md:flex-row items-end gap-2 md:gap-4 p-3 md:p-4 bg-white mx-3 md:mx-10 mb-6 rounded-[2rem] shadow-lg border border-slate-200">
+                     <input 
+                       type="file" 
+                       ref={fileInputRef} 
+                       onChange={handleFileChange} 
+                       className="hidden" 
+                       accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+                     />
+                     <div className="flex items-center gap-1">
+                        <button 
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-2xl transition-all"
+                          title="Anexar Arquivo"
+                        >
+                          <Paperclip size={22} />
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => setIsNoteMode(!isNoteMode)}
+                          className={cn("p-3 rounded-2xl transition-all", isNoteMode ? "bg-amber-100 text-amber-600 shadow-inner" : "text-slate-400 hover:text-amber-500 hover:bg-amber-50")}
+                          title="Nota Interna"
+                        >
+                          <FileText size={22} />
+                        </button>
+                     </div>
                 
                 {/* Sugestões da IA (Dicas Invisíveis para o Lead) */}
                 {!isRecording && aiSuggestions.length > 0 && !newMessage && !selectedFile && (

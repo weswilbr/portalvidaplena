@@ -166,13 +166,20 @@ export default function KanbanView({ leads, onEdit, onDelete, onStatusChange }: 
                     </span>
                   )}
 
-                  <div className="mt-3">
+                   <div className="mt-3 flex gap-2">
                     <button 
                       onClick={() => onEdit(lead)}
-                      className="w-full py-2.5 bg-indigo-50 text-indigo-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2"
+                      className="flex-1 py-2 bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-100 transition-all shadow-sm flex items-center justify-center gap-1.5 border border-slate-200/50"
                     >
-                      <MessageSquare size={14} />
-                      Abrir Atendimento
+                      <ExternalLink size={12} />
+                      Detalhes
+                    </button>
+                    <button 
+                      onClick={() => window.location.href = `/dashboard/vendas?leadId=${lead.id}`}
+                      className="flex-1 py-2 bg-indigo-600 text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-1.5"
+                    >
+                      <MessageSquare size={12} />
+                      Chat
                     </button>
                   </div>
                 </div>

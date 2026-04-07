@@ -10,7 +10,8 @@ import {
   X,
   List,
   LayoutGrid,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Pencil
 } from "lucide-react";
 import React, { useState, useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -330,19 +331,27 @@ export default function LeadsClient({ user }: { user: any }) {
                           </button>
                         )}
                          <button 
-                          onClick={() => handleOpenEditModal(lead)}
-                          className="p-2.5 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all" 
-                          title="Detalhes"
-                        >
-                          <MessageSquare size={18} />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteLead(lead.id)}
-                          className="p-2.5 rounded-xl hover:bg-red-50 hover:text-red-500 transition-all"
-                          title="Excluir"
-                        >
-                          <X size={18} />
-                        </button>
+                           onClick={() => window.location.href = `/dashboard/vendas?leadId=${lead.id}`}
+                           className="p-2.5 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 transition-all font-bold flex items-center gap-1" 
+                           title="Abrir Chat"
+                         >
+                           <MessageSquare size={18} />
+                           <span className="text-[10px] hidden md:inline">Chat</span>
+                         </button>
+                         <button 
+                           onClick={() => handleOpenEditModal(lead)}
+                           className="p-2.5 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all" 
+                           title="Editar Detalhes"
+                         >
+                           <Pencil size={18} />
+                         </button>
+                         <button 
+                           onClick={() => handleDeleteLead(lead.id)}
+                           className="p-2.5 rounded-xl hover:bg-red-50 hover:text-red-500 transition-all"
+                           title="Excluir"
+                         >
+                           <X size={18} />
+                         </button>
                       </div>
                     </td>
                   </tr>
