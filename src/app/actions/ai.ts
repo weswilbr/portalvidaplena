@@ -75,7 +75,7 @@ export async function getLeadAnalysis(leadId: string) {
     }
 
     const chatHistory = lead.messages
-      .map((m: any) => `${m.author?.name || 'Cliente'}: ${m.content || ''}${m.transcription ? ` (ÁUDIO TRANSCRITO: ${m.transcription})` : ''}`)
+      .map((m: any) => `${m.author?.name ? `VENDEDOR (${m.author.name})` : 'CLIENTE (Lead)'}: ${m.content || ''}${m.transcription ? ` (ÁUDIO TRANSCRITO: ${m.transcription})` : ''}`)
       .join('\n');
 
     const result = await analyzeConversion(chatHistory);
@@ -115,7 +115,7 @@ export async function getConversationSummary(leadId: string) {
     if (!lead || (lead.messages || []).length === 0) return "Sem mensagens para resumir.";
 
     const chatHistory = lead.messages
-      .map((m: any) => `${m.author?.name || 'Cliente'}: ${m.content || ''}${m.transcription ? ` (ÁUDIO TRANSCRITO: ${m.transcription})` : ''}`)
+      .map((m: any) => `${m.author?.name ? `VENDEDOR (${m.author.name})` : 'CLIENTE (Lead)'}: ${m.content || ''}${m.transcription ? ` (ÁUDIO TRANSCRITO: ${m.transcription})` : ''}`)
       .join('\n');
 
     return await summarizeConversation(chatHistory);

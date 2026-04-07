@@ -87,7 +87,17 @@ export async function analyzeConversion(chatHistory: string) {
     const key = process.env.GEMINI_API_KEY;
     if (!key) return { score: 0, status: 'GELADO', advice: 'Inicie a conversa' };
 
-    const prompt = `Analise o histórico de conversa de um lead de plano de saúde/negócios. Avalie o nível de interesse (score 0-100), o status (GELADO, MORNO, QUENTE) e dê um conselho curto de "Próximo Passo" para o vendedor. Retorne APENAS um JSON: {"score": 85, "status": "QUENTE", "advice": "Ofereça o fechamento agora"}\n\nHistórico:\n${chatHistory}`;
+    const prompt = `Analise o histórico de conversa entre um VENDEDOR e um CLIENTE. 
+Siga estas regras rigorosas:
+1. Um lead só é QUENTE se tiver interesse IMEDIATO em comprar, perguntar sobre pagamento, documentos ou demonstrar pressa.
+2. Um lead é MORNO se estiver apenas tirando dúvidas básicas e ainda não demonstrou que vai comprar.
+3. Um lead é GELADO se o cliente parou de responder, deu respostas curtas de desinteresse ou se apenas o vendedor estiver falando muito sem retorno.
+4. Seja realista: se o cliente apenas fez uma pergunta técnica e não respondeu o pitch de vendas, ele NÃO é quente.
+
+Retorne APENAS um JSON: {"score": 85, "status": "QUENTE", "advice": "Ofereça o fechamento agora"}
+
+Histórico de Conversa:
+${chatHistory}`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
