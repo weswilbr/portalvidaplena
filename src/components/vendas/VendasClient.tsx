@@ -627,11 +627,9 @@ export default function VendasClient({ user }: { user: any }) {
     refreshData();
   };
 
-  // Efeito para buscar análise da IA quando abre o chat
+  // Efeito para limpar análise ao trocar de lead
   useEffect(() => {
-    if (isDetailsOpen && selectedLead) {
-      handleRefreshAI();
-    } else {
+    if (!selectedLead || !isDetailsOpen) {
       setAiAnalysis(null);
       setAiSuggestions([]);
       setFullSummary(null);
@@ -1042,6 +1040,14 @@ export default function VendasClient({ user }: { user: any }) {
                   title="Resumir Conversa"
                 >
                   {isSummarizing ? <Loader2 size={20} className="animate-spin" /> : <FileText size={20} />}
+                </button>
+                <button 
+                  onClick={handleRefreshAI}
+                  disabled={isAnalyzing}
+                  className="p-3 rounded-2xl text-orange-500 hover:bg-orange-50 transition-all flex items-center gap-1.5"
+                  title="Calcular Temperatura"
+                >
+                  {isAnalyzing ? <Loader2 size={20} className="animate-spin" /> : <Thermometer size={20} />}
                 </button>
                 <button 
                   onClick={() => setIsTransferring(!isTransferring)}
