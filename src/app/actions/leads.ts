@@ -463,3 +463,47 @@ export async function updateQuickReply(id: string, data: { title?: string; conte
     return { success: false, error: "Falha ao atualizar gatilho" };
   }
 }
+export async function reactToMessage(messageId: string, emoji: string, userId: string) {
+  try {
+    const msg = await (prisma as any).message.findUnique({ where: { id: messageId } });
+    if (!msg) return { success: false, error: "Mensagem não encontrada" };
+
+    let reactions: Record<string, string[]> = {};
+    if (msg.reactions) {
+      try {
+        reactions = JSON.parse(msg.reactions);
+      } catch (e) {
+        reactions = {};
+      }
+    }
+
+    // Gerencia a reação (adiciona ou remove se for o mesmo emoji do mesmo usuário)
+    if (!reactions[emoji]) {
+      reactions[emoji] = [];
+    }
+
+    if (reactions[emoji].includes(userId)) {
+      reactions[emoji] = reactions[emoji].filter(id => id !== userId);
+      if (reactions[emoji].length === 0) delete reactions[emoji];
+    } else {
+      // Remove o usuário de outras reações se você quiser apenas uma (estilo WhatsApp)
+      Object.keys(reactions).forEach(e => {
+        reactions[e] = reactions[e].filter(id => id !== userId);
+        if (reactions[e].length === 0) delete reactions[e];
+      });
+      
+      if (!reactions[emoji]) reactions[emoji] = [];
+      reactions[emoji].push(userId);
+    }
+
+    await (prisma as any).message.update({
+      where: { id: messageId },
+      data: { reactions: JSON.stringify(reactions) }
+    });
+
+    return { success: true, reactions };
+  } catch (error) {
+    console.error("Error reacting to message:", error);
+    return { success: false, error: "Falha ao reagir" };
+  }
+}

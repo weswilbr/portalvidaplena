@@ -64,6 +64,7 @@ model Message {
   mediaType     String?  // image, video, document, audio
   transcription String?  // Texto transcrito de áudio (AI)
   whatsappId    String?  // ID único da mensagem no WhatsApp (para exclusão)
+  reactions     String?  // JSON string: { "❤️": ["userId1"], "👍": ["userId2"] }
   createdAt     DateTime @default(now())
 }
 

@@ -46,10 +46,12 @@ import {
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import axios, { type AxiosProgressEvent } from "axios";
 import { cn, openWhatsApp, getWhatsAppHref } from "@/lib/utils";
-import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead, sendWhatsAppMessage, addInternalNote, uploadMedia, deleteMessage, updateMessage, getQuickReplies, createQuickReply, deleteQuickReply, updateQuickReply, getLeadById } from "@/app/actions/leads";
+import { getLeads, createLead, updateLead, deleteLead, addMessage, transferLead, pullLead, sendWhatsAppMessage, addInternalNote, uploadMedia, deleteMessage, updateMessage, getQuickReplies, createQuickReply, deleteQuickReply, updateQuickReply, getLeadById, reactToMessage } from "@/app/actions/leads";
 import { getSellers } from "@/app/actions/users";
 import { getLeadAnalysis, getConversationSummary, getReplySuggestions, transcribeMessage } from '@/app/actions/ai';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from "framer-motion";
+import EmojiPicker, { Theme, EmojiClickData } from "emoji-picker-react";
 import KanbanView from "@/components/leads/KanbanView";
 
 // Helper para formatar celular do Brasil
@@ -443,9 +445,25 @@ export default function VendasClient({ user }: { user: any }) {
     }
   };
 
-  const addEmoji = (emoji: string) => {
-    setNewMessage(prev => prev + emoji);
-    setIsEmojiOpen(false);
+  const handleReact = async (messageId: string, emoji: string) => {
+    const res = await reactToMessage(messageId, emoji, user.id);
+    if (res.success) {
+      setLeads(prev => prev.map(l => {
+        if (l.id === selectedLead.id) {
+          return {
+            ...l,
+            messages: l.messages.map((m: any) => m.id === messageId ? { ...m, reactions: JSON.stringify(res.reactions) } : m)
+          };
+        }
+        return l;
+      }));
+      if (selectedLead?.id) {
+        setSelectedLead((prev: any) => ({
+          ...prev,
+          messages: prev.messages.map((m: any) => m.id === messageId ? { ...m, reactions: JSON.stringify(res.reactions) } : m)
+        }));
+      }
+    }
   };
 
   const startRecording = async () => {
@@ -481,11 +499,16 @@ export default function VendasClient({ user }: { user: any }) {
     }
   };
 
-  const stopRecording = () => {
+  const stopRecording = (cancel = false) => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      setRecordingTime(0);
       if (timerRef.current) clearInterval(timerRef.current);
+      
+      if (cancel) {
+          audioChunksRef.current = [];
+      }
     }
   };
 
@@ -1389,7 +1412,38 @@ export default function VendasClient({ user }: { user: any }) {
                              </button>
                            </>
                          )}
-                      </div>
+
+                          {/* Reações (Estilo WhatsApp) */}
+                          <div className={cn(
+                            "flex items-center bg-white/90 backdrop-blur-sm border border-slate-100 rounded-full p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100",
+                            isMe ? "flex-row" : "flex-row-reverse"
+                          )}>
+                             {["❤️", "👍", "😂", "😮", "🙏"].map(emoji => (
+                               <button 
+                                 key={emoji} 
+                                 onClick={(e) => { e.stopPropagation(); handleReact(msg.id, emoji); }}
+                                 className="hover:scale-125 transition-all p-1 text-xs"
+                               >
+                                 {emoji}
+                               </button>
+                             ))}
+                          </div>
+                       </div>
+
+                       {/* Display das Reações Recebidas */}
+                       {msg.reactions && Object.keys(JSON.parse(msg.reactions)).length > 0 && (
+                         <div className={cn(
+                           "flex flex-wrap gap-1 mt-1 mb-2 px-2",
+                           isMe ? "justify-end" : "justify-start"
+                         )}>
+                            {Object.entries(JSON.parse(msg.reactions)).map(([emoji, userIds]: [string, any]) => (
+                               <div key={emoji} className="bg-white border border-slate-100 rounded-full px-1.5 py-0.5 text-[10px] shadow-sm flex items-center gap-1 active:scale-90 transition-all cursor-default">
+                                  <span>{emoji}</span>
+                                  <span className="font-bold text-slate-400">{userIds.length > 1 ? userIds.length : ""}</span>
+                               </div>
+                            ))}
+                         </div>
+                       )}
                     </div>
                   );
                 })}
@@ -1566,12 +1620,38 @@ export default function VendasClient({ user }: { user: any }) {
                     )}
 
                     {isRecording ? (
-                      <div className="w-full h-11 px-4 rounded-2xl bg-red-50 flex items-center justify-between border border-red-100 animate-pulse">
-                         <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                            <span className="text-xs font-bold text-red-600">Gravando: {formatTime(recordingTime)}</span>
+                      <div className="w-full h-12 px-4 rounded-3xl bg-white flex items-center justify-between border border-slate-200 shadow-inner overflow-hidden relative">
+                         <div className="flex items-center gap-2 z-10">
+                            <motion.div 
+                              animate={{ opacity: [0, 1, 0] }}
+                              transition={{ repeat: Infinity, duration: 1.5 }}
+                              className="w-2 h-2 rounded-full bg-red-500"
+                            />
+                            <span className="text-xs font-black text-red-600 tracking-tight">{formatTime(recordingTime)}</span>
                          </div>
-                         <button type="button" onClick={stopRecording} className="p-1.5 bg-red-600 text-white rounded-full"><Square size={14}/></button>
+                         
+                         <motion.div 
+                           initial={{ x: 0 }}
+                           animate={{ x: -20 }}
+                           className="flex items-center gap-2 text-slate-400 text-[10px] font-bold uppercase tracking-widest pointer-events-none z-10"
+                         >
+                            <ChevronLeft size={14} className="animate-pulse" />
+                            Deslize para cancelar
+                         </motion.div>
+
+                         <motion.div 
+                            drag="x"
+                            dragConstraints={{ right: 0, left: -150 }}
+                            onDragEnd={(e, info) => {
+                               if (info.point.x < -100) {
+                                  stopRecording(true); // Cancela
+                                  toast.error("Gravação Cancelada");
+                               }
+                            }}
+                            className="absolute right-2 top-1.5 bottom-1.5 w-20 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg cursor-grab active:cursor-grabbing z-20"
+                         >
+                            <Mic size={18} />
+                         </motion.div>
                       </div>
                     ) : (
                       <textarea 
@@ -1597,13 +1677,22 @@ export default function VendasClient({ user }: { user: any }) {
                       />
                     )}
 
-                    {/* Picker de Emojis */}
+                    {/* Picker de Emojis Premium */}
                     {isEmojiOpen && (
-                      <div className="absolute bottom-full mb-2 left-0 bg-white shadow-2xl rounded-[1.5rem] p-4 grid grid-cols-6 gap-2 border border-slate-100 animate-in slide-in-from-bottom duration-200 z-[70] w-64">
-                        {["😀", "😂", "🚀", "🔥", "✅", "🙌", "🤝", "📦", "💰", "📞", "📝", "❓", "📌", "⚠️", "⏳", "🎉", "💙", "💊"].map(emoji => (
-                          <button key={emoji} type="button" onClick={() => addEmoji(emoji)} className="text-xl hover:scale-125 transition-all active:scale-95">{emoji}</button>
-                        ))}
-                        <button type="button" onClick={() => setIsEmojiOpen(false)} className="col-span-6 mt-1 py-1 text-[9px] font-black text-slate-400 uppercase tracking-widest border-t border-slate-100 pt-2">Fechar</button>
+                      <div className="absolute bottom-full mb-3 left-0 z-[100] shadow-2xl animate-in slide-in-from-bottom duration-300">
+                        <EmojiPicker 
+                          onEmojiClick={(emojiData: EmojiClickData) => {
+                            setNewMessage(prev => prev + emojiData.emoji);
+                            setIsEmojiOpen(false);
+                          }}
+                          autoFocusSearch={false}
+                          theme={Theme.LIGHT}
+                          width={320}
+                          height={400}
+                          searchDisabled={false}
+                          skinTonesDisabled={true}
+                          previewConfig={{ showPreview: false }}
+                        />
                       </div>
                     )}
                   </div>
