@@ -1,4 +1,4 @@
-const GEMINI_MODEL = "gemini-2.5-flash-lite";
+const GEMINI_MODEL = "gemini-1.5-flash"; // Estável e com cota melhor no Free Tier
 
 /**
  * Transcreve e resume um áudio enviado pelo WhatsApp
@@ -73,6 +73,10 @@ ${chatHistory}`;
 
     if (!response.ok) {
         const errText = await response.text();
+        if (response.status === 429) {
+          console.warn("⚠️ Cota Gemini Excedida (Suggest)");
+          return ["Cota de IA atingida. Tente em 1 min."];
+        }
         console.error("❌ Gemini API erro (Suggest):", response.status, errText);
         return [];
     }
@@ -122,8 +126,11 @@ ${chatHistory}`;
 
     if (!response.ok) {
         const errText = await response.text();
+        if (response.status === 429) {
+           return { score: 0, status: 'LIMITE', advice: 'Cota de IA atingida por agora. Tente em 1 min.' };
+        }
         console.error("❌ Gemini API erro (Analyze):", response.status, errText);
-        return { score: 0, status: 'GELADO', advice: 'Analise indisponível' };
+        return { score: 0, status: 'GELADO', advice: 'Analise indisponível no momento' };
     }
 
     const data = await response.json();

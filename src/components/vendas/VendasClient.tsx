@@ -141,6 +141,7 @@ export default function VendasClient({ user }: { user: any }) {
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [isRecordingLocked, setIsRecordingLocked] = useState(false);
   const [isStrategicMode, setIsStrategicMode] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -691,13 +692,29 @@ export default function VendasClient({ user }: { user: any }) {
   }, [isDetailsOpen, selectedLead?.id]);
 
   const handleRefreshAI = async () => {
-    if (!selectedLead) return;
+    if (!selectedLead || isAnalyzing) return;
+
+    const now = Date.now();
+    const cooldownMs = 30 * 1000;
+    if (now - lastRefreshTime < cooldownMs) {
+      const waitSec = Math.ceil((cooldownMs - (now - lastRefreshTime)) / 1000);
+      toast.error(`Aguarde ${waitSec}s para analisar novamente.`);
+      return;
+    }
+
     setIsAnalyzing(true);
     try {
       const [analysis, suggestions] = await Promise.all([
         getLeadAnalysis(selectedLead.id),
         getReplySuggestions(selectedLead.id)
       ]);
+
+      if (analysis?.status === 'LIMITE') {
+        toast.warning("AI Limit reached. Showing cached data.");
+      } else {
+        setLastRefreshTime(now);
+      }
+
       setAiAnalysis(analysis);
       setAiSuggestions(suggestions);
     } catch (error) {

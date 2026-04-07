@@ -79,8 +79,18 @@ export async function getLeadAnalysis(leadId: string) {
       .join('\n');
 
     const result = await analyzeConversion(chatHistory);
+    
+    // Se estourou a cota, retornamos o que já temos no banco para não travar a UI
+    if (result && result.status === 'LIMITE') {
+       console.warn(`⏳ [COTA] Gemini limitada. Usando dados cacheados para o lead ${leadId}`);
+       return { 
+         score: lead.aiScore || 0, 
+         status: lead.aiStatus || 'GELADO', 
+         advice: (lead.aiAdvice || 'IA em repouso. Tente em 1 min.') 
+       };
+    }
 
-    if (result && result.status) {
+    if (result && result.status && result.status !== 'ERRO') {
       await (prisma as any).lead.update({
         where: { id: leadId },
         data: {
@@ -94,7 +104,7 @@ export async function getLeadAnalysis(leadId: string) {
     return result;
   } catch (error) {
     console.error("Erro ao analisar lead:", error);
-    return { score: 0, status: 'ERRO', advice: 'Tente novamente' };
+    return { score: 0, status: 'ERRO', advice: 'Tente novamente em breve' };
   }
 }
 
