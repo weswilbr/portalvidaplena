@@ -901,6 +901,16 @@ export default function VendasClient({ user }: { user: any }) {
                                  {lead.unreadCount}
                                </span>
                              )}
+                             {lead.aiStatus && (
+                               <span className={cn(
+                                 "flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest shadow-sm",
+                                 lead.aiStatus === 'QUENTE' ? "bg-orange-500 text-white animate-pulse" :
+                                 lead.aiStatus === 'MORNO' ? "bg-amber-400 text-white" : "bg-slate-200 text-slate-500"
+                               )}>
+                                 <Thermometer size={10} />
+                                 {lead.aiStatus}
+                               </span>
+                             )}
                           </div>
                           <div className="text-[10px] md:text-xs font-semibold text-slate-400 mt-0.5">{formatPhoneNumber(lead.phone)}</div>
                         </div>

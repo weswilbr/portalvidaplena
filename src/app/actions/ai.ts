@@ -78,7 +78,20 @@ export async function getLeadAnalysis(leadId: string) {
       .map((m: any) => `${m.author?.name || 'Cliente'}: ${m.content || ''}${m.transcription ? ` (ÁUDIO TRANSCRITO: ${m.transcription})` : ''}`)
       .join('\n');
 
-    return await analyzeConversion(chatHistory);
+    const result = await analyzeConversion(chatHistory);
+
+    if (result && result.status) {
+      await (prisma as any).lead.update({
+        where: { id: leadId },
+        data: {
+          aiScore: result.score,
+          aiStatus: result.status,
+          aiAdvice: result.advice
+        }
+      });
+    }
+
+    return result;
   } catch (error) {
     console.error("Erro ao analisar lead:", error);
     return { score: 0, status: 'ERRO', advice: 'Tente novamente' };

@@ -11,6 +11,8 @@ interface Lead {
   phone?: string;
   interest?: string;
   profilePic?: string;
+  aiStatus?: string;
+  aiScore?: number;
 }
 
 function formatPhoneNumber(phone: string) {
@@ -134,7 +136,22 @@ export default function KanbanView({ leads, onEdit, onDelete, onStatusChange }: 
                       {lead.profilePic && (
                         <img src={lead.profilePic} alt={lead.name} className="w-8 h-8 rounded-full object-cover shadow-sm border border-slate-200" />
                       )}
-                      <h4 className="font-bold text-slate-900 dark:text-slate-100 leading-tight">{lead.name}</h4>
+                      <h4 className="font-bold text-slate-900 dark:text-slate-100 leading-tight flex items-center gap-2">
+                        {lead.name}
+                        {lead.aiStatus && (
+                          <div 
+                            className={cn(
+                              "px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest flex items-center gap-0.5 shadow-sm",
+                              lead.aiStatus === 'QUENTE' ? "bg-orange-500 text-white" :
+                              lead.aiStatus === 'MORNO' ? "bg-amber-400 text-white" : "bg-slate-200 text-slate-500"
+                            )}
+                            title={`${lead.aiStatus} (${lead.aiScore}%)`}
+                          >
+                             <div className={cn("w-1 h-1 rounded-full bg-white", lead.aiStatus === 'QUENTE' && "animate-ping")} />
+                             {lead.aiStatus}
+                          </div>
+                        )}
+                      </h4>
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => onDelete(lead.id)} className="p-1 hover:text-red-500 transition-colors">

@@ -42,6 +42,9 @@ model Lead {
   assignedToId String?
   assignedTo   User?    @relation("UserLeads", fields: [assignedToId], references: [id])
   unreadCount Int      @default(0)
+  aiScore     Int?
+  aiStatus    String?  // GELADO, MORNO, QUENTE
+  aiAdvice    String?
   messages    Message[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
