@@ -43,6 +43,12 @@ const ALL_MENU_ITEMS = [
 
 export function Sidebar({ role, userId, userName }: { role?: string, userId?: string, userName?: string }) {
   const pathname = usePathname();
+  
+  // Não mostra o menu em páginas de autenticação ou na home pública
+  if (pathname === "/login" || pathname === "/nova-senha" || pathname === "/") {
+    return null;
+  }
+
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 

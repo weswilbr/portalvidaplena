@@ -9,6 +9,11 @@ export function middleware(request: NextRequest) {
   const lastActivity = request.cookies.get('last_activity')?.value;
   const pathname = request.nextUrl.pathname;
 
+  // 1. Se estiver na página de login e já tiver token, redireciona para o dashboard
+  if ((pathname === '/login' || pathname === '/') && authToken) {
+    return NextResponse.redirect(new URL('/dashboard/vendas', request.url));
+  }
+
   // Só verifica inatividade se o usuário estiver tentando acessar rotas do Dashboard
   if (pathname.startsWith('/dashboard')) {
     // 1. Se não houver token, manda para o login
