@@ -135,6 +135,7 @@ export default function VendasClient({ user }: { user: any }) {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [isRecordingLocked, setIsRecordingLocked] = useState(false);
+  const [isStrategicMode, setIsStrategicMode] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -370,6 +371,9 @@ export default function VendasClient({ user }: { user: any }) {
 
     if (isNoteMode) {
       res = await addInternalNote({ leadId: selectedLead.id, content: newMessage, authorId: user.id });
+    } else if (isStrategicMode) {
+      // Nota Estratégica (Azul) - Usamos como nota interna mas com prefixo para o UI
+      res = await addInternalNote({ leadId: selectedLead.id, content: `[STRATEGY] ${newMessage}`, authorId: user.id });
     } else {
       res = await sendWhatsAppMessage({ 
         leadId: selectedLead.id, 
@@ -395,7 +399,8 @@ export default function VendasClient({ user }: { user: any }) {
           author: { id: user.id, name: user.name },
           authorId: user.id,
           isSystem: false,
-          isNote: isNoteMode,
+          isNote: isNoteMode || isStrategicMode,
+          isStrategy: isStrategicMode || (newMessage.startsWith("[STRATEGY]")),
           quotedMessageId: replyingTo?.whatsappId || replyingTo?.id,
           quotedMessageContent: replyingTo?.content
         };
@@ -1102,44 +1107,43 @@ export default function VendasClient({ user }: { user: any }) {
                     </div>
                 </div>
             )}
-            {/* Barra de Status Rápida (Kanban) - Design Premium */}
-            <div className="bg-slate-50/90 backdrop-blur-md border-b border-slate-200 p-2.5 flex flex-col gap-2 shrink-0">
-               <div className="px-1 flex items-center justify-between">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                     <LayoutGrid size={10} /> Mover no Funil (Kanban)
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[8px] font-bold text-indigo-400 uppercase">Toque para mudar</span>
-                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
-                  </div>
-               </div>
-               <div className="overflow-x-auto whitespace-nowrap flex gap-2 scrollbar-hide no-scrollbar pb-0.5 ml-0.5">
-                  <style dangerouslySetInnerHTML={{ __html: `
-                    .no-scrollbar::-webkit-scrollbar { display: none; }
-                    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-                  `}} />
-                  {Object.entries(statusLabels).map(([key, label]) => {
-                    const isActive = selectedLead.status === key;
-                    return (
-                      <button 
-                        key={key} 
-                        onClick={async () => {
-                           const fakeEvent = { target: { value: key } } as any;
-                           handleStatusChange(fakeEvent);
-                        }}
-                        className={cn(
-                          "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm border whitespace-nowrap",
-                          isActive 
-                            ? "bg-indigo-600 text-white border-indigo-600 scale-105" 
-                            : "bg-white text-slate-400 border-slate-100 hover:border-indigo-200"
-                        )}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-               </div>
-            </div>
+             {/* Barra de Status Rápida (Kanban) - Design High-End */}
+             <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200 p-4 flex flex-col gap-3 shrink-0 shadow-sm z-20">
+                <div className="px-1 flex items-center justify-between">
+                   <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                         <LayoutGrid size={14} />
+                      </div>
+                      <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Estágio da Oportunidade</span>
+                   </div>
+                   <div className="flex items-center gap-1.5 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100/50">
+                     <span className="text-[8px] font-black text-indigo-600 uppercase tracking-tighter">Status Ativo</span>
+                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+                   </div>
+                </div>
+                <div className="overflow-x-auto whitespace-nowrap flex gap-2.5 scrollbar-hide no-scrollbar pb-1">
+                   {Object.entries(statusLabels).map(([key, label]) => {
+                     const isActive = selectedLead.status === key;
+                     return (
+                       <button 
+                         key={key} 
+                         onClick={async () => {
+                            const fakeEvent = { target: { value: key } } as any;
+                            handleStatusChange(fakeEvent);
+                         }}
+                         className={cn(
+                           "px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all border shrink-0",
+                           isActive 
+                             ? "bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-200 -translate-y-0.5" 
+                             : "bg-white text-slate-400 border-slate-100 hover:border-indigo-300 hover:text-indigo-600 hover:bg-slate-50"
+                         )}
+                       >
+                         {label}
+                       </button>
+                     );
+                   })}
+                </div>
+             </div>
 
             {/* Painel de Ações do Lead (Opcional, abre sob o header) */}
             {isTransferring && (
@@ -1234,27 +1238,28 @@ export default function VendasClient({ user }: { user: any }) {
                   }
 
                   return (
-                    <div key={msg.id} className={cn("flex flex-col gap-0.5 relative group", isMe ? "items-end" : "items-start")} style={{maxWidth:'82%', alignSelf: isMe ? 'flex-end' : 'flex-start'}}>
+                    <div key={msg.id} className={cn("flex flex-col gap-1 relative group", isMe ? "items-end" : "items-start")} style={{maxWidth:'85%', alignSelf: isMe ? 'flex-end' : 'flex-start'}}>
                       {!msg.isSystem && !isMe && (
-                        <div className="flex items-center gap-1.5 ml-2 mb-0.5 group-hover:translate-x-0.5 transition-transform">
+                        <div className="flex items-center gap-1.5 ml-3 mb-0.5 group-hover:translate-x-1 transition-transform">
                           <span className={cn(
-                            "text-[9px] font-black uppercase tracking-[0.15em]",
-                            isClient ? "text-indigo-500" : "text-slate-400"
+                            "text-[10px] font-black uppercase tracking-[0.2em]",
+                            isClient ? "text-indigo-600" : "text-slate-400"
                           )}>
                             {isClient ? selectedLead.name : (msg.author?.name || "Vendedor")}
                           </span>
                           {isClient && (
-                            <div className="w-1 h-1 rounded-full bg-indigo-200 animate-pulse"></div>
+                            <div className="w-1 h-1 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_4px_rgba(79,70,229,0.5)]"></div>
                           )}
                         </div>
                       )}
 
                         <div 
                           className={cn(
-                            "max-w-[90%] md:max-w-[75%] p-3 md:p-4 rounded-2xl md:rounded-[1.25rem] shadow-sm relative group transition-all cursor-pointer select-none overflow-hidden",
-                            msg.isNote ? "bg-[#fef3c7] border border-amber-200 text-amber-900 rounded-tr-none" : 
-                            isMe ? "bg-[#e2ffc7] text-[#111b21] rounded-tr-none border border-emerald-100" : 
-                            "bg-[#e8f0fe] text-[#111b21] rounded-tl-none border border-indigo-100" // Client bubble in light indigo/blue
+                            "max-w-[95%] md:max-w-[85%] p-4 rounded-[1.5rem] shadow-sm relative group transition-all cursor-pointer select-none border backdrop-blur-sm",
+                            msg.isNote && msg.content?.startsWith("[STRATEGY]") ? "bg-indigo-50/90 border-indigo-200 text-indigo-900 rounded-tr-none shadow-indigo-100/50" :
+                            msg.isNote ? "bg-amber-50/90 border-amber-200 text-amber-900 rounded-tr-none shadow-amber-100/50" : 
+                            isMe ? "bg-gradient-to-br from-[#e2ffc7] to-[#d4f8b0] text-[#111b21] rounded-tr-none border-[#c6e5a1]" : 
+                            "bg-white/80 border-slate-100 rounded-tl-none shadow-slate-200/50" // High-end white glass effect for client
                           )}
                         onDoubleClick={() => setReplyingTo(msg)}
                         onTouchStart={(e) => {
@@ -1527,7 +1532,7 @@ export default function VendasClient({ user }: { user: any }) {
                 </div>
               )}
 
-                   <div className="flex flex-col md:flex-row items-end gap-2 md:gap-4 p-3 md:p-4 bg-white mx-3 md:mx-10 mb-6 rounded-[2rem] shadow-lg border border-slate-200">
+                   <div className="flex flex-col md:flex-row items-end gap-3 p-3 md:p-5 bg-white/95 backdrop-blur-md mx-3 md:mx-6 mb-8 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-white/20">
                      <input 
                        type="file" 
                        ref={fileInputRef} 
@@ -1535,22 +1540,44 @@ export default function VendasClient({ user }: { user: any }) {
                        className="hidden" 
                        accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
                      />
-                     <div className="flex items-center gap-1">
+                     <div className="flex items-center gap-1.5 shrink-0 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
                         <button 
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="p-3 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 rounded-2xl transition-all"
+                          className="p-3 text-slate-500 hover:text-indigo-600 hover:bg-white rounded-xl transition-all shadow-sm group"
                           title="Anexar Arquivo"
                         >
-                          <Paperclip size={22} />
+                          <Paperclip size={22} className="group-hover:rotate-12 transition-transform" />
                         </button>
                         <button 
                           type="button"
-                          onClick={() => setIsNoteMode(!isNoteMode)}
-                          className={cn("p-3 rounded-2xl transition-all", isNoteMode ? "bg-amber-100 text-amber-600 shadow-inner" : "text-slate-400 hover:text-amber-500 hover:bg-amber-50")}
-                          title="Nota Interna"
+                          onClick={() => { setIsNoteMode(!isNoteMode); setIsStrategicMode(false); }}
+                          className={cn(
+                            "p-3 rounded-xl transition-all flex items-center gap-2",
+                            isNoteMode ? "bg-amber-400 text-white shadow-lg shadow-amber-100" : "text-slate-500 hover:text-amber-500 hover:bg-white"
+                          )}
+                          title="Nota de Interna (Time)"
                         >
                           <FileText size={22} />
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => { setIsStrategicMode(!isStrategicMode); setIsNoteMode(false); }}
+                          className={cn(
+                            "p-3 rounded-xl transition-all flex items-center gap-2",
+                            isStrategicMode ? "bg-indigo-500 text-white shadow-lg shadow-indigo-100" : "text-slate-500 hover:text-indigo-500 hover:bg-white"
+                          )}
+                          title="Nota Estratégica (Processo)"
+                        >
+                          <Zap size={22} />
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={handleRefreshAI}
+                          className="p-3 text-slate-500 hover:text-purple-600 hover:bg-white rounded-xl transition-all shadow-sm"
+                          title="Melhorar com IA"
+                        >
+                          <Sparkles size={22} />
                         </button>
                      </div>
                 
