@@ -41,7 +41,9 @@ import {
   Camera,
   Thermometer,
   Sparkles,
-  Settings
+  Settings,
+  Lock,
+  ChevronUp
 } from "lucide-react";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import axios, { type AxiosProgressEvent } from "axios";
@@ -132,6 +134,7 @@ export default function VendasClient({ user }: { user: any }) {
   const [replyingTo, setReplyingTo] = useState<any>(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [isRecordingLocked, setIsRecordingLocked] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -503,6 +506,7 @@ export default function VendasClient({ user }: { user: any }) {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
+      setIsRecordingLocked(false);
       setRecordingTime(0);
       if (timerRef.current) clearInterval(timerRef.current);
       
@@ -1620,38 +1624,97 @@ export default function VendasClient({ user }: { user: any }) {
                     )}
 
                     {isRecording ? (
-                      <div className="w-full h-12 px-4 rounded-3xl bg-white flex items-center justify-between border border-slate-200 shadow-inner overflow-hidden relative">
-                         <div className="flex items-center gap-2 z-10">
+                      <div className="w-full h-14 px-4 rounded-3xl bg-white flex items-center justify-between border border-slate-200 shadow-xl overflow-hidden relative">
+                         {/* Lado Esquerdo: Feedback Visual de Gravação */}
+                         <div className="flex items-center gap-3 z-10">
                             <motion.div 
-                              animate={{ opacity: [0, 1, 0] }}
+                              animate={{ opacity: [1, 0, 1], scale: [1, 1.2, 1] }}
                               transition={{ repeat: Infinity, duration: 1.5 }}
-                              className="w-2 h-2 rounded-full bg-red-500"
+                              className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"
                             />
-                            <span className="text-xs font-black text-red-600 tracking-tight">{formatTime(recordingTime)}</span>
+                            <span className="text-sm font-black text-slate-800 tracking-tight font-mono">{formatTime(recordingTime)}</span>
                          </div>
                          
-                         <motion.div 
-                           initial={{ x: 0 }}
-                           animate={{ x: -20 }}
-                           className="flex items-center gap-2 text-slate-400 text-[10px] font-bold uppercase tracking-widest pointer-events-none z-10"
-                         >
-                            <ChevronLeft size={14} className="animate-pulse" />
-                            Deslize para cancelar
-                         </motion.div>
+                         {/* Centro: Instruções Dinâmicas */}
+                         <AnimatePresence mode="wait">
+                           {!isRecordingLocked ? (
+                             <motion.div 
+                               initial={{ opacity: 0, x: 20 }}
+                               animate={{ opacity: 1, x: 0 }}
+                               exit={{ opacity: 0, x: -20 }}
+                               className="flex items-center gap-3 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] pointer-events-none z-10"
+                             >
+                                <motion.div animate={{ x: [-2, 2, -2] }} transition={{ repeat: Infinity, duration: 1 }}>
+                                  <ChevronLeft size={16} className="text-indigo-500" />
+                                </motion.div>
+                                Deslize para cancelar
+                             </motion.div>
+                           ) : (
+                             <motion.div 
+                               initial={{ opacity: 0, scale: 0.8 }}
+                               animate={{ opacity: 1, scale: 1 }}
+                               className="text-emerald-500 font-bold text-[10px] uppercase tracking-widest flex items-center gap-1.5"
+                             >
+                                <Lock size={12} fill="currentColor" /> Gravação Fixada
+                             </motion.div>
+                           )}
+                         </AnimatePresence>
 
-                         <motion.div 
-                            drag="x"
-                            dragConstraints={{ right: 0, left: -150 }}
-                            onDragEnd={(e, info) => {
-                               if (info.point.x < -100) {
-                                  stopRecording(true); // Cancela
-                                  toast.error("Gravação Cancelada");
-                               }
-                            }}
-                            className="absolute right-2 top-1.5 bottom-1.5 w-20 bg-emerald-500 rounded-2xl flex items-center justify-center text-white shadow-lg cursor-grab active:cursor-grabbing z-20"
-                         >
-                            <Mic size={18} />
-                         </motion.div>
+                         {/* Lado Direito: Botão Deslizante ou Controles de Trava */}
+                         <div className="flex items-center gap-2 z-20">
+                            {isRecordingLocked ? (
+                              <div className="flex items-center gap-2">
+                                <button 
+                                  onClick={() => stopRecording(true)} 
+                                  className="p-2.5 bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500 rounded-full transition-all active:scale-90"
+                                  title="Descartar"
+                                >
+                                  <Trash2 size={20} />
+                                </button>
+                                <button 
+                                  onClick={() => stopRecording(false)} 
+                                  className="p-2.5 bg-emerald-500 text-white rounded-full shadow-lg hover:bg-emerald-600 transition-all active:scale-90"
+                                  title="Enviar Áudio"
+                                >
+                                  <Send size={20} className="ml-0.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="relative flex flex-col items-center">
+                                {/* Indicador de Trava (Vertical) */}
+                                <motion.div 
+                                  animate={{ y: [0, -4, 0] }}
+                                  transition={{ repeat: Infinity, duration: 2 }}
+                                  className="absolute bottom-full mb-6 flex flex-col items-center gap-1 opacity-60 text-slate-400 group"
+                                >
+                                  <Lock size={14} />
+                                  <ChevronUp size={12} className="animate-bounce" />
+                                </motion.div>
+
+                                {/* Handle de Gravação (Dual Axis) */}
+                                <motion.div 
+                                  drag
+                                  dragConstraints={{ top: -80, bottom: 0, left: -200, right: 0 }}
+                                  dragElastic={0.1}
+                                  onDragEnd={(e, info) => {
+                                     // Lógica de Cancelar (Esquerda)
+                                     if (info.offset.x < -100) {
+                                        stopRecording(true);
+                                        toast.error("Cancelado");
+                                     } 
+                                     // Lógica de Travar (Cima)
+                                     else if (info.offset.y < -50) {
+                                        setIsRecordingLocked(true);
+                                        toast.success("Gravação Fixada");
+                                     }
+                                  }}
+                                  className="w-11 h-11 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg cursor-grab active:cursor-grabbing hover:bg-emerald-600 transition-colors"
+                                >
+                                  <Mic size={22} />
+                                </motion.div>
+                              </div>
+                            )}
+                         </div>
                       </div>
                     ) : (
                       <textarea 
