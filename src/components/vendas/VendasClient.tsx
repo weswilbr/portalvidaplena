@@ -140,6 +140,18 @@ export default function VendasClient({ user }: { user: any }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Verificação de Permissão: Apenas o dono ou Admin escreve
+  const isOwner = selectedLead?.assignedToId === user.id;
+  const isUnassigned = !selectedLead?.assignedToId;
+  const isAdmin = user.role === 'ADMIN' || user.role === 'OWNER';
+  const canWrite = isOwner || isUnassigned || isAdmin;
+
+  const assignedSellerName = useMemo(() => {
+    if (!selectedLead?.assignedToId) return null;
+    const seller = sellers.find(s => s.id === selectedLead.assignedToId);
+    return seller?.name || "Outro Atendente";
+  }, [selectedLead?.assignedToId, sellers]);
   const lastLeadIdRef = useRef<string | null>(null);
   const lastMessageCount = useRef(0);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -328,6 +340,10 @@ export default function VendasClient({ user }: { user: any }) {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canWrite) {
+      toast.error("Você não tem permissão para responder este lead.");
+      return;
+    }
     if ((!newMessage.trim() && !selectedFile) || !selectedLead || isSending) return;
 
     setIsSending(true);
@@ -1535,11 +1551,28 @@ export default function VendasClient({ user }: { user: any }) {
                 </div>
               )}
 
-                   <div className="flex flex-col md:flex-row items-end gap-3 p-3 md:p-5 bg-white/95 backdrop-blur-md mx-3 md:mx-6 mb-8 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-white/20">
+                    <div className={cn(
+                      "flex flex-col md:flex-row items-end gap-3 p-3 md:p-5 bg-white/95 backdrop-blur-md mx-3 md:mx-6 mb-8 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-white/20 relative overflow-hidden",
+                      !canWrite && "opacity-80 grayscale-[0.2]"
+                    )}>
+                      {/* Overlay de Bloqueio (Modo Leitura) */}
+                      {!canWrite && (
+                        <div className="absolute inset-0 bg-slate-900/5 backdrop-blur-[2px] z-[90] flex items-center justify-center p-4">
+                           <div className="bg-white/90 border border-slate-200 px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-in zoom-in-95 duration-200">
+                              <Lock size={20} className="text-slate-400" />
+                              <div className="flex flex-col">
+                                 <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Modo Apenas Leitura</span>
+                                 <p className="text-xs font-bold text-slate-700">Este lead está com {assignedSellerName}</p>
+                              </div>
+                           </div>
+                        </div>
+                      )}
+
                      <input 
                        type="file" 
                        ref={fileInputRef} 
                        onChange={handleFileChange} 
+                       disabled={!canWrite}
                        className="hidden" 
                        accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
                      />
@@ -1773,13 +1806,17 @@ export default function VendasClient({ user }: { user: any }) {
                     ) : (
                       <textarea 
                         ref={messageInputRef}
-                        placeholder={isNoteMode ? "Nota interna..." : "Mensagem..."}
+                        readOnly={!canWrite}
+                        disabled={!canWrite}
+                        placeholder={!canWrite ? "Modo apenas leitura..." : (isNoteMode ? "Nota interna..." : "Mensagem...")}
                         className={cn(
                           "w-full px-4 py-3 rounded-2xl text-sm font-medium border-none outline-none focus:ring-2 focus:ring-indigo-200 transition-all resize-none min-h-[44px] max-h-[160px] overflow-y-auto pt-3",
-                          isNoteMode ? "bg-amber-50 focus:ring-amber-100" : "bg-white"
+                          isNoteMode ? "bg-amber-50 focus:ring-amber-100" : "bg-white",
+                          !canWrite && "cursor-not-allowed text-slate-400"
                         )}
                         value={newMessage}
                         onChange={(e) => {
+                          if (!canWrite) return;
                           setNewMessage(e.target.value);
                           e.target.style.height = 'auto';
                           e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px';
@@ -1814,41 +1851,45 @@ export default function VendasClient({ user }: { user: any }) {
                     )}
                   </div>
 
-                  <div className="flex gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setIsNoteMode(!isNoteMode)}
-                      title={isNoteMode ? "Mudar para WhatsApp" : "Mudar para Nota Interna"}
-                      className={cn(
-                        "w-11 h-11 flex items-center justify-center rounded-2xl transition-all border shadow-sm",
-                        isNoteMode ? "bg-amber-400 text-white border-amber-500" : "bg-white text-slate-400 border-slate-200 hover:bg-amber-50"
-                      )}
-                    >
-                      {isNoteMode ? <CalendarCheck size={22} /> : <FileText size={22} />}
-                    </button>
-
-                    {!isNoteMode && !newMessage && !selectedFile ? (
+                    <div className="flex gap-2 shrink-0">
                       <button
                         type="button"
-                        onClick={startRecording}
-                        className="w-11 h-11 flex items-center justify-center rounded-2xl bg-[#00a884] text-white shadow-lg hover:scale-105 active:scale-95 transition-all"
-                      >
-                        <Mic size={22} />
-                      </button>
-                    ) : (
-                      <button
-                        type="submit"
-                        disabled={(!newMessage.trim() && !selectedFile) || isSending}
+                        onClick={() => setIsNoteMode(!isNoteMode)}
+                        title={isNoteMode ? "Mudar para WhatsApp" : "Mudar para Nota Interna"}
+                        disabled={!canWrite}
                         className={cn(
-                          "w-11 h-11 flex items-center justify-center rounded-2xl text-white shadow-lg transition-all active:scale-95",
-                          isNoteMode ? "bg-amber-600" : "bg-indigo-600"
+                          "w-11 h-11 flex items-center justify-center rounded-2xl transition-all border shadow-sm",
+                          isNoteMode ? "bg-amber-400 text-white border-amber-500" : "bg-white text-slate-400 border-slate-200 hover:bg-amber-50",
+                          !canWrite && "opacity-50"
                         )}
                       >
-                        {isSending ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} className="ml-0.5" />}
+                        {isNoteMode ? <CalendarCheck size={22} /> : <FileText size={22} />}
                       </button>
-                    )}
-                  </div>
-                </form>
+
+                      {!isNoteMode && !newMessage && !selectedFile ? (
+                        <button
+                          type="button"
+                          disabled={!canWrite}
+                          onClick={startRecording}
+                          className="w-11 h-11 flex items-center justify-center rounded-2xl bg-[#00a884] text-white shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
+                        >
+                          <Mic size={22} />
+                        </button>
+                      ) : (
+                        <button
+                          type="submit"
+                          disabled={(!newMessage.trim() && !selectedFile) || isSending || !canWrite}
+                          className={cn(
+                            "w-11 h-11 flex items-center justify-center rounded-2xl text-white shadow-lg transition-all active:scale-95",
+                            isNoteMode ? "bg-amber-600" : "bg-indigo-600",
+                            !canWrite && "opacity-50"
+                          )}
+                        >
+                          {isSending ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} className="ml-0.5" />}
+                        </button>
+                      )}
+                    </div>
+                  </form>
               </div>
             </div>
           </div>

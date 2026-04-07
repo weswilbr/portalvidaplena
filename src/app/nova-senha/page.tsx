@@ -24,8 +24,7 @@ export default function NovaSenhaPage() {
     const res = await updateUserPassword(formData);
 
     if (res.success) {
-      alert("Senha atualizada com sucesso! Você continuará para o sistema.");
-      router.push("/dashboard/vendas");
+      window.location.href = "/dashboard/vendas";
     } else {
       setError(res.error || "Erro ao atualizar a senha.");
     }

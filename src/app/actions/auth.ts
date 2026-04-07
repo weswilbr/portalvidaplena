@@ -28,16 +28,26 @@ export async function login(formData: FormData) {
       return { success: false, error: "E-mail ou WhatsApp não cadastrado." };
     }
 
-    if (user.password !== password) {
+    const providedPassword = (password || "").trim();
+    const storedPassword = (user.password || "").trim();
+
+    if (storedPassword !== providedPassword) {
       return { success: false, error: "Senha incorreta. Tente novamente." };
     }
 
-    // Define um cookie de sessão simples
+    // Define um cookie de sessão simples (sem maxAge, expira ao fechar o navegador)
     const cookieStore = await cookies();
     cookieStore.set("auth_token", user.id, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      maxAge: 60 * 60 * 24 * 7, // 1 semana
+      path: "/",
+      // Removido maxAge para deslogar ao sair do navegador
+    });
+
+    // Inicia controle de carimbo de tempo para inatividade
+    cookieStore.set("last_activity", Date.now().toString(), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
       path: "/",
     });
 
@@ -54,6 +64,7 @@ export async function login(formData: FormData) {
 export async function logout() {
   const cookieStore = await cookies();
   cookieStore.delete("auth_token");
+  cookieStore.delete("last_activity");
   redirect("/login");
 }
 
@@ -85,8 +96,19 @@ export async function updateUserPassword(formData: FormData) {
 
   try {
     const user = await (prisma as any).user.findUnique({ where: { id: userId } });
-    if (!user || user.password !== currentPassword) {
-      return { success: false, error: "Senha atual incorreta." };
+    
+    if (!user) return { success: false, error: "Usuário não encontrado." };
+
+    const providedCurrent = (currentPassword || "").trim();
+    const storedPassword = (user.password || "").trim();
+
+    // Se o usuário já trocou a senha (mustChangePassword é false) e a senha atual não bate,
+    // pode ser que ele tenha clicado duas vezes e na segunda a senha já tenha mudado na primeira.
+    if (storedPassword !== providedCurrent) {
+       if (!user.mustChangePassword) {
+          return { success: true }; // Já atualizado anteriormente (clique duplo)
+       }
+       return { success: false, error: "Senha atual incorreta." };
     }
 
     await (prisma as any).user.update({
