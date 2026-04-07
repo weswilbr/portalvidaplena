@@ -1017,9 +1017,9 @@ export default function VendasClient({ user }: { user: any }) {
                 <div className="min-w-0 flex-1 relative">
                   <h3 className="text-base font-black text-slate-900 leading-tight truncate">{selectedLead.name}</h3>
                   <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                      WhatsApp Online
+                    <span className={cn("text-[10px] font-bold flex items-center gap-1 transition-all", selectedLead.isTyping ? "text-indigo-600 animate-pulse scale-105" : "text-emerald-500")}>
+                      <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", selectedLead.isTyping ? "bg-indigo-600 shadow-[0_0_8px_rgba(79,70,229,0.5)]" : "bg-emerald-500")}></div>
+                      {selectedLead.isTyping ? "Digitando..." : "WhatsApp Online"}
                     </span>
                     {aiAnalysis && (
                       <div className="flex items-center gap-2 border-l pl-3 border-slate-200">
@@ -1393,6 +1393,21 @@ export default function VendasClient({ user }: { user: any }) {
                     </div>
                   );
                 })}
+                {selectedLead.isTyping && (
+                  <div className="flex flex-col gap-1 items-start max-w-[82%] self-start animate-in slide-in-from-bottom duration-300 mb-2">
+                    <div className="flex items-center gap-1.5 ml-2 mb-0.5">
+                      <span className="text-[9px] font-black uppercase tracking-[0.15em] text-indigo-500">{selectedLead.name}</span>
+                      <div className="w-1 h-1 rounded-full bg-indigo-200 animate-pulse"></div>
+                    </div>
+                    <div className="bg-[#e8f0fe] p-3 px-4 rounded-2xl rounded-tl-none border border-indigo-100 flex items-center gap-1 shadow-sm">
+                      <div className="flex gap-1.5 items-center h-4">
+                        <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                        <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                        <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               <div ref={messagesEndRef} />
             </div>
@@ -1442,8 +1457,8 @@ export default function VendasClient({ user }: { user: any }) {
                       
                       <div className="flex-1 min-w-0 text-center md:text-left py-2">
                         <p className="text-sm font-black text-slate-800 truncate">{selectedFile.name}</p>
-                        <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">
-                          Tamanho: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                        <p className={cn("text-[10px] font-bold uppercase tracking-widest", selectedLead.isTyping ? "text-emerald-500 animate-pulse" : "text-slate-400")}>
+                          {selectedLead.isTyping ? "Digitando..." : (selectedLead.interest || "Sem Cadastro")}
                         </p>
                         <div className="mt-3 flex items-center justify-center md:justify-start gap-2">
                            <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-[9px] font-black uppercase">Pronto para enviar</span>

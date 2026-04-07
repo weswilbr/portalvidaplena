@@ -45,6 +45,7 @@ model Lead {
   aiScore     Int?
   aiStatus    String?  // GELADO, MORNO, QUENTE
   aiAdvice    String?
+  isTyping    Boolean  @default(false)
   messages    Message[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
