@@ -1239,16 +1239,19 @@ export default function VendasClient({ user }: { user: any }) {
 
                   return (
                     <div key={msg.id} className={cn("flex flex-col gap-1 relative group", isMe ? "items-end" : "items-start")} style={{maxWidth:'85%', alignSelf: isMe ? 'flex-end' : 'flex-start'}}>
-                      {!msg.isSystem && !isMe && (
-                        <div className="flex items-center gap-1.5 ml-3 mb-0.5 group-hover:translate-x-1 transition-transform">
+                      {!msg.isSystem && (
+                        <div className={cn("flex items-center gap-1.5 mb-0.5 transition-transform", isMe ? "mr-4" : "ml-3 group-hover:translate-x-1")}>
                           <span className={cn(
                             "text-[10px] font-black uppercase tracking-[0.2em]",
-                            isClient ? "text-indigo-600" : "text-slate-400"
+                            isMe ? "text-emerald-600" : (isClient ? "text-indigo-600" : "text-slate-400")
                           )}>
-                            {isClient ? selectedLead.name : (msg.author?.name || "Vendedor")}
+                            {isMe ? `Atendente: ${user.name}` : (isClient ? selectedLead.name : (msg.author?.name || "Vendedor"))}
                           </span>
-                          {isClient && (
+                          {!isMe && isClient && (
                             <div className="w-1 h-1 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_4px_rgba(79,70,229,0.5)]"></div>
+                          )}
+                          {isMe && (
+                             <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.5)]"></div>
                           )}
                         </div>
                       )}

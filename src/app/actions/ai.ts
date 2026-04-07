@@ -144,7 +144,11 @@ export async function getReplySuggestions(leadId: string) {
 
     const chatHistory = lead.messages
       .reverse()
-      .map((m: any) => `${m.author?.name || 'Cliente'}: ${m.content}`)
+      .map((m: any) => {
+        const role = m.authorId ? "VOCÊ (Vendedor)" : `CLIENTE (${lead.name})`;
+        const text = m.content || (m.transcription ? `[Áudio: ${m.transcription}]` : "[Mídia]");
+        return `${role}: ${text}`;
+      })
       .join('\n');
 
     return await suggestReplies(chatHistory);

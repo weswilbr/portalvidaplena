@@ -48,7 +48,17 @@ export async function suggestReplies(chatHistory: string) {
     const key = process.env.GEMINI_API_KEY;
     if (!key) return [];
 
-    const prompt = `Com base no histórico abaixo de um lead no CRM, sugira 3 respostas curtas e profissionais para o vendedor enviar. Retorne APENAS um array JSON de strings. Exemplo: ["Sim, claro!", "Pode me enviar seu e-mail?", "Vou verificar agora."]\n\nHistórico:\n${chatHistory}`;
+    const prompt = `Você é o VENDEDOR em uma conversa de CRM. Sua missão é sugerir 3 opções de respostas curtas para VOCÊ mesmo enviar ao CLIENTE.
+REGRAS CRÍTICAS:
+1. NUNCA sugira o que o CLIENTE diria.
+2. Escreva como se você fosse o atendente profissional.
+3. Se o histórico termina com uma mensagem sua, sugira follow-ups (ex: "Conseguiu ver o vídeo?", "Ficou claro?", "Apareceu alguma dúvida?", "O que achou do material?").
+4. Se o histórico termina com o cliente, responda à dúvida dele ou agradeça.
+
+Retorne APENAS um array JSON de strings. Exemplo: ["Sim, claro!", "Consegue me enviar seu CEP?", "Vou verificar agora."]
+
+Histórico (últimas mensagens):
+${chatHistory}`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
