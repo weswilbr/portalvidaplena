@@ -913,19 +913,70 @@ export default function VendasClient({ user }: { user: any }) {
           onStatusChange={handleKanbanStatusChange}
         />
       ) : (
-        <div className={cn("bg-white rounded-3xl md:rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden w-full", isDetailsOpen ? "hidden md:block" : "block")}>
-           <div className="overflow-x-auto w-full">
-             <table className="w-full text-left whitespace-nowrap">
-                <thead className="bg-slate-50/80 border-b border-slate-100">
-                  <tr>
-                    <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400">Cliente</th>
-                    <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400">Atendimento</th>
-                    <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400">Status</th>
-                    <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400 text-left md:text-right">Ação</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {filteredLeads.map(lead => (
+        <div className="w-full">
+           {/* Versão Moblie (Cards Táteis) */}
+           <div className="md:hidden space-y-4 px-1 pb-20">
+              {filteredLeads.map((lead: any) => (
+                <div 
+                  key={lead.id} 
+                  onClick={() => { setSelectedLead(lead); setIsDetailsOpen(true); }}
+                  className="bg-white rounded-[2rem] p-5 shadow-sm border border-slate-100 active:scale-[0.98] transition-all flex flex-col gap-4 relative overflow-hidden"
+                >
+                  {/* Badge de Não Lida */}
+                  {lead.unreadMessagesCount > 0 && (
+                    <div className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded-bl-2xl shadow-lg animate-pulse">
+                      {lead.unreadMessagesCount} NOVAS
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-4">
+                     <div className="relative">
+                        {lead.profilePic ? (
+                          <img src={lead.profilePic} className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-md" alt="" />
+                        ) : (
+                          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl font-black">{lead.name?.charAt(0)}</div>
+                        )}
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full"></div>
+                     </div>
+                     <div className="flex-1 min-w-0">
+                        <h4 className="font-black text-slate-800 truncate leading-tight uppercase tracking-tight text-sm">{lead.name}</h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={cn("text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest", statusStyles[lead.status as keyof typeof statusStyles])}>
+                             {statusLabels[lead.status as keyof typeof statusLabels]}
+                          </span>
+                        </div>
+                     </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between border-t border-slate-50 pt-4 px-1">
+                     <div className="flex flex-col flex-1 min-w-0 pr-4">
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Última msg:</span>
+                        <p className="text-[11px] font-medium text-slate-600 truncate italic">
+                          {lead.lastMessage ? lead.lastMessage : "Inicie o atendimento agora..."}
+                        </p>
+                     </div>
+                     <div className="p-3 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-100 flex items-center justify-center shrink-0">
+                        <MessageSquare size={20} />
+                     </div>
+                  </div>
+                </div>
+              ))}
+           </div>
+
+           {/* Versão Desktop (Tabela) */}
+           <div className="hidden md:block bg-white dark:bg-slate-900 rounded-[3rem] shadow-2xl shadow-slate-200/50 dark:shadow-none overflow-hidden border border-slate-100 dark:border-slate-800">
+             <div className="overflow-x-auto">
+               <table className="w-full text-left whitespace-nowrap">
+                  <thead className="bg-slate-50/80 border-b border-slate-100">
+                    <tr>
+                      <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400">Cliente</th>
+                      <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400">Atendimento</th>
+                      <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400">Status</th>
+                      <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400 text-left md:text-right">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {filteredLeads.map(lead => (
                     <tr key={lead.id} className="hover:bg-indigo-50/30 transition-all group animate-in slide-in-from-bottom duration-300">
                       <td className="px-6 md:px-8 py-4 md:py-5 flex items-center gap-4">
                         <div className="flex-shrink-0">
@@ -1032,6 +1083,7 @@ export default function VendasClient({ user }: { user: any }) {
              </table>
            </div>
         </div>
+      </div>
       )}
 
       {isDetailsOpen && selectedLead && (
@@ -1042,13 +1094,13 @@ export default function VendasClient({ user }: { user: any }) {
             className={cn(
               "relative bg-[#f0f2f5] h-full shadow-2xl flex flex-col transition-all duration-300 ease-in-out",
               chatWindowState === 'maximized' ? "w-full" : "w-full md:max-w-4xl",
-              chatWindowState === 'minimized' ? "translate-y-[calc(100%-64px)] overflow-hidden" : "translate-y-0",
+              chatWindowState === 'minimized' ? "translate-y-[calc(100%-64px)] md:translate-y-[calc(100%-64px)] overflow-hidden" : "translate-y-0",
               isDetailsOpen ? "animate-in slide-in-from-right" : ""
             )}
           >
-            {/* Cabeçalho do Chat (Estilo Janela de Sistema) */}
-            <header className="p-3 px-4 bg-white flex items-center justify-between border-b border-slate-200 shadow-sm z-10 sticky top-0">
-              <div className="flex items-center gap-3 flex-1 min-w-0">
+            {/* Cabeçalho do Chat (Otimizado Mobile) */}
+            <header className="p-2 md:p-3 px-4 bg-white flex items-center justify-between border-b border-slate-200 shadow-sm z-10 sticky top-0">
+              <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
                 <button 
                   onClick={() => {
                     if (chatWindowState === 'minimized') {
@@ -1057,9 +1109,9 @@ export default function VendasClient({ user }: { user: any }) {
                       setIsDetailsOpen(false);
                     }
                   }} 
-                  className="p-3 -ml-2 text-indigo-600 hover:bg-slate-100 rounded-2xl transition-all shrink-0"
+                  className="p-3 -ml-2 text-indigo-600 hover:bg-slate-100 rounded-2xl transition-all shrink-0 active:scale-90"
                 >
-                  {chatWindowState === 'minimized' ? <ChevronUp size={28} /> : <ChevronLeft size={28} />}
+                  {chatWindowState === 'minimized' ? <ChevronUp size={28} /> : <ChevronLeft size={32} />}
                 </button>
                 <div className="flex-shrink-0">
                   {selectedLead.profilePic ? (
