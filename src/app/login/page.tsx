@@ -47,9 +47,9 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.05)_0%,_transparent_50%)]">
       <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom duration-700">
         <div className="text-center space-y-2">
-          <Link href="/" className="inline-flex items-center gap-2 text-indigo-600 font-bold hover:gap-3 transition-all mb-8">
+          <Link href="/contato" className="inline-flex items-center gap-2 text-indigo-600 font-bold hover:gap-3 transition-all mb-8">
             <ArrowLeft size={16} />
-            Voltar para Home
+            Voltar para Site
           </Link>
           
           <div className="mx-auto w-16 h-16 bg-white rounded-2xl shadow-xl flex items-center justify-center text-indigo-600 mb-6">

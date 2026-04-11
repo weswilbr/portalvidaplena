@@ -45,7 +45,7 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
   const pathname = usePathname();
   
   // Não mostra o menu em páginas de autenticação ou na home pública
-  if (pathname === "/login" || pathname === "/nova-senha" || pathname === "/") {
+  if (["/login", "/nova-senha", "/", "/contato"].includes(pathname)) {
     return null;
   }
 
