@@ -12,57 +12,41 @@ import {
   ChevronRight,
   Loader2,
   ExternalLink,
-  ShoppingBag,
   UserPlus
 } from "lucide-react";
 import { createLead } from "@/app/actions/leads";
 import { openWhatsApp } from "@/lib/utils";
 
 export default function LandingClient() {
-  const [formData, setFormData] = useState({ name: "", phone: "", interest: "Negócio" });
+  const [formData, setFormData] = useState({ name: "", phone: "" });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  // Constants
-  const WHATSAPP_NUMBER = "5527996872622"; // Número Oficial do CRM / Bot
-  const AFFILIATE_LINK = "https://brazil.Vida Plena.com/12866267/signup/PC";
+  const WHATSAPP_NUMBER = "5527996872622";
+  const AFFILIATE_LINK = "https://brazil.4life.com/12866267/signup/PC";
 
-  // Actions
-  const handleLeadCapture = async (e?: React.FormEvent, type: "Form" | "WhatsApp" = "Form", interest_override?: string) => {
-    if (e) e.preventDefault();
+  const handleLeadCapture = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (loading) return;
     
     setLoading(true);
     
-    const interest = interest_override || formData.interest;
-    
-    // Capture in DB
     const res = await createLead({
-      name: formData.name || (type === "WhatsApp" ? "Lead via WhatsApp Direto" : "Visitante Interessado"),
+      name: formData.name || "Lead via Landing Negócio",
       phone: formData.phone || "",
-      source: type === "WhatsApp" ? "Landing Page - WhatsApp Direto" : "Landing Page - Form",
+      source: "Landing Negócio",
       status: "NEW", 
-      interest: interest === "Negócio" ? "Negócio" : "Produto"
+      interest: "Negócio"
     });
 
     if (res.success) {
-      if (type === "Form") {
-        setSubmitted(true);
-        setTimeout(() => {
-          const msg = interest === "Negócio" 
-            ? `Olá! Sou ${formData.name}. Acabei de me cadastrar no Projeto Vida Plena e quero saber mais sobre o negócio.`
-            : `Olá! Sou ${formData.name}. Gostaria de saber mais sobre os produtos Vida Plena para minha saúde.`;
-          openWhatsApp(WHATSAPP_NUMBER, msg);
-        }, 1500);
-      } else {
-        const msg = interest === "Negócio"
-          ? "Olá! Vim da sua Landing Page e gostaria de saber mais sobre a oportunidade de negócio Vida Plena."
-          : "Olá! Vim da sua Landing Page e gostaria de saber mais sobre os produtos Vida Plena.";
+      setSubmitted(true);
+      setTimeout(() => {
+        const msg = `Olá! Sou ${formData.name}. Quero saber mais sobre a oportunidade de negócio Vida Plena como Afiliado Independente.`;
         openWhatsApp(WHATSAPP_NUMBER, msg);
-        setLoading(false);
-      }
+      }, 1500);
     } else {
-      alert("Houve um erro ao processar seu pedido. Mas você pode clicar em WhatsApp direto!");
+      alert("Houve um erro. Mas você pode clicar em WhatsApp direto!");
       setLoading(false);
     }
   };
@@ -75,44 +59,30 @@ export default function LandingClient() {
           <div className="flex flex-col items-center text-center space-y-8 max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 px-5 py-2 rounded-full text-xs font-bold uppercase tracking-widest animate-pulse border border-indigo-100">
               <Zap size={14} className="fill-indigo-600" />
-              Oportunidade Vida Plena Vida Plena 2026
+              Oportunidade Vida Plena 2026
             </div>
             
             <h1 className="text-4xl md:text-7xl font-black text-slate-900 tracking-tight leading-[1.1]">
-              Deixe a <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-500">Ciência e os Resultados</span> falarem por você.
+              Construa sua <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-500">Renda Vitalícia</span> como Afiliado
             </h1>
             
             <p className="text-xl md:text-2xl text-slate-600 max-w-3xl leading-relaxed">
               Descubra o <strong className="text-slate-900">Projeto Vida Plena</strong>: O caminho definitivo para construir sua liberdade financeira como Afiliado Independente da líder mundial em imunologia.
             </p>
 
-            {/* Quick CTAs */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 w-full justify-center pt-8">
-              <a 
-                href="#capturar" 
-                onClick={() => setFormData({...formData, interest: "Negócio"})}
-                className="w-full sm:w-auto px-10 py-5 bg-indigo-600 text-white rounded-2xl font-bold text-lg hover:bg-indigo-700 hover:scale-105 transition-all shadow-xl shadow-indigo-200 flex items-center justify-center gap-2 active:scale-95"
-              >
-                QUERO SER PARCEIRO
-                <ChevronRight size={20} />
-              </a>
-              <a 
-                href="#capturar" 
-                onClick={() => setFormData({...formData, interest: "Produto"})}
-                className="w-full sm:w-auto px-10 py-5 bg-white text-slate-900 border-2 border-slate-200 rounded-2xl font-bold text-lg hover:border-indigo-600 hover:text-indigo-600 hover:scale-105 transition-all shadow-xl flex items-center justify-center gap-2 active:scale-95"
-              >
-                QUERO COMPRAR PRODUTOS
-                <ShoppingBag size={20} />
-              </a>
-            </div>
+            <a 
+              href="#capturar" 
+              className="w-full sm:w-auto px-10 py-5 bg-indigo-600 text-white rounded-2xl font-bold text-lg hover:bg-indigo-700 hover:scale-105 transition-all shadow-xl shadow-indigo-200 flex items-center justify-center gap-2 active:scale-95"
+            >
+              QUERO SER PARCEIRO
+              <ChevronRight size={20} />
+            </a>
           </div>
         </div>
-
-        {/* Decorative elements */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[120%] h-[120%] bg-[radial-gradient(circle_at_center,_rgba(99,102,241,0.05)_0%,_transparent_70%)] pointer-events-none -z-10"></div>
       </header>
 
-      {/* Benefits Content */}
+      {/* Benefits */}
       <main className="py-24 space-y-32">
         <section className="container mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
@@ -126,7 +96,7 @@ export default function LandingClient() {
               { 
                 icon: TrendingUp, 
                 title: "Renda Vitalícia", 
-                desc: "Um plano de compensação premiado que paga até 64% de comissões, possibilitando ganhos imediatos e escaláveis.",
+
                 color: "blue"
               },
               { 
@@ -180,31 +150,12 @@ export default function LandingClient() {
                     </div>
                     <div>
                       <h3 className="text-3xl font-bold text-slate-900">Quase lá!</h3>
-                      <p className="text-slate-500 text-lg">Estamos te levando para o WhatsApp para completar seu pedido...</p>
+                      <p className="text-slate-500 text-lg">Estamos te levando para o WhatsApp...</p>
                     </div>
                     <Loader2 className="animate-spin text-slate-300" size={32} />
                   </div>
                 ) : (
                   <form onSubmit={handleLeadCapture} className="space-y-6">
-                    <div className="flex bg-slate-100 p-1.5 rounded-2xl">
-                      <button 
-                        type="button"
-                        onClick={() => setFormData({...formData, interest: "Negócio"})}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${formData.interest === "Negócio" ? "bg-white text-indigo-600 shadow-md" : "text-slate-500 hover:text-slate-700"}`}
-                      >
-                        <UserPlus size={18} />
-                        Ser Parceiro
-                      </button>
-                      <button 
-                        type="button"
-                        onClick={() => setFormData({...formData, interest: "Produto"})}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold transition-all ${formData.interest === "Produto" ? "bg-white text-indigo-600 shadow-md" : "text-slate-500 hover:text-slate-700"}`}
-                      >
-                        <ShoppingBag size={18} />
-                        Comprar Produto
-                      </button>
-                    </div>
-
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-slate-700 uppercase tracking-widest ml-1">Seu Nome Completo</label>
                       <input 
@@ -271,7 +222,6 @@ export default function LandingClient() {
                 <ExternalLink size={20} />
               </a>
             </div>
-            {/* Shimmer effect */}
             <div className="absolute top-0 -left-full w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:animate-[shimmer_2s_infinite] transition-all"></div>
           </div>
         </section>
@@ -290,11 +240,6 @@ export default function LandingClient() {
           <div className="text-center space-y-4">
             <h2 className="text-sm font-bold text-slate-900 uppercase tracking-[0.3em]">Projeto Vida Plena</h2>
             <p className="text-slate-400 text-sm font-medium">© 2026 Todos os direitos reservados. Projeto operado por Distribuidor Independente Vida Plena.</p>
-            <div className="flex justify-center flex-wrap gap-4 sm:gap-8 text-xs text-slate-400 underline underline-offset-4">
-               <a href="#" className="hover:text-indigo-600 transition-colors">Política de Privacidade</a>
-               <a href="#" className="hover:text-indigo-600 transition-colors">Termos de Uso</a>
-               <a href="#" className="hover:text-indigo-600 transition-colors">Aviso Legal</a>
-            </div>
           </div>
         </div>
       </footer>

@@ -69,40 +69,86 @@
   color utility to all relevant elements.
 */
 @layer base {
+  * {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  }
   *,
   ::after,
   ::before,
   ::placeholder {
     border-color: var(--border);
   }
+  body {
+    background: linear-gradient(135deg, var(--background) 0%, oklch(0.98 0.01 249) 100%);
+    min-height: 100vh;
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: oklch(0.95 0.01 249);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(0.7 0.15 265);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.6 0.2 265);
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Button press effect */
+.btn-press:active {
+  transform: scale(0.97);
 }
 
 :root {
-  --background: oklch(1 0 0);
+  --background: oklch(0.985 0.012 249.221);
   --foreground: oklch(0.145 0.05 249.221);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0.05 249.221);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0.05 249.221);
-  --primary: oklch(0.205 0.05 249.221);
+  --primary: oklch(0.65 0.2 265);
   --primary-foreground: oklch(0.985 0.02 249.221);
   --secondary: oklch(0.97 0.012 249.221);
   --secondary-foreground: oklch(0.205 0.05 249.221);
-  --muted: oklch(0.97 0.012 249.221);
-  --muted-foreground: oklch(0.556 0.04 249.221);
-  --accent: oklch(0.97 0.012 249.221);
+  --muted: oklch(0.96 0.008 249.221);
+  --muted-foreground: oklch(0.5 0.03 249.221);
+  --accent: oklch(0.96 0.008 249.221);
   --accent-foreground: oklch(0.205 0.05 249.221);
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0.02 249.221);
   --border: oklch(0.922 0.04 249.221);
   --input: oklch(0.922 0.04 249.221);
-  --ring: oklch(0.708 0.04 249.221);
+  --ring: oklch(0.65 0.2 265);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.5rem;
+  --radius: 1rem;
+  --shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 8px 30px -4px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 20px 50px -8px rgba(0, 0, 0, 0.15);
 }
 
 .dark {
@@ -287,4 +333,50 @@
   color: oklch(0.12 0.02 280) !important;
   border: none !important;
   box-shadow: 0 0 20px oklch(0.6 0.25 310 / 0.4) !important;
+}
+
+/* Safe area for mobile devices with notch */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* PWA manifest placeholder */
+@layer base {
+  body {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+/* Better touch targets */
+@layer components {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Hide scrollbar on mobile but keep functionality */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  
+  body {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Mobile optimized inputs */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+  }
+  
+  button {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.05);
+  }
 }

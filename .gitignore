@@ -52,3 +52,4 @@ next-env.d.ts
 /bot_auth_info
 /wwebjs_auth
 /public/uploads/
+.wwebjs_cache

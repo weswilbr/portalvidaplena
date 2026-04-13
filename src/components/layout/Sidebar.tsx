@@ -24,7 +24,8 @@ import {
   Briefcase,
   Crown,
   Bell,
-  Save
+  Save,
+  MessageCircle
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -33,9 +34,9 @@ import { getUserSettings, updateUserNotificationSettings } from "@/app/actions/u
 
 const ALL_MENU_ITEMS = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", roles: ["ADMIN"] },
+  { icon: MessageCircle, label: "Atendimento", href: "/dashboard/atendimento", roles: ["ADMIN", "SELLER"] },
   { icon: Users, label: "Equipe", href: "/dashboard/equipe", roles: ["ADMIN"] },
   { icon: UserPlus, label: "Leads (Negócio)", href: "/dashboard/leads", roles: ["ADMIN", "SELLER"] },
-  { icon: ShoppingBag, label: "Vendas (Produtos)", href: "/dashboard/vendas", roles: ["ADMIN", "SELLER"] },
   { icon: Bot, label: "Bot WhatsApp", href: "/dashboard/bot", roles: ["ADMIN"] },
   { icon: BarChart3, label: "Metas Vida Plena", href: "/dashboard/goals", roles: ["ADMIN"] },
   { icon: Calendar, label: "Agenda", href: "/dashboard/agenda", roles: ["ADMIN", "SELLER"] },

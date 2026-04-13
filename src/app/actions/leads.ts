@@ -141,6 +141,18 @@ export async function getLeadById(id: string) {
   }
 }
 
+export async function setLeadTyping(leadId: string, isTyping: boolean) {
+  try {
+    await (prisma as any).lead.update({
+      where: { id: leadId },
+      data: { isTyping }
+    });
+    return { success: true };
+  } catch (error) {
+    return { success: false };
+  }
+}
+
 export async function addMessage(data: { leadId: string; content: string; authorId: string; isSystem?: boolean; isNote?: boolean }) {
   try {
     const message = await (prisma as any).message.create({

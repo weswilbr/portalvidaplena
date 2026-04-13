@@ -44,8 +44,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.05)_0%,_transparent_50%)]">
-      <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom duration-700">
+    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-50"></div>
+      <div className="absolute top-20 left-20 w-72 h-72 bg-indigo-300/20 rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-300/20 rounded-full blur-3xl"></div>
+      
+      <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom duration-700 relative z-10">
         <div className="text-center space-y-2">
           <Link href="/contato" className="inline-flex items-center gap-2 text-indigo-600 font-bold hover:gap-3 transition-all mb-8">
             <ArrowLeft size={16} />

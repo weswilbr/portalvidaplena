@@ -270,19 +270,18 @@ async function scanProfilePhotos() {
         
         let picUrl = null;
         try {
-           const contact = await client.getContactById(jid);
-           picUrl = await contact.getProfilePicUrl();
+           // Tenta pegar foto diretamente via getProfilePictureUrl (não precisa do contato em memória)
+           picUrl = await client.getProfilePictureUrl(jid);
            
            // Se falhar e for BR com 13 dígitos, tenta sem o '9' (DDI 55 + DDD + 9 dígitos)
            if (!picUrl && cleanNumber.startsWith('55') && cleanNumber.length === 13) {
               const alternativeNumber = cleanNumber.slice(0, 4) + cleanNumber.slice(5);
               const altJid = `${alternativeNumber}@c.us`;
               console.log(`🔍 Tentando versão sem o '9': ${altJid}`);
-              const altContact = await client.getContactById(altJid);
-              picUrl = await altContact.getProfilePicUrl();
+              picUrl = await client.getProfilePictureUrl(altJid);
            }
         } catch (e) {
-           console.log(`❌ Contato ${lead.name} não localizado.`);
+           console.log(`❌ Foto não disponível para ${lead.name} (pode não ter foto pública ou está bloqueado).`);
         }
         
         if (picUrl) {
@@ -297,7 +296,7 @@ async function scanProfilePhotos() {
         }
         
         // Delay curto para evitar bloqueio mas manter fluidez
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 500));
       } catch (e) {
         // Avança silenciosamente se o contato for privado ou inválido
       }
@@ -363,13 +362,18 @@ client.on('message', async (msg: any) => {
 
     const cfg = await (prisma as any).botConfig.findFirst();
 
-    // Busca foto de perfil com retry (WHATSAPP as vezes demora para liberar a URL na primeira msg)
+    // Busca foto de perfil com retry melhorado (WHATSAPP as vezes demora para liberar a URL na primeira msg)
     let profilePic: string | null = null;
     try {
-      for (let attempt = 0; attempt < 3; attempt++) {
+      // Tenta até 5 vezes com delays crescentes
+      for (let attempt = 0; attempt < 5; attempt++) {
         profilePic = await contact.getProfilePicUrl() || null;
-        if (profilePic) break;
-        await new Promise(r => setTimeout(r, 1000)); // Espera 1s entre tentativas
+        if (profilePic) {
+          console.log(`📸 Foto capturada para ${participantName} na tentativa ${attempt + 1}`);
+          break;
+        }
+        // Delay crescente: 1s, 2s, 3s, 4s, 5s
+        await new Promise(r => setTimeout(r, (attempt + 1) * 1000));
       }
     } catch {
       // Contato não tem foto pública ou erro de rede
@@ -482,8 +486,8 @@ client.on('message', async (msg: any) => {
                   
                   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://portalfvp.duckdns.org') + '?v=2';
                   const alertMsg = assignedToId 
-                     ? `🔔 *Novo Lead na sua Carteira!*\n\nLead: *${participantName}*\n\n🚀 *Atenda agora:* \n${appUrl}/dashboard/vendas`
-                     : `🔔 *Lead na Fila Geral!*\n\nLead: *${participantName}*\nNenhum vendedor fixo.\n\n🚀 *Assuma o chat:* \n${appUrl}/dashboard/vendas`;
+                     ? `🔔 *Novo Lead na sua Carteira!*\n\nLead: *${participantName}*\n\n🚀 *Atenda agora:* \n${appUrl}/dashboard/atendimento`
+                     : `🔔 *Lead na Fila Geral!*\n\nLead: *${participantName}*\nNenhum vendedor fixo.\n\n🚀 *Assuma o chat:* \n${appUrl}/dashboard/atendimento`;
                   
                   console.log(`📡 Disparando alerta de novo lead para: ${user.name} (${user.notificationPhone})...`);
                   await sendSafeAlert(user.notificationPhone, alertMsg, user.name);
@@ -562,7 +566,7 @@ client.on('message', async (msg: any) => {
                 return;
               }
               const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://portalfvp.duckdns.org') + '?v=2';
-              const newMsgAlert = `💬 *Nova mensagem no CRM!*\n\nLead: *${lead.name}*\n\n👆 Toque para responder:\n${appUrl}/dashboard/vendas`;
+              const newMsgAlert = `💬 *Nova mensagem no CRM!*\n\nLead: *${lead.name}*\n\n👆 Toque para responder:\n${appUrl}/dashboard/atendimento`;
 
               await sendSafeAlert(assignee.notificationPhone, newMsgAlert, assignee.name);
               await markNotificationSent(assignee.id);

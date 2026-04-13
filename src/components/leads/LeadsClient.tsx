@@ -140,33 +140,33 @@ export default function LeadsClient({ user }: { user: any }) {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-4 md:space-y-6 pb-24 md:pb-8">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="p-3 md:p-4 space-y-3 md:space-y-4 pb-4 md:pb-4 max-w-full overflow-hidden">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 leading-none">Gestão de Leads (Negócio)</h1>
-          <p className="text-slate-500 font-medium mt-2 text-sm md:text-base">Gerencie seus prospectos interessados no Projeto Vida Plena e Vida Plena.</p>
+          <h1 className="text-lg md:text-2xl font-black tracking-tight text-slate-900 leading-none">Leads (Negócio)</h1>
+          <p className="text-slate-500 font-medium mt-1 text-xs md:text-sm hidden md:block">Gerencie seus prospectos Vida Plena.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 w-full md:w-auto">
+        <div className="flex items-center gap-2">
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
             <button 
               onClick={() => setViewMode("table")}
               className={cn(
-                "flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest", 
+                "flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg transition-all font-bold text-[10px] uppercase tracking-wider", 
                 viewMode === "table" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400 hover:text-indigo-600"
               )}
             >
-              <List size={16} />
-              <span>Lista</span>
+              <List size={14} />
+              <span className="hidden sm:inline">Lista</span>
             </button>
             <button 
               onClick={() => setViewMode("kanban")}
               className={cn(
-                "flex items-center gap-2 px-6 py-2.5 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest", 
+                "flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all font-bold text-[10px] uppercase tracking-wider", 
                 viewMode === "kanban" ? "bg-white text-indigo-600 shadow-sm" : "text-slate-400 hover:text-indigo-600"
               )}
             >
-              <LayoutGrid size={16} />
-              <span>Kanban</span>
+              <LayoutGrid size={14} />
+              <span className="hidden sm:inline">Kanban</span>
             </button>
           </div>
           <button 
@@ -174,29 +174,36 @@ export default function LeadsClient({ user }: { user: any }) {
               setSelectedLead(null);
               setIsModalOpen(true);
             }}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100"
+            className="flex items-center gap-1 bg-indigo-600 text-white px-3 py-2 rounded-xl font-bold text-xs hover:bg-indigo-700 transition-all shadow-md"
           >
-            <Plus size={20} />
-            <span className="hidden md:inline">Novo Prospecto</span>
+            <Plus size={14} />
+            <span className="hidden sm:inline">Novo Lead</span>
           </button>
         </div>
       </header>
 
-      {/* Floating Action Button for Mobile */}
+      {/* FAB for Mobile - Above Bottom Nav */}
       <button 
         onClick={() => {
           setSelectedLead(null);
           setIsModalOpen(true);
         }}
-        className="fixed bottom-6 right-6 z-40 md:hidden h-16 w-16 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all animate-in zoom-in duration-300"
+        className="fixed bottom-24 right-4 z-40 md:hidden h-14 w-14 bg-indigo-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
       >
-        <Plus size={32} />
+        <Plus size={24} />
       </button>
 
-      {/* Filters Area */}
-      <div className="p-4 bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-center">
-        <div className="relative flex-1 w-full">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+      {/* Filters Area - Compact */}
+      <div className="p-3 bg-white rounded-2xl border border-slate-200 flex flex-col gap-2">
+        <div className="relative w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+          <input
+            type="text"
+            placeholder="Buscar leads..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none"
+          />
           <input 
             type="text" 
             placeholder="Buscar por nome, telefone ou e-mail..."

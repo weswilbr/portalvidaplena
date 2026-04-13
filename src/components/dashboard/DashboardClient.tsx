@@ -87,83 +87,84 @@ export default function DashboardClient() {
   ];
 
   return (
-    <div className="p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto animate-in fade-in duration-700 pb-24 md:pb-8">
-      <div className="relative overflow-hidden bg-gradient-to-r from-indigo-700 via-purple-700 to-pink-600 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 text-white shadow-2xl shadow-indigo-200 group">
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 bg-white/20 w-fit px-4 py-1.5 rounded-full text-[10px] font-black backdrop-blur-md border border-white/10 uppercase tracking-[0.2em]">
-              <Zap size={14} className="fill-white" />
+    <div className="p-3 md:p-4 space-y-3 md:space-y-5 max-w-full overflow-hidden animate-in fade-in duration-700">
+      {/* Hero Banner - Mobile Optimizado */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-700 via-purple-700 to-pink-600 rounded-2xl md:rounded-3xl p-4 md:p-8 text-white shadow-xl shadow-indigo-200/50">
+        {/* Glow effects */}
+        <div className="absolute -top-10 -right-10 w-32 md:w-48 h-32 md:h-48 bg-white/10 rounded-full blur-2xl"></div>
+        <div className="absolute -bottom-10 -left-10 w-40 md:w-64 h-40 md:h-64 bg-pink-400/20 rounded-full blur-2xl"></div>
+        
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6">
+          <div className="space-y-2 md:space-y-3 text-center md:text-left w-full">
+            <div className="inline-flex items-center gap-1.5 bg-white/20 w-fit px-3 py-1 rounded-full text-[9px] md:text-[10px] font-black backdrop-blur-sm border border-white/10 uppercase tracking-wider">
+              <Zap size={12} className="fill-white" />
               Março com Momentum
             </div>
-            <h1 className="text-2xl md:text-5xl font-black tracking-tight leading-tight md:leading-none">
-              Ativando o Potencial para <br className="hidden md:block" /> <span className="text-amber-300">Multiplicar Resultados</span>
+            <h1 className="text-base md:text-2xl lg:text-4xl font-black tracking-tight leading-tight">
+              Ativando o Potencial para <span className="text-amber-300">Multiplicar Resultados</span>
             </h1>
-            <p className="text-indigo-100 font-medium max-w-md italic opacity-90 block pt-2">
-              "{randomQuote}"
-            </p>
           </div>
-          <div className="flex -space-x-4">
-             {data?.recentLeads?.slice(0, 4).map((lead: any) => (
-               <div key={lead.id} className="w-14 h-14 rounded-full border-4 border-white/30 overflow-hidden bg-white/10 flex items-center justify-center shadow-lg transition-transform hover:scale-110 hover:z-20 cursor-pointer" title={lead.name}>
+          <div className="flex -space-x-2 md:-space-x-3">
+             {data?.recentLeads?.slice(0, 3).map((lead: any) => (
+               <div key={lead.id} className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-white/30 overflow-hidden bg-white/10 flex items-center justify-center shadow-md" title={lead.name}>
                   {lead.profilePic ? (
                     <img src={lead.profilePic} alt={lead.name} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-white font-black text-sm">{lead.name?.charAt(0) || 'L'}</span>
+                    <span className="text-white font-black text-xs">{lead.name?.charAt(0) || 'L'}</span>
                   )}
                </div>
              ))}
-             <div className="w-14 h-14 rounded-full border-4 border-white bg-indigo-500 flex items-center justify-center text-[10px] font-black shadow-lg">
-                +{Math.max((data?.stats?.totalLeads || 0) - 4, 0)}
+             <div className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-white/50 bg-indigo-500 flex items-center justify-center text-[9px] md:text-[10px] font-black shadow-md">
+                +{Math.max((data?.stats?.totalLeads || 0) - 3, 0)}
              </div>
           </div>
         </div>
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-96 h-96 bg-white/10 rounded-full blur-[100px] pointer-events-none"></div>
       </div>
 
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900 leading-none">Fala, Líder! 🚀</h2>
-          <p className="text-slate-500 font-medium mt-2 text-sm md:text-base tracking-tight">Evolução em tempo real da sua estrutura Vida Plena.</p>
+          <h2 className="text-base md:text-xl font-black tracking-tight text-slate-900 leading-none">Fala, Líder! 🚀</h2>
+          <p className="text-slate-500 font-medium mt-1 text-xs md:text-sm hidden md:block">Evolução em tempo real da sua estrutura Vida Plena.</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-2">
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="hidden md:flex items-center gap-2 bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all"
+            className="hidden md:flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl font-bold shadow-md hover:bg-indigo-700 transition-all"
           >
-            <Plus size={20} />
+            <Plus size={16} />
             Novo Lead
           </button>
         </div>
       </header>
 
-      {/* Floating Action Button for Mobile Dashboard */}
+      {/* FAB for Mobile - Above Bottom Nav */}
       <button 
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-6 right-6 z-40 md:hidden h-16 w-16 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all animate-in zoom-in duration-300"
+        className="fixed bottom-24 right-4 z-40 md:hidden h-14 w-14 bg-indigo-600 text-white rounded-full shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
       >
-        <Plus size={32} />
+        <Plus size={24} />
       </button>
 
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
         {stats.map((stat) => (
-          <div key={stat.label} className="p-5 md:p-8 bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
-            <div className={cn("p-4 rounded-2xl text-white w-fit mb-6", stat.color)}>
-              <stat.icon size={28} />
+          <div key={stat.label} className="p-3 md:p-4 bg-white rounded-xl md:rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
+            <div className={cn("p-2 md:p-3 rounded-xl text-white w-fit mb-2 md:mb-3", stat.color)}>
+              <stat.icon size={16} />
             </div>
             <div>
-              <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{stat.label}</span>
-              <h3 className="text-4xl font-black mt-2 tracking-tight text-slate-900">{stat.value}</h3>
+              <span className="text-slate-400 text-[8px] md:text-[9px] font-black uppercase tracking-wider">{stat.label}</span>
+              <h3 className="text-lg md:text-2xl font-black mt-0.5 md:mt-1 tracking-tight text-slate-900">{stat.value}</h3>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm p-10 min-h-[450px] relative overflow-hidden">
-            <div className="flex items-center justify-between mb-12">
-              <h3 className="text-2xl font-black tracking-tight flex items-center gap-3">
-                <TrendingUp className="text-indigo-600" size={28} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
+        <div className="lg:col-span-2 space-y-3 md:space-y-4">
+          <div className="bg-white rounded-2xl md:rounded-3xl border border-slate-100 shadow-sm p-4 md:p-6 min-h-[300px] relative overflow-hidden">
+            <div className="flex items-center justify-between mb-4 md:mb-6">
+              <h3 className="text-sm md:text-lg font-black tracking-tight flex items-center gap-2">
+                <TrendingUp className="text-indigo-600" size={18} />
                 Tendência de Evolução
               </h3>
             </div>
