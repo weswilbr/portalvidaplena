@@ -41,13 +41,13 @@ export function BottomNav({ role }: { role?: string }) {
       <div className="md:hidden fixed top-0 left-0 right-0 z-30 bg-white/90 backdrop-blur-lg border-b border-slate-100/50 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-black bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="text-lg font-black bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent">
               Vida Plena
             </span>
           </div>
           <button 
             onClick={() => setIsOpen(!isOpen)}
-            className="p-2.5 rounded-xl bg-slate-50 text-indigo-600 active:scale-95 transition-all"
+            className="p-2.5 rounded-xl bg-slate-50 text-blue-700 active:scale-95 transition-all"
           >
             {isOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -68,7 +68,7 @@ export function BottomNav({ role }: { role?: string }) {
                   className={cn(
                     "flex items-center gap-3 p-4 rounded-2xl transition-all font-bold",
                     isActive 
-                      ? "bg-indigo-600 text-white" 
+                      ? "bg-blue-700 text-white" 
                       : "bg-slate-50 text-slate-600 hover:bg-slate-100"
                   )}
                 >
@@ -109,7 +109,7 @@ export function BottomNav({ role }: { role?: string }) {
                 className={cn(
                   "flex flex-col items-center gap-1 p-3 rounded-2xl min-w-[64px] transition-all",
                   isActive 
-                    ? "text-indigo-600 bg-indigo-50" 
+                    ? "text-blue-700 bg-blue-50" 
                     : "text-slate-400"
                 )}
               >

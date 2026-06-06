@@ -112,7 +112,7 @@ export default function EquipeClient({ user }: { user: any }) {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Atenção: Todos os leads de ${name} serão devolvidos para a Fila Geral.\n\nTem certeza que deseja DELETAR este vendedor?`)) {
+    if (confirm(`Atenção: Todos os leads de ${name} serão devolvidos para a Fila Geral.\n\nTem certeza que deseja DELETAR este parceiro?`)) {
       await deleteSeller(id);
       refreshSellers();
     }
@@ -149,11 +149,11 @@ export default function EquipeClient({ user }: { user: any }) {
     <div className="p-8 space-y-6 bg-slate-50/50 min-h-screen animate-in fade-in duration-500">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-indigo-600 font-black text-xs uppercase tracking-[0.2em] mb-1">
+          <div className="flex items-center gap-2 text-blue-700 font-black text-xs uppercase tracking-[0.2em] mb-1">
             <Users size={14} />
             Configuração Administrativa
           </div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-none">Usuários e Equipe</h1>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-none">Usuários e Parceiros</h1>
           <p className="text-slate-500 font-medium mt-2">
             Adicione membros, edite perfis e gerencie as senhas de acesso do portal.
           </p>
@@ -161,7 +161,7 @@ export default function EquipeClient({ user }: { user: any }) {
         
         <button 
           onClick={() => { setEditingUser(null); setIsModalOpen(true); }}
-          className="flex items-center gap-2 bg-indigo-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all"
+          className="flex items-center gap-2 bg-blue-700 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-blue-100 hover:bg-blue-800 hover:scale-[1.02] active:scale-95 transition-all"
         >
           <UserPlus size={20} />
           Cadastrar Novo
@@ -205,16 +205,16 @@ export default function EquipeClient({ user }: { user: any }) {
            {/* Inteligência Artificial (Gemini) */}
            <div className={cn(
              "p-6 rounded-[2.5rem] border flex items-center justify-between gap-4 transition-all",
-             botConfig.aiEnabled ? "bg-indigo-50/50 border-indigo-100" : "bg-slate-50 border-slate-100"
+             botConfig.aiEnabled ? "bg-blue-50/50 border-blue-100" : "bg-slate-50 border-slate-100"
            )}>
              <div className="flex items-center gap-4">
-                <div className={cn("p-3 rounded-2xl shadow-sm", botConfig.aiEnabled ? "bg-indigo-500 text-white" : "bg-slate-200 text-slate-400")}>
+                <div className={cn("p-3 rounded-2xl shadow-sm", botConfig.aiEnabled ? "bg-blue-600 text-white" : "bg-slate-200 text-slate-400")}>
                    <Sparkles size={22} className={botConfig.aiEnabled ? "animate-pulse" : ""} />
                 </div>
                 <div>
-                   <h3 className="font-black text-slate-800 tracking-tight">IA Gemini 1.5</h3>
+                   <h3 className="font-black text-slate-800 tracking-tight">IA Multi-Modelo</h3>
                    <div className="flex items-center gap-2">
-                      <div className={cn("w-2 h-2 rounded-full", botConfig.aiEnabled ? "bg-indigo-500 animate-pulse" : "bg-slate-300")} />
+                      <div className={cn("w-2 h-2 rounded-full", botConfig.aiEnabled ? "bg-blue-600 animate-pulse" : "bg-slate-300")} />
                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                         {botConfig.aiEnabled ? "Inteligência Ativa" : "IA Desativada"}
                       </span>
@@ -226,7 +226,7 @@ export default function EquipeClient({ user }: { user: any }) {
                disabled={globalLoading} 
                className={cn(
                  "px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md",
-                 botConfig.aiEnabled ? "bg-white text-indigo-600 hover:bg-indigo-600 hover:text-white" : "bg-slate-800 text-white"
+                 botConfig.aiEnabled ? "bg-white text-blue-700 hover:bg-blue-700 hover:text-white" : "bg-slate-800 text-white"
                )}
              >
                 {globalLoading ? "..." : botConfig.aiEnabled ? "Desativar" : "Ativar"}
@@ -240,7 +240,7 @@ export default function EquipeClient({ user }: { user: any }) {
         <input 
           type="text" 
           placeholder="Buscar usuário por nome, e-mail ou WhatsApp..."
-          className="w-full py-3 rounded-2xl bg-white border-none outline-none focus:ring-4 focus:ring-indigo-100 transition-all font-medium"
+          className="w-full py-3 rounded-2xl bg-white border-none outline-none focus:ring-4 focus:ring-blue-100 transition-all font-medium"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -268,10 +268,10 @@ export default function EquipeClient({ user }: { user: any }) {
               </tr>
             ) : (
               filteredSellers.map(seller => (
-                <tr key={seller.id} className="hover:bg-indigo-50/30 transition-all group animate-in slide-in-from-bottom duration-300">
+                <tr key={seller.id} className="hover:bg-blue-50/30 transition-all group animate-in slide-in-from-bottom duration-300">
                   <td className="px-8 py-5">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-[1.25rem] bg-indigo-50 text-indigo-600 flex items-center justify-center font-black uppercase text-xl border border-indigo-100">
+                      <div className="w-12 h-12 rounded-[1.25rem] bg-blue-50 text-blue-700 flex items-center justify-center font-black uppercase text-xl border border-blue-100">
                         {seller.name.substring(0,2)}
                       </div>
                       <div>
@@ -296,14 +296,14 @@ export default function EquipeClient({ user }: { user: any }) {
                               <div title="Alertas de Novo Lead" className={cn("p-1.5 rounded-lg border", seller.notificationsEnabled ? "bg-emerald-50 border-emerald-200 text-emerald-600" : "bg-slate-50 border-slate-200 text-slate-400")}>
                                  <AlertCircle size={14} />
                               </div>
-                              <div title="Alertas de Mensagens" className={cn("p-1.5 rounded-lg border", seller.notifyNewMessages ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-slate-50 border-slate-200 text-slate-400")}>
+                              <div title="Alertas de Mensagens" className={cn("p-1.5 rounded-lg border", seller.notifyNewMessages ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-slate-50 border-slate-200 text-slate-400")}>
                                  <MessageCircle size={14} />
                               </div>
                            </div>
                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ativo em: {seller.notificationPhone}</span>
                          </>
                        ) : (
-                         <div className="flex items-center gap-2 text-slate-300 italic text-[10px] font-bold">
+                         <div className="flex items-center gap-2 text-slate-600 italic text-[10px] font-bold">
                             <BellOff size={12} />
                             Sem alertas
                          </div>
@@ -320,7 +320,7 @@ export default function EquipeClient({ user }: { user: any }) {
                     <button 
                       onClick={() => { setEditingUser(seller); setIsModalOpen(true); }}
                       title="Editar Informações Cadastrais"
-                      className="p-3 bg-white text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm"
+                      className="p-3 bg-white text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-blue-700 hover:border-blue-200 transition-all shadow-sm"
                     >
                       <Edit size={16} />
                     </button>
@@ -341,7 +341,7 @@ export default function EquipeClient({ user }: { user: any }) {
                     {seller.id !== user.id && seller.role !== "ADMIN" && (
                       <button 
                         onClick={() => handleDelete(seller.id, seller.name)}
-                        title="Demitir / Remover Vendedor"
+                        title="Demitir / Remover Parceiro"
                         className="p-3 bg-red-50 text-red-600 border border-red-100 rounded-xl hover:bg-red-600 hover:text-white transition-all shadow-sm"
                       >
                         <Trash2 size={16} />
@@ -365,23 +365,23 @@ export default function EquipeClient({ user }: { user: any }) {
               </button>
             </div>
             <p className="text-sm font-medium text-slate-500 mb-8">
-              {editingUser ? "Altere nome, contato ou permissões básicas." : "O vendedor poderá logar p/ usar o sistema e chat."}
+              {editingUser ? "Altere nome, contato ou permissões básicas." : "O parceiro poderá logar p/ usar o sistema e chat."}
             </p>
             
             <form className="space-y-4" onSubmit={handleSaveSeller}>
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Nome Completo</label>
-                <input name="name" defaultValue={editingUser?.name || ""} required placeholder="Ex: João da Silva" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-4 focus:ring-indigo-100 font-bold" />
+                <input name="name" defaultValue={editingUser?.name || ""} required placeholder="Ex: João da Silva" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-4 focus:ring-blue-100 font-bold text-slate-900" />
               </div>
               
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 ml-1">WhatsApp Business</label>
-                <input name="phone" defaultValue={editingUser?.phone || ""} required placeholder="11999999999" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-4 focus:ring-indigo-100 font-bold" />
+                <input name="phone" defaultValue={editingUser?.phone || ""} required placeholder="11999999999" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-4 focus:ring-blue-100 font-bold text-slate-900" />
               </div>
 
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 ml-1">E-mail</label>
-                <input name="email" defaultValue={editingUser?.email || ""} type="email" required placeholder="vendedor@email.com" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-4 focus:ring-indigo-100 font-bold text-slate-500" />
+                <input name="email" defaultValue={editingUser?.email || ""} type="email" required placeholder="parceiro@email.com" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-4 focus:ring-blue-100 font-bold text-slate-900" />
               </div>
 
               {!editingUser && (

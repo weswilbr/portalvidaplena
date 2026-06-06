@@ -81,12 +81,16 @@
   body {
     background: linear-gradient(135deg, var(--background) 0%, oklch(0.98 0.01 249) 100%);
     min-height: 100vh;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
+  overscroll-behavior: none;
+  touch-action: pan-y pinch-zoom;
 }
 
 /* Custom scrollbar */

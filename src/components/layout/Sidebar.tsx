@@ -25,7 +25,8 @@ import {
   Crown,
   Bell,
   Save,
-  MessageCircle
+  MessageCircle,
+  BookOpen
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
@@ -35,10 +36,11 @@ import { getUserSettings, updateUserNotificationSettings } from "@/app/actions/u
 const ALL_MENU_ITEMS = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard", roles: ["ADMIN"] },
   { icon: MessageCircle, label: "Atendimento", href: "/dashboard/atendimento", roles: ["ADMIN", "SELLER"] },
-  { icon: Users, label: "Equipe", href: "/dashboard/equipe", roles: ["ADMIN"] },
-  { icon: UserPlus, label: "Leads (Negócio)", href: "/dashboard/leads", roles: ["ADMIN", "SELLER"] },
+  { icon: Users, label: "Parceiros", href: "/dashboard/equipe", roles: ["ADMIN"] },
+  { icon: UserPlus, label: "Convidados", href: "/dashboard/leads", roles: ["ADMIN", "SELLER"] },
   { icon: Bot, label: "Bot WhatsApp", href: "/dashboard/bot", roles: ["ADMIN"] },
-  { icon: BarChart3, label: "Metas Vida Plena", href: "/dashboard/goals", roles: ["ADMIN"] },
+  { icon: BookOpen, label: "Conhecimento", href: "/dashboard/conhecimento", roles: ["ADMIN"] },
+  { icon: BarChart3, label: "Metas & Ranks", href: "/dashboard/goals", roles: ["ADMIN"] },
   { icon: Calendar, label: "Agenda", href: "/dashboard/agenda", roles: ["ADMIN", "SELLER"] },
 ];
 
@@ -108,7 +110,7 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
     <>
       <button 
         onClick={() => setIsMobileOpen(true)}
-        className="md:hidden fixed top-6 right-6 z-40 p-3 bg-white/80 backdrop-blur-md rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100/50 text-indigo-600 hover:scale-105 active:scale-95 transition-all"
+        className="md:hidden fixed top-6 right-6 z-40 p-3 bg-white/80 backdrop-blur-md rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100/50 text-blue-700 hover:scale-105 active:scale-95 transition-all"
       >
         <Menu size={24} />
       </button>
@@ -130,7 +132,7 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
         <div className="p-6 pt-8 flex items-center justify-between">
           {(!isCollapsed || isMobileOpen) && (
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-blue-500 bg-clip-text text-transparent italic tracking-tight">
+              <span className="text-2xl font-black bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent italic tracking-tight">
                 Vida Plena
               </span>
               <img 
@@ -169,8 +171,8 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
                 className={cn(
                   "flex items-center gap-3 p-4 md:p-3.5 rounded-2xl transition-all duration-300 group font-bold relative overflow-hidden",
                   isActive 
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100" 
-                    : "hover:bg-indigo-50 dark:hover:bg-indigo-900/10 text-slate-500 hover:text-indigo-600"
+                    ? "bg-blue-700 text-white shadow-lg shadow-blue-100" 
+                    : "hover:bg-blue-50 dark:hover:bg-blue-900/10 text-slate-500 hover:text-blue-700"
                 )}
               >
                 <item.icon size={isActive ? 22 : 20} className={cn("shrink-0", isActive ? "scale-110" : "group-hover:scale-110 transition-transform")} />
@@ -230,7 +232,7 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
               onClick={() => changeTheme("default")}
               className={cn(
                 "flex items-center justify-center p-3 rounded-2xl transition-all border",
-                theme === "default" ? "bg-indigo-600 text-white border-indigo-600 shadow-lg" : "bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-50"
+                theme === "default" ? "bg-blue-700 text-white border-blue-700 shadow-lg" : "bg-white dark:bg-slate-800 text-slate-400 border-slate-100 dark:border-slate-800 hover:bg-slate-50"
               )}
               title="Clássico Moderno"
             >
@@ -276,8 +278,8 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
           )}>
             {(!isCollapsed || isMobileOpen) && (
               <div className="flex flex-col truncate">
-                <span className="text-[10px] md:text-xs font-black text-indigo-400 uppercase tracking-[0.2em] leading-none mb-1.5 font-bold">{role === "ADMIN" ? "Administrador" : "Equipe"}</span>
-                <span className="text-sm md:text-sm font-black text-slate-900 dark:text-white truncate tracking-tight">{userName || "Vendedor"}</span>
+                <span className="text-[10px] md:text-xs font-black text-blue-400 uppercase tracking-[0.2em] leading-none mb-1.5 font-bold">{role === "ADMIN" ? "Administrador" : "Parceiro"}</span>
+                <span className="text-sm md:text-sm font-black text-slate-900 dark:text-white truncate tracking-tight">{userName || "Parceiro"}</span>
               </div>
             )}
             <button 
@@ -324,8 +326,8 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
                  {/* NOVOS LEADS */}
                  <div className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-100">
                     <div>
-                       <p className="text-sm font-black text-slate-800">Novos Leads</p>
-                       <p className="text-[10px] font-bold text-emerald-600 uppercase">Alertar quando entrar lead</p>
+                       <p className="text-sm font-black text-slate-800">Novos Convidados</p>
+                       <p className="text-[10px] font-bold text-emerald-600 uppercase">Alertar quando entrar convidado</p>
                     </div>
                     <button 
                       onClick={() => setNotifEnabled(!notifEnabled)}
@@ -345,13 +347,13 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
                  <div className="flex items-center justify-between p-5 bg-slate-50 rounded-2xl border border-slate-100">
                     <div>
                        <p className="text-sm font-black text-slate-800">Mensagens</p>
-                       <p className="text-[10px] font-bold text-indigo-600 uppercase">Alertar novas msgs de leads</p>
+                       <p className="text-[10px] font-bold text-blue-600 uppercase">Alertar novas msgs de convidados</p>
                     </div>
                     <button 
                       onClick={() => setNotifyNewMessages(!notifyNewMessages)}
                       className={cn(
                         "w-12 h-6 rounded-full transition-all relative",
-                        notifyNewMessages ? "bg-indigo-500" : "bg-slate-300"
+                        notifyNewMessages ? "bg-blue-600" : "bg-slate-300"
                       )}
                     >
                        <div className={cn(
@@ -365,14 +367,14 @@ export function Sidebar({ role, userId, userName }: { role?: string, userId?: st
                  <div className="space-y-3">
                     <div className="flex items-center justify-between ml-1">
                       <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Aguardar (minutos)</label>
-                      <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{notifInterval === 0 ? "Imediato" : `${notifInterval}m`}</span>
+                      <span className="text-xs font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">{notifInterval === 0 ? "Imediato" : `${notifInterval}m`}</span>
                     </div>
                     <input 
                       type="range" 
                       min="0" 
                       max="60" 
                       step="5"
-                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                      className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-700"
                       value={notifInterval}
                       onChange={(e) => setNotifInterval(parseInt(e.target.value))}
                     />

@@ -46,6 +46,14 @@ model Lead {
   aiStatus    String?  // GELADO, MORNO, QUENTE
   aiAdvice    String?
   isTyping    Boolean  @default(false)
+  aiActive    Boolean  @default(true)
+  apresentacaoEnviada Boolean @default(false)
+  aiMemory    String?  // memória longa: resumo vivo do lead
+  cidade      String?  // cidade/regiao do lead (capturada na conversa)
+  reuniaoQuando String?  // dia/hora que o lead pediu p/ reuniao
+  linkEnviado Boolean  @default(false) // link de cadastro 4Life ja enviado
+  followupCount Int     @default(0)
+  lastFollowupAt DateTime?
   messages    Message[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -149,5 +157,24 @@ model BotConfig {
   globalNotificationsEnabled Boolean  @default(true) // Controle mestre para ligar/desligar todos os alertas
   aiEnabled                   Boolean  @default(true) // Controle mestre da Inteligência Artificial (Gemini)
   isRoundRobin    Boolean  @default(true) // Se ativo, distribui leads automaticamente; se falso, envia para a fila geral
+  aiDelaySeconds  Int      @default(40) // tempo de digestão antes da IA responder
+  cadastroLink    String?  // link de cadastro/ativacao na 4Life
+  aiModel         String?  // modelo de IA p/ conversar (escolhido no painel)
+  voiceMode       String   @default("OFF") // OFF, SOMETIMES, ALWAYS
+  followupEnabled Boolean  @default(true)
+  voiceName       String   @default("nova") // voz do TTS
+  connectedNumber String?  // numero do WhatsApp conectado
   updatedAt       DateTime @updatedAt
+}
+
+
+model KnowledgeItem {
+  id        String   @id @default(cuid())
+  title     String
+  type      String   @default("TEXT") // TEXT, IMAGE, PDF
+  content   String   @db.Text          // conteudo em texto que o bot le
+  fileUrl   String?                     // arquivo original (se houver)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

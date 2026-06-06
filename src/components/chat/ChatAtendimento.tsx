@@ -38,17 +38,20 @@ import {
   Video,
   Download,
   Sparkles,
+  Pencil,
 } from "lucide-react";
 import { getLeads, addMessage, sendWhatsAppMessage, updateLead, createLead, pullLead, updateMessage, deleteMessage, getQuickReplies, createQuickReply, updateQuickReply, deleteQuickReply, setLeadTyping } from "@/app/actions/leads";
 import { getLeadAnalysis, getConversationSummary, getReplySuggestions } from "@/app/actions/ai";
 import { getSellers } from "@/app/actions/users";
 
 const statusConfig: Record<string, { color: string; bg: string; label: string }> = {
-  NEW: { color: "text-blue-600", bg: "bg-blue-50 border-blue-200", label: "Novo" },
-  CONTACTED: { color: "text-indigo-600", bg: "bg-indigo-50 border-indigo-200", label: "Contatado" },
-  PRESENTED: { color: "text-orange-600", bg: "bg-orange-50 border-orange-200", label: "Apresentado" },
-  CLOSED: { color: "text-green-600", bg: "bg-green-50 border-green-200", label: "Fechado" },
-  LOST: { color: "text-red-600", bg: "bg-red-50 border-red-200", label: "Perdido" },
+  NEW: { color: "text-blue-600", bg: "bg-blue-50 border-blue-200", label: "Recepção" },
+  CONTACTED: { color: "text-blue-700", bg: "bg-blue-50 border-blue-200", label: "Relacionamento" },
+  PRESENTED: { color: "text-orange-600", bg: "bg-orange-50 border-orange-200", label: "Apresentação" },
+  REMARKETING: { color: "text-red-600", bg: "bg-red-50 border-red-200", label: "Pronto p/ Cadastro" },
+  CLOSED: { color: "text-emerald-600", bg: "bg-emerald-50 border-emerald-200", label: "Cadastrado (4Life)" },
+  FOLLOWUP: { color: "text-teal-600", bg: "bg-teal-50 border-teal-200", label: "Acompanhamento" },
+  LOST: { color: "text-slate-600", bg: "bg-slate-50 border-slate-200", label: "Perdido" },
 };
 
 const temperatureConfig: Record<string, { color: string; bg: string; icon: string }> = {
@@ -79,6 +82,8 @@ interface Lead {
   aiScore: number | null;
   aiStatus: string | null;
   aiAdvice: string | null;
+  aiActive?: boolean;
+  aiMemory?: string | null;
   isTyping: boolean;
   assignedTo: { id: string; name: string } | null;
   messages: any[];
@@ -199,12 +204,21 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
     setShowAssignModal(false);
   };
 
+  // 🤖 Liga/desliga o bot (IA) para ESTE convidado. Desligado = você assume a conversa.
+  const handleToggleAI = async () => {
+    if (!selectedLead) return;
+    const novoEstado = !(selectedLead.aiActive !== false); // inverte (default é ligado)
+    setSelectedLead({ ...selectedLead, aiActive: novoEstado });
+    await updateLead(selectedLead.id, { aiActive: novoEstado });
+    await refreshLeads(true);
+  };
+
   const handleAIAction = async (action: "analyze" | "summary" | "suggest") => {
     if (!selectedLead || aiLoading) return;
     setAiLoading(true);
     setAiResult(null);
     try {
-      let result: string;
+      let result: any;
       if (action === "analyze") {
         result = await getLeadAnalysis(selectedLead.id);
       } else if (action === "summary") {
@@ -592,10 +606,10 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
             <button
               onClick={() => { setViewMode("meus"); setFilterLeads("meus"); setSelectedAtendente(null); }}
               className={cn(
-                "flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-[10px] font-bold transition-all",
+                "flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-bold transition-all",
                 viewMode === "meus" 
-                  ? "bg-white text-indigo-600 shadow-sm" 
-                  : "text-slate-500 hover:text-indigo-600"
+                  ? "bg-white text-blue-700 shadow-sm" 
+                  : "text-slate-500 hover:text-blue-700"
               )}
             >
               <span>Meus</span>
@@ -603,10 +617,10 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
             <button
               onClick={() => { setViewMode("novos"); setFilterLeads("novos"); setSelectedAtendente(null); }}
               className={cn(
-                "flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-[10px] font-bold transition-all",
+                "flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-bold transition-all",
                 viewMode === "novos" 
-                  ? "bg-white text-indigo-600 shadow-sm" 
-                  : "text-slate-500 hover:text-indigo-600"
+                  ? "bg-white text-blue-700 shadow-sm" 
+                  : "text-slate-500 hover:text-blue-700"
               )}
             >
               <span>Novos</span>
@@ -614,10 +628,10 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
             <button
               onClick={() => { setViewMode("todos"); setFilterLeads("todos"); }}
               className={cn(
-                "flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-[10px] font-bold transition-all",
+                "flex-1 flex items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-bold transition-all",
                 viewMode === "todos" 
-                  ? "bg-white text-indigo-600 shadow-sm" 
-                  : "text-slate-500 hover:text-indigo-600"
+                  ? "bg-white text-blue-700 shadow-sm" 
+                  : "text-slate-500 hover:text-blue-700"
               )}
             >
               <span>Equipe</span>
@@ -628,11 +642,11 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-[10px] font-bold text-slate-600">{currentUser?.name || "Você"}</span>
+              <span className="text-xs font-bold text-slate-600">{currentUser?.name || "Você"}</span>
             </div>
             <button
               onClick={() => setIsCreatingLead(true)}
-              className="p-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 active:scale-95 transition-all"
+              className="p-1.5 bg-blue-700 text-white rounded-lg hover:bg-blue-800 active:scale-95 transition-all"
             >
               <UserPlus size={14} />
             </button>
@@ -658,7 +672,7 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
               placeholder="Buscar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none"
+              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
             />
           </div>
           
@@ -669,7 +683,7 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
           <div className="flex-1 overflow-y-auto">
             {loading && leads.length === 0 && (
               <div className="flex items-center justify-center h-32">
-                <RefreshCw className="animate-spin text-indigo-600" size={24} />
+                <RefreshCw className="animate-spin text-blue-700" size={24} />
               </div>
             )}
             {!loading && filteredLeads.length === 0 && (
@@ -693,13 +707,13 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                 }}
                 className={cn(
                   "w-full p-3 border-b border-slate-50 text-left hover:bg-slate-50 transition-all",
-                  selectedLead?.id === lead.id && "bg-indigo-50"
+                  selectedLead?.id === lead.id && "bg-blue-50"
                 )}
               >
                 <div className="flex items-center gap-3">
                   {/* Avatar - Smaller */}
                   <div className="relative shrink-0">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-black text-sm">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white font-black text-sm">
                       {lead.profilePic ? (
                         <img src={lead.profilePic} alt={lead.name} className="w-full h-full rounded-full object-cover" />
                       ) : (
@@ -708,7 +722,7 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                     </div>
                     {/* Unread Notification Badge */}
                     {lead.unreadCount > 0 && (
-                      <div className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-pulse">
+                      <div className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[11px] font-black rounded-full flex items-center justify-center animate-pulse">
                         {lead.unreadCount > 9 ? "9+" : lead.unreadCount}
                       </div>
                     )}
@@ -727,11 +741,11 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                       )}>
                         {lead.name}
                       </span>
-                      <span className="text-[9px] text-slate-400 shrink-0">
+                      <span className="text-[11px] text-slate-400 shrink-0">
                         {formatTime(lead.updatedAt)}
                       </span>
                     </div>
-                    <p className="text-[10px] text-slate-500 truncate">
+                    <p className="text-xs text-slate-500 truncate">
                       {getLastMessage(lead)}
                     </p>
                   </div>
@@ -754,7 +768,7 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
               <ChevronRight size={18} className="rotate-180" />
             </button>
             
-            <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-black text-xs md:text-sm shrink-0">
+            <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white font-black text-xs md:text-sm shrink-0">
               {selectedLead.profilePic ? (
                 <img src={selectedLead.profilePic} alt={selectedLead.name} className="w-full h-full rounded-full object-cover" />
               ) : (
@@ -763,41 +777,66 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
             </div>
             
             <div className="flex-1 min-w-0 pr-2">
-              <h2 className="font-bold text-xs md:text-sm text-slate-900 truncate">{selectedLead.name}</h2>
-              <p className="text-[9px] md:text-[10px] text-slate-500 truncate">{selectedLead.phone || "Sem telefone"}</p>
+              <h2 className="font-bold text-sm md:text-base text-slate-900 truncate">{selectedLead.name}</h2>
+              <div className="flex items-center gap-2">
+                <p className="text-[11px] md:text-xs text-slate-500 truncate">{selectedLead.phone || "Sem telefone"}</p>
+                <span className={cn(
+                  "shrink-0 px-2 py-0.5 rounded-full text-[10px] font-black border",
+                  statusConfig[selectedLead.status]?.bg, statusConfig[selectedLead.status]?.color
+                )}>
+                  {statusConfig[selectedLead.status]?.label || selectedLead.status}
+                </span>
+              </div>
             </div>
-            
+
             <div className="flex items-center gap-1 shrink-0">
+              {/* 🤖 Toggle da IA — assumir/devolver a conversa */}
+              <button
+                onClick={handleToggleAI}
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 md:px-3 py-2 rounded-xl font-black text-[11px] md:text-xs transition-all border",
+                  selectedLead.aiActive !== false
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                    : "bg-blue-700 text-white border-blue-700 hover:bg-blue-800"
+                )}
+                title={selectedLead.aiActive !== false ? "A IA está respondendo. Clique para ASSUMIR a conversa." : "Você está no comando. Clique para DEVOLVER à IA."}
+              >
+                {selectedLead.aiActive !== false ? (
+                  <><Sparkles size={13} /> <span className="hidden sm:inline">IA ativa</span></>
+                ) : (
+                  <><User size={13} /> <span className="hidden sm:inline">Você assumiu</span></>
+                )}
+              </button>
               <button
                 onClick={() => openWhatsApp(selectedLead.phone || "")}
-                className="p-1.5 md:p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-all"
+                className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-all"
                 title="Abrir WhatsApp"
               >
-                <Phone size={14} />
+                <Phone size={15} />
               </button>
               <button
                 onClick={() => setIsInfoOpen(!isInfoOpen)}
                 className={cn(
-                  "p-1.5 md:p-2 rounded-lg transition-all",
-                  isInfoOpen ? "bg-indigo-100 text-indigo-600" : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                  "p-2 rounded-lg transition-all",
+                  isInfoOpen ? "bg-blue-100 text-blue-700" : "bg-slate-50 text-slate-400 hover:bg-slate-100"
                 )}
-                title="Informações do Lead"
+                title="Informações do convidado"
               >
-                <User size={14} />
+                <User size={15} />
               </button>
             </div>
           </div>
 
           {/* Lead Info Sidebar - Compact */}
           {isInfoOpen && (
-            <div className="p-2 md:p-3 bg-gradient-to-r from-slate-50 to-indigo-50 border-b border-slate-100 space-y-2">
+            <div className="p-2 md:p-3 bg-gradient-to-r from-slate-50 to-blue-50 border-b border-slate-100 space-y-2">
               <div className="flex flex-wrap gap-1">
                 {Object.entries(statusConfig).map(([key, config]) => (
                   <button
                     key={key}
                     onClick={() => handleStatusChange(key)}
                     className={cn(
-                      "px-2 py-1 rounded-lg text-[10px] font-bold transition-all",
+                      "px-2 py-1 rounded-lg text-xs font-bold transition-all",
                       selectedLead.status === key 
                         ? `${config.bg} ${config.color} ring-1 ring-current` 
                         : "bg-white text-slate-500 hover:bg-slate-100 border border-slate-200"
@@ -810,7 +849,7 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
               
               <div className="grid grid-cols-4 gap-2">
                 <div className="bg-white p-2 rounded-lg border border-slate-100 text-center">
-                  <p className="text-[9px] text-slate-400 font-bold uppercase">Score</p>
+                  <p className="text-[11px] text-slate-400 font-bold uppercase">Score</p>
                   <p className={cn(
                     "text-sm font-black",
                     (selectedLead.aiScore || 0) >= 70 ? "text-green-600" :
@@ -820,34 +859,44 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                   </p>
                 </div>
                 <div className="bg-white p-2 rounded-lg border border-slate-100 text-center">
-                  <p className="text-[9px] text-slate-400 font-bold uppercase">Temp</p>
+                  <p className="text-[11px] text-slate-400 font-bold uppercase">Temp</p>
                   <p className={cn("text-xs font-black", temperatureConfig[selectedLead.aiStatus || "MORNO"]?.color)}>
                     {temperatureConfig[selectedLead.aiStatus || "MORNO"]?.icon}
                   </p>
                 </div>
                 <div className="bg-white p-2 rounded-lg border border-slate-100 text-center">
-                  <p className="text-[9px] text-slate-400 font-bold uppercase">Origem</p>
-                  <p className="text-[10px] font-bold text-slate-700 truncate">{selectedLead.source || "Direto"}</p>
+                  <p className="text-[11px] text-slate-400 font-bold uppercase">Origem</p>
+                  <p className="text-xs font-bold text-slate-700 truncate">{selectedLead.source || "Direto"}</p>
                 </div>
                 <div className="bg-white p-2 rounded-lg border border-slate-100 text-center">
-                  <p className="text-[9px] text-slate-400 font-bold uppercase">Atendente</p>
-                  <p className="text-[10px] font-bold text-slate-700 truncate">{selectedLead.assignedTo?.name || "-"}</p>
+                  <p className="text-[11px] text-slate-400 font-bold uppercase">Parceiro</p>
+                  <p className="text-xs font-bold text-slate-700 truncate">{selectedLead.assignedTo?.name || "-"}</p>
                 </div>
               </div>
+
+              {/* 🧠 Memória da IA — o que o bot já sabe deste convidado */}
+              {selectedLead.aiMemory && (
+                <div className="bg-blue-50 border border-blue-100 p-2.5 rounded-xl">
+                  <p className="text-[11px] text-blue-700 font-black uppercase flex items-center gap-1 mb-1">
+                    <Sparkles size={11} /> O que a IA já sabe
+                  </p>
+                  <p className="text-xs text-slate-700 leading-relaxed">{selectedLead.aiMemory}</p>
+                </div>
+              )}
               
               {/* AI Actions - Economic */}
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => handleAIAction("suggest")}
                   disabled={aiLoading}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg text-[9px] font-bold text-amber-700 disabled:opacity-50 transition-all"
+                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg text-[11px] font-bold text-amber-700 disabled:opacity-50 transition-all"
                 >
                   <Sparkles size={10} /> {aiLoading ? "..." : "Sugerir"}
                 </button>
                 <button
                   onClick={() => handleAIAction("summary")}
                   disabled={aiLoading}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg text-[9px] font-bold text-purple-700 disabled:opacity-50 transition-all"
+                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-[11px] font-bold text-blue-700 disabled:opacity-50 transition-all"
                 >
                   <Sparkles size={10} /> {aiLoading ? "..." : "Resumir"}
                 </button>
@@ -855,45 +904,59 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
               {aiResult && (
                 <div className="bg-slate-50 border border-slate-200 p-2 rounded-lg">
                   <div className="flex items-center justify-between">
-                    <p className="text-[9px] text-slate-500 font-bold uppercase flex items-center gap-1">
+                    <p className="text-[11px] text-slate-500 font-bold uppercase flex items-center gap-1">
                       <Sparkles size={9} /> Resultado IA
                     </p>
                     <div className="flex gap-1">
                       <button 
                         onClick={() => { navigator.clipboard.writeText(aiResult); }}
-                        className="px-2 py-0.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-600 rounded text-[9px] font-bold"
+                        className="px-2 py-0.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-[11px] font-bold"
                       >
                         📋 Copiar
                       </button>
                       <button 
                         onClick={() => { setMessageText(String(aiResult || "")); setAiResult(null); }}
-                        className="px-2 py-0.5 bg-green-100 hover:bg-green-200 text-green-600 rounded text-[9px] font-bold"
+                        className="px-2 py-0.5 bg-green-100 hover:bg-green-200 text-green-600 rounded text-[11px] font-bold"
                       >
                         ➡️ Usar
                       </button>
                       <button onClick={() => setAiResult(null)} className="px-1 py-0.5 text-slate-400 hover:text-slate-600">✕</button>
                     </div>
                   </div>
-                  <p className="text-[10px] text-slate-700 mt-1 whitespace-pre-wrap">{aiResult}</p>
+                  {/* Cada linha vira um chip clicável que preenche o campo */}
+                  <div className="flex flex-col gap-1.5 mt-2">
+                    {String(aiResult).split("\n").map(l => l.trim()).filter(Boolean).map((linha, i) => (
+                      <button
+                        key={i}
+                        onClick={() => { setMessageText(linha); setAiResult(null); inputRef.current?.focus(); }}
+                        className="text-left text-xs text-slate-700 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 px-3 py-2 rounded-xl transition-all leading-relaxed"
+                      >
+                        {linha}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
               {selectedLead.aiAdvice && !aiResult && (
                 <div className="bg-amber-50 border border-amber-200 p-2 rounded-lg">
-                  <p className="text-[9px] text-amber-600 font-bold uppercase flex items-center gap-1">
+                  <p className="text-[11px] text-amber-600 font-bold uppercase flex items-center gap-1">
                     <Zap size={10} /> Dica IA
                   </p>
-                  <p className="text-[10px] text-amber-800 mt-0.5">{selectedLead.aiAdvice}</p>
+                  <p className="text-xs text-amber-800 mt-0.5">{selectedLead.aiAdvice}</p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Messages - Compact */}
-          <div className="flex-1 overflow-y-auto p-2 md:p-3 space-y-2 md:space-y-3 bg-slate-50/50">
+          {/* Messages */}
+          <div
+            className="flex-1 overflow-y-auto p-3 md:p-4 space-y-1.5 md:space-y-2"
+            style={{ backgroundColor: "#eef2f7", backgroundImage: "radial-gradient(circle at 1px 1px, rgba(30,58,138,0.05) 1px, transparent 0)", backgroundSize: "22px 22px" }}
+          >
             {selectedLead.messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-slate-400">
                 <MessageCircle size={32} />
-                <p className="text-xs font-medium mt-2">Nenhuma mensagem</p>
+                <p className="text-sm font-medium mt-2">Nenhuma mensagem ainda</p>
               </div>
             ) : (
               selectedLead.messages.map((msg: any, index: number) => {
@@ -901,25 +964,47 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                 const isSystem = msg.isSystem;
                 const isNote = msg.isNote;
                 const isAudio = msg.mediaType === "audio";
+
+                // 📅 Separador de data (Hoje / Ontem / data) quando muda o dia
+                const msgDay = new Date(msg.createdAt).toDateString();
+                const prevDay = index > 0 ? new Date(selectedLead.messages[index - 1].createdAt).toDateString() : null;
+                const hoje = new Date().toDateString();
+                const ontem = new Date(Date.now() - 86400000).toDateString();
+                const mostrarData = msgDay !== prevDay;
+                const rotuloData = msgDay === hoje ? "Hoje" : msgDay === ontem ? "Ontem"
+                  : new Date(msg.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+                const separador = mostrarData ? (
+                  <div key={"sep-" + (msg.id || index)} className="flex justify-center my-3">
+                    <span className="px-3 py-1 bg-white/80 backdrop-blur-sm text-slate-500 text-[11px] font-bold rounded-full shadow-sm border border-slate-200">
+                      {rotuloData}
+                    </span>
+                  </div>
+                ) : null;
                 
                 if (isSystem) {
                   return (
-                    <div key={msg.id || index} className="flex justify-center">
-                      <div className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-[10px] font-bold">
-                        {msg.content}
+                    <React.Fragment key={msg.id || index}>
+                      {separador}
+                      <div className="flex justify-center">
+                        <div className="bg-white/80 text-slate-600 px-3 py-1 rounded-full text-[11px] font-bold shadow-sm border border-slate-200">
+                          {msg.content}
+                        </div>
                       </div>
-                    </div>
+                    </React.Fragment>
                   );
                 }
-                
+
                 if (isNote) {
                   return (
-                    <div key={msg.id || index} className="flex justify-end">
-                      <div className="bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl rounded-tr-md max-w-[85%]">
-                        <p className="text-[9px] text-amber-400 font-bold uppercase mb-0.5">📝 Nota</p>
-                        <p className="text-xs text-amber-800">{msg.content}</p>
+                    <React.Fragment key={msg.id || index}>
+                      {separador}
+                      <div className="flex justify-end">
+                        <div className="bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl rounded-tr-md max-w-[85%] shadow-sm">
+                          <p className="text-[11px] text-amber-500 font-bold uppercase mb-0.5">📝 Nota interna</p>
+                          <p className="text-sm text-amber-800">{msg.content}</p>
+                        </div>
                       </div>
-                    </div>
+                    </React.Fragment>
                   );
                 }
                 
@@ -928,26 +1013,27 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                 const isVideo = msg.mediaType?.startsWith("video/") || msg.mediaUrl?.match(/\.(mp4|mov|avi|webm)$/i);
                 
                 return (
-                  <div 
-                    key={msg.id || index} 
+                  <React.Fragment key={msg.id || index}>
+                  {separador}
+                  <div
                     className={cn("flex group relative", isOwn ? "justify-end" : "justify-start")}
                   >
                     {messageMenu === msg.id && (
                       <div className="absolute bottom-full mb-1 z-10 bg-white rounded-lg shadow-lg border border-slate-200 p-1 flex gap-1">
-                        <button onClick={() => handleEditMessage(msg)} className="px-2 py-1 text-[10px] font-bold text-slate-600 hover:bg-slate-100 rounded">✏️ Editar</button>
-                        <button onClick={() => handleDeleteMessage(msg.id)} className="px-2 py-1 text-[10px] font-bold text-red-500 hover:bg-red-50 rounded">🗑️ Apagar</button>
+                        <button onClick={() => handleEditMessage(msg)} className="px-2 py-1 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded">✏️ Editar</button>
+                        <button onClick={() => handleDeleteMessage(msg.id)} className="px-2 py-1 text-xs font-bold text-red-500 hover:bg-red-50 rounded">🗑️ Apagar</button>
                       </div>
                     )}
-                    
-                    <div 
+
+                    <div
                       onContextMenu={(e) => { e.preventDefault(); setMessageMenu(messageMenu === msg.id ? null : msg.id); }}
                       onClick={() => messageMenu === msg.id && setMessageMenu(null)}
                       className={cn(
-                        "max-w-[85%] rounded-2xl cursor-pointer overflow-hidden",
-                        isOwn 
-                          ? "bg-indigo-600 text-white rounded-tr-md" 
-                          : "bg-white border border-slate-200 text-slate-800 rounded-tl-md",
-                        !isAudio && !isImage && !isVideo && "px-3 py-2"
+                        "max-w-[80%] rounded-2xl cursor-pointer overflow-hidden shadow-sm",
+                        isOwn
+                          ? "bg-blue-700 text-white rounded-br-sm"
+                          : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm",
+                        !isAudio && !isImage && !isVideo && "px-3.5 py-2"
                       )}>
                       {isImage ? (
                         <div className="p-1">
@@ -975,14 +1061,14 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                         </div>
                       ) : msg.mediaType && !msg.mediaType.startsWith("image/") && !msg.mediaType.startsWith("video/") && !msg.mediaType.startsWith("audio/") ? (
                         <div className="flex items-center gap-2 px-3 py-2">
-                          <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                            <FileText size={20} className="text-indigo-600" />
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <FileText size={20} className="text-blue-700" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-bold truncate">{msg.content || "Documento"}</p>
-                            <p className="text-[10px] text-indigo-200">📄 Documento</p>
+                            <p className="text-xs text-blue-200">📄 Documento</p>
                           </div>
-                          <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer" className="p-1 hover:bg-indigo-500 rounded">
+                          <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer" className="p-1 hover:bg-blue-600 rounded">
                             <Download size={14} />
                           </a>
                         </div>
@@ -1020,44 +1106,54 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                           </div>
                         </div>
                       ) : (
-                        <p className="text-xs whitespace-pre-wrap">{msg.content}</p>
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
                       )}
                       <p className={cn(
-                        "text-[9px] mt-0.5 flex items-center gap-1",
-                        isOwn ? "text-indigo-200" : "text-slate-400"
+                        "text-[11px] mt-0.5 flex items-center gap-1 justify-end",
+                        isOwn ? "text-blue-200" : "text-slate-400"
                       )}>
                         {new Date(msg.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                         {msg.mediaUrl && !isAudio && <a href={msg.mediaUrl} target="_blank" rel="noopener" className="underline">📎</a>}
                       </p>
                     </div>
                   </div>
+                  </React.Fragment>
                 );
               })
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Replies with Add Button */}
-          <div className="px-2 md:px-3 py-1.5 bg-white border-t border-slate-100">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[9px] font-bold text-slate-400 uppercase">Gatilhos</span>
+          {/* Gatilhos (respostas rápidas) */}
+          <div className="px-2 md:px-3 py-2 bg-white border-t border-slate-100">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1"><Zap size={12} /> Gatilhos</span>
               <button
                 onClick={() => { setEditingQR(null); setQRForm({ title: "", content: "" }); setShowQRModal(true); }}
-                className="p-1 text-indigo-600 hover:bg-indigo-50 rounded"
+                className="flex items-center gap-1 px-2 py-1 text-blue-700 hover:bg-blue-50 rounded-lg text-[11px] font-black transition-all"
               >
-                <Plus size={12} />
+                <Plus size={13} /> Novo
               </button>
             </div>
             <div className="flex gap-1.5 overflow-x-auto pb-1">
               {quickReplies.map((qr, idx) => (
-                <button
-                  key={qr.id || idx}
-                  onClick={() => handleQuickReply(qr.content)}
-                  onContextMenu={(e) => { e.preventDefault(); handleEditQR(qr); }}
-                  className="shrink-0 px-2 py-1 bg-slate-100 hover:bg-indigo-100 text-slate-600 hover:text-indigo-600 rounded-md text-[10px] font-bold transition-all"
-                >
-                  {qr.title}
-                </button>
+                <div key={qr.id || idx} className="group/qr relative shrink-0">
+                  <button
+                    onClick={() => handleQuickReply(qr.content)}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-blue-100 text-slate-700 hover:text-blue-700 rounded-lg text-xs font-bold transition-all whitespace-nowrap"
+                  >
+                    {qr.title}
+                  </button>
+                  {qr.id && (
+                    <button
+                      onClick={() => handleEditQR(qr)}
+                      title="Editar gatilho"
+                      className="absolute -top-1.5 -right-1.5 bg-white border border-slate-200 text-slate-500 hover:text-blue-700 rounded-full p-0.5 shadow-sm opacity-0 group-hover/qr:opacity-100 transition-all"
+                    >
+                      <Pencil size={11} />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -1070,17 +1166,17 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                 {attachment.type.startsWith("image/") ? (
                   <img src={attachmentPreview || ""} alt="Preview" className="w-16 h-16 object-cover rounded-lg border border-slate-200" />
                 ) : attachment.type.startsWith("video/") ? (
-                  <div className="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center border border-purple-200">
-                    <Video size={20} className="text-purple-600" />
+                  <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center border border-blue-200">
+                    <Video size={20} className="text-blue-700" />
                   </div>
                 ) : (
-                  <div className="w-16 h-16 bg-indigo-100 rounded-lg flex items-center justify-center border border-indigo-200">
-                    <FileText size={20} className="text-indigo-600" />
+                  <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center border border-blue-200">
+                    <FileText size={20} className="text-blue-700" />
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-slate-700 truncate">{attachment.file.name}</p>
-                  <p className="text-[10px] text-slate-500">
+                  <p className="text-xs text-slate-500">
                     {attachment.type.startsWith("image/") ? "📷 Foto" : 
                      attachment.type.startsWith("video/") ? "🎬 Vídeo" : 
                      attachment.type.startsWith("audio/") ? "🎤 Áudio" : "📄 Documento"}
@@ -1128,7 +1224,7 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                     className={cn(
                       "p-2 rounded-xl transition-all shrink-0",
                       viewMode === "todos"
-                        ? "bg-slate-100 text-slate-300 cursor-not-allowed"
+                        ? "bg-slate-100 text-slate-500 cursor-not-allowed"
                         : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                     )}
                   >
@@ -1171,7 +1267,7 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                   className={cn(
                     "p-2 rounded-xl transition-all shrink-0",
                     viewMode === "todos" 
-                      ? "bg-slate-100 text-slate-300 cursor-not-allowed"
+                      ? "bg-slate-100 text-slate-500 cursor-not-allowed"
                       : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                   )}
                 >
@@ -1193,8 +1289,8 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                     className={cn(
                       "w-full px-3 py-2 border rounded-xl outline-none transition-all text-sm",
                       viewMode === "todos"
-                        ? "bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed"
-                        : "bg-slate-50 border-slate-200 focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400"
+                        ? "bg-slate-100 border-slate-200 text-slate-600 cursor-not-allowed"
+                        : "bg-slate-50 border-slate-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
                     )}
                     disabled={sending || viewMode === "todos"}
                     readOnly={viewMode === "todos"}
@@ -1206,8 +1302,8 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                   className={cn(
                     "p-2 rounded-xl transition-all shrink-0",
                     messageText.trim() && viewMode !== "todos"
-                      ? "bg-indigo-600 text-white hover:bg-indigo-700 active:scale-95" 
-                      : "bg-slate-100 text-slate-400 cursor-not-allowed"
+                      ? "bg-blue-700 text-white hover:bg-blue-800 active:scale-95" 
+                      : "bg-slate-100 text-slate-500 cursor-not-allowed"
                   )}
                 >
                   <SendHorizontal size={18} />
@@ -1220,8 +1316,8 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
         /* Empty State - Compact */
         <div className="hidden md:flex flex-1 items-center justify-center bg-slate-50/50">
           <div className="text-center">
-            <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto">
-              <MessageCircle className="text-indigo-600" size={32} />
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+              <MessageCircle className="text-blue-700" size={32} />
             </div>
             <h3 className="text-lg font-bold text-slate-700 mt-3">Selecione uma conversa</h3>
             <p className="text-xs text-slate-500 mt-1">Escolha um lead na lista</p>
@@ -1244,14 +1340,14 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                 <button
                   key={user.id}
                   onClick={() => handleAssignAtendente(user.id)}
-                  className="w-full flex items-center gap-3 p-3 bg-slate-50 hover:bg-indigo-50 rounded-xl transition-all"
+                  className="w-full flex items-center gap-3 p-3 bg-slate-50 hover:bg-blue-50 rounded-xl transition-all"
                 >
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-black">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white font-black">
                     {user.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 text-left">
                     <p className="text-sm font-bold text-slate-700">{user.name}</p>
-                    <p className="text-[10px] text-slate-500">{user.role}</p>
+                    <p className="text-xs text-slate-500">{user.role}</p>
                   </div>
                   {(selectedLead as any)?.assignedToId === user.id && (
                     <span className="text-xs font-bold text-green-600">✓ Atual</span>
@@ -1281,7 +1377,7 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                   value={qrForm.title}
                   onChange={(e) => setQRForm({ ...qrForm, title: e.target.value })}
                   placeholder="Ex: Bom dia!"
-                  className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400"
+                  className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
                 />
               </div>
               <div>
@@ -1291,7 +1387,7 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                   onChange={(e) => setQRForm({ ...qrForm, content: e.target.value })}
                   placeholder="Conteúdo da mensagem..."
                   rows={3}
-                  className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 resize-none"
+                  className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500 resize-none"
                 />
               </div>
               <div className="flex gap-3">
@@ -1306,7 +1402,7 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                 <button
                   onClick={handleSaveQR}
                   disabled={!qrForm.title.trim() || !qrForm.content.trim()}
-                  className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 transition-all"
+                  className="flex-1 py-3 bg-blue-700 text-white rounded-xl font-bold hover:bg-blue-800 disabled:opacity-50 transition-all"
                 >
                   Salvar
                 </button>
@@ -1329,13 +1425,13 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
               </button>
             </div>
             <div className="flex items-center gap-4 mb-4">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-black text-lg">
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white font-black text-lg">
                 {confirmLead.name.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1">
                 <p className="font-bold text-slate-900">{confirmLead.name}</p>
                 <p className="text-sm text-slate-500">{confirmLead.phone || "Sem telefone"}</p>
-                <span className={cn("inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold", statusConfig[confirmLead.status]?.bg, statusConfig[confirmLead.status]?.color)}>
+                <span className={cn("inline-block mt-1 px-2 py-0.5 rounded text-xs font-bold", statusConfig[confirmLead.status]?.bg, statusConfig[confirmLead.status]?.color)}>
                   {statusConfig[confirmLead.status]?.label}
                 </span>
               </div>
@@ -1354,7 +1450,7 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
               </button>
               <button
                 onClick={handleConfirmLead}
-                className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all"
+                className="flex-1 py-3 bg-blue-700 text-white rounded-xl font-bold hover:bg-blue-800 transition-all"
               >
                 {confirmLead.assignedToId ? "Acompanhar" : "Puxar"}
               </button>
@@ -1381,7 +1477,7 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                   value={newLeadData.name}
                   onChange={(e) => setNewLeadData({ ...newLeadData, name: e.target.value })}
                   placeholder="Nome dolead"
-                  className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400"
+                  className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
                 />
               </div>
               <div>
@@ -1391,13 +1487,13 @@ export default function ChatAtendimento({ currentUser }: { currentUser: any }) {
                   value={newLeadData.phone}
                   onChange={(e) => setNewLeadData({ ...newLeadData, phone: e.target.value })}
                   placeholder="11999999999"
-                  className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400"
+                  className="w-full mt-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-500"
                 />
               </div>
               <button
                 onClick={handleCreateLead}
                 disabled={!newLeadData.name.trim()}
-                className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="w-full py-3 bg-blue-700 text-white rounded-xl font-bold hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 Criar Lead
               </button>

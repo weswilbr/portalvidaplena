@@ -79,21 +79,23 @@ function formatPhoneNumber(phone: string) {
 }
 
 const statusStyles = {
-  NEW: "bg-emerald-100 text-emerald-700",
-  CONTACTED: "bg-blue-100 text-blue-700",
-  PRESENTED: "bg-indigo-100 text-indigo-700",
-  CLOSED: "bg-green-600 text-white",
-  REMARKETING: "bg-purple-100 text-purple-700",
-  LOST: "bg-red-100 text-red-600",
+  NEW: "bg-blue-100 text-blue-700",
+  CONTACTED: "bg-blue-100 text-blue-800",
+  PRESENTED: "bg-orange-100 text-orange-700",
+  REMARKETING: "bg-red-100 text-red-700",
+  CLOSED: "bg-emerald-600 text-white",
+  FOLLOWUP: "bg-teal-100 text-teal-700",
+  LOST: "bg-slate-200 text-slate-600",
 };
 
 const statusLabels: Record<string, string> = {
-  NEW: "Novo Lead",
-  CONTACTED: "Em Atendimento",
-  PRESENTED: "Carrinho Aberto",
-  REMARKETING: "Remarketing",
-  CLOSED: "Venda Concluída",
-  LOST: "Venda Perdida",
+  NEW: "Recepção",
+  CONTACTED: "Relacionamento",
+  PRESENTED: "Apresentação",
+  REMARKETING: "Pronto p/ Cadastro",
+  CLOSED: "Cadastrado (4Life)",
+  FOLLOWUP: "Acompanhamento",
+  LOST: "Perdido",
 };
 
 export default function VendasClient({ user }: { user: any }) {
@@ -156,7 +158,7 @@ export default function VendasClient({ user }: { user: any }) {
   const assignedSellerName = useMemo(() => {
     if (!selectedLead?.assignedToId) return null;
     const seller = sellers.find(s => s.id === selectedLead.assignedToId);
-    return seller?.name || "Outro Atendente";
+    return seller?.name || "Outro Parceiro";
   }, [selectedLead?.assignedToId, sellers]);
   const lastLeadIdRef = useRef<string | null>(null);
   const lastMessageCount = useRef(0);
@@ -667,14 +669,14 @@ export default function VendasClient({ user }: { user: any }) {
     if (!selectedLead) return;
     
     if (newStatus === "CLOSED") {
-      const satisfaction = prompt("Conversa finalizada. Qual o nível de satisfação do cliente (1 a 5)? Deixe uma nota para o histórico.");
-      if (satisfaction) {
-        await addMessage({ leadId: selectedLead.id, content: `Venda concluída. Pesquisa de Satisfação: ${satisfaction} Estrelas.`, authorId: user.id, isSystem: true });
+      const idVidaPlena = prompt("Cadastro confirmado na 4Life! 🎉 Anote o ID/observação do novo associado (opcional):");
+      if (idVidaPlena) {
+        await addMessage({ leadId: selectedLead.id, content: `✅ Cadastrado na 4Life. Obs: ${idVidaPlena}`, authorId: user.id, isSystem: true });
       }
     } else if (newStatus === "LOST") {
-      const reason = prompt("Por que a venda foi perdida? (Deixe em branco p/ pular)");
+      const reason = prompt("Por que o prospecto foi perdido? (Deixe em branco p/ pular)");
       if (reason) {
-        await addMessage({ leadId: selectedLead.id, content: `Venda perdida. Motivo: ${reason}`, authorId: user.id, isSystem: true });
+        await addMessage({ leadId: selectedLead.id, content: `Prospecto perdido. Motivo: ${reason}`, authorId: user.id, isSystem: true });
       }
     }
 
@@ -803,7 +805,7 @@ export default function VendasClient({ user }: { user: any }) {
     <div className="p-4 md:p-8 md:pt-8 pt-20 space-y-6 bg-slate-50/50 min-h-screen animate-in fade-in duration-500 w-full overflow-x-hidden">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-indigo-600 font-black text-xs uppercase tracking-[0.2em] mb-1">
+          <div className="flex items-center gap-2 text-blue-700 font-black text-xs uppercase tracking-[0.2em] mb-1">
             <ShoppingBag size={14} />
             E-commerce & WhatsApp
           </div>
@@ -817,20 +819,20 @@ export default function VendasClient({ user }: { user: any }) {
           <div className="flex bg-white p-1.5 rounded-[1.25rem] shadow-sm border border-slate-200 justify-center">
             <button 
               onClick={() => setViewMode("table")}
-              className={cn("p-2 rounded-xl transition-all duration-300 flex-1 flex justify-center", viewMode === "table" ? "bg-indigo-600 text-white shadow-md" : "text-slate-400")}
+              className={cn("p-2 rounded-xl transition-all duration-300 flex-1 flex justify-center", viewMode === "table" ? "bg-blue-700 text-white shadow-md" : "text-slate-400")}
             >
               <List size={20} />
             </button>
             <button 
               onClick={() => setViewMode("kanban")}
-              className={cn("p-2 rounded-xl transition-all duration-300 flex-1 flex justify-center", viewMode === "kanban" ? "bg-indigo-600 text-white shadow-md" : "text-slate-400")}
+              className={cn("p-2 rounded-xl transition-all duration-300 flex-1 flex justify-center", viewMode === "kanban" ? "bg-blue-700 text-white shadow-md" : "text-slate-400")}
             >
               <LayoutGrid size={20} />
             </button>
           </div>
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-3.5 md:py-4 rounded-2xl font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all w-full sm:w-auto"
+            className="flex items-center justify-center gap-2 bg-blue-700 text-white px-6 py-3.5 md:py-4 rounded-2xl font-black shadow-xl shadow-blue-100 hover:bg-blue-800 transition-all w-full sm:w-auto"
           >
             <Plus size={20} />
             Criar Venda Manual
@@ -842,8 +844,8 @@ export default function VendasClient({ user }: { user: any }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
         {[
           { label: "Total", value: leads.length, icon: UserCheck, color: "blue" },
-          { label: "Abertos", value: leads.filter(l => l.status === "CONTACTED").length, icon: MessageSquare, color: "indigo" },
-          { label: "Fechados", value: leads.filter(l => l.status === "CLOSED").length, icon: CreditCard, color: "emerald" },
+          { label: "Em Relacionamento", value: leads.filter(l => l.status === "CONTACTED").length, icon: MessageSquare, color: "blue" },
+          { label: "Cadastrados", value: leads.filter(l => l.status === "CLOSED").length, icon: CreditCard, color: "emerald" },
           { label: "Meus", value: leads.filter(l => l.assignedToId === user.id).length, icon: UserPlus, color: "purple" },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-4 md:p-6 rounded-3xl md:rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col sm:flex-row items-center sm:items-start gap-2 sm:gap-5 text-center sm:text-left">
@@ -864,7 +866,7 @@ export default function VendasClient({ user }: { user: any }) {
           <input 
             type="text" 
             placeholder="Buscar por nome ou WhatsApp..."
-            className="w-full pl-12 pr-4 py-3 rounded-2xl bg-slate-50 md:bg-white border-none outline-none focus:ring-4 focus:ring-indigo-100 transition-all font-medium text-sm"
+            className="w-full pl-12 pr-4 py-3 rounded-2xl bg-slate-50 md:bg-white border-none outline-none focus:ring-4 focus:ring-blue-100 transition-all font-medium text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -886,7 +888,7 @@ export default function VendasClient({ user }: { user: any }) {
           value={sellerFilter}
           onChange={(e) => setSellerFilter(e.target.value)}
         >
-          <option value="">Vendedor: Todos</option>
+          <option value="">Parceiro: Todos</option>
           {sellers.map((s) => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
@@ -908,7 +910,7 @@ export default function VendasClient({ user }: { user: any }) {
             onClick={() => setSellerFilter(sellerFilter === user.id ? "" : user.id)}
             className={cn(
               "px-6 py-3 rounded-2xl font-black text-xs flex items-center gap-2 transition-all shrink-0 uppercase tracking-widest",
-              sellerFilter === user.id ? "bg-indigo-600 text-white shadow-lg" : "bg-white border border-slate-100 text-slate-600 hover:bg-slate-50"
+              sellerFilter === user.id ? "bg-blue-700 text-white shadow-lg" : "bg-white border border-slate-100 text-slate-600 hover:bg-slate-50"
             )}
           >
             <User size={14} />
@@ -919,7 +921,7 @@ export default function VendasClient({ user }: { user: any }) {
 
       {loading ? (
         <div className="flex flex-col items-center justify-center h-48 md:h-96 space-y-4">
-          <Loader2 className="animate-spin text-indigo-600" size={48} />
+          <Loader2 className="animate-spin text-blue-700" size={48} />
           <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Atualizando Central...</p>
         </div>
       ) : viewMode === "kanban" ? (
@@ -951,7 +953,7 @@ export default function VendasClient({ user }: { user: any }) {
                         {lead.profilePic ? (
                           <img src={lead.profilePic} className="w-14 h-14 rounded-full object-cover border-2 border-white shadow-md" alt="" />
                         ) : (
-                          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl font-black">{lead.name?.charAt(0)}</div>
+                          <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white text-xl font-black">{lead.name?.charAt(0)}</div>
                         )}
                         <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 border-2 border-white rounded-full"></div>
                      </div>
@@ -972,7 +974,7 @@ export default function VendasClient({ user }: { user: any }) {
                           {lead.lastMessage ? lead.lastMessage : "Inicie o atendimento agora..."}
                         </p>
                      </div>
-                     <div className="p-3 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-100 flex items-center justify-center shrink-0">
+                     <div className="p-3 bg-blue-700 text-white rounded-2xl shadow-lg shadow-blue-100 flex items-center justify-center shrink-0">
                         <MessageSquare size={20} />
                      </div>
                   </div>
@@ -986,7 +988,7 @@ export default function VendasClient({ user }: { user: any }) {
                <table className="w-full text-left whitespace-nowrap">
                   <thead className="bg-slate-50/80 border-b border-slate-100">
                     <tr>
-                      <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400">Cliente</th>
+                      <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400">Convidado</th>
                       <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400">Atendimento</th>
                       <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400">Status</th>
                       <th className="px-6 md:px-8 py-4 md:py-5 font-black text-[10px] md:text-xs uppercase tracking-widest text-slate-400 text-left md:text-right">Ação</th>
@@ -994,7 +996,7 @@ export default function VendasClient({ user }: { user: any }) {
                   </thead>
                   <tbody className="divide-y divide-slate-50">
                     {filteredLeads.map(lead => (
-                    <tr key={lead.id} className="hover:bg-indigo-50/30 transition-all group animate-in slide-in-from-bottom duration-300">
+                    <tr key={lead.id} className="hover:bg-blue-50/30 transition-all group animate-in slide-in-from-bottom duration-300">
                       <td className="px-6 md:px-8 py-4 md:py-5 flex items-center gap-4">
                         <div className="flex-shrink-0">
                           {lead.profilePic ? (
@@ -1010,7 +1012,7 @@ export default function VendasClient({ user }: { user: any }) {
                           ) : null}
                           <div 
                             style={{ display: lead.profilePic ? 'none' : 'flex' }}
-                            className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold border border-slate-200"
+                            className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold border border-slate-200"
                           >
                             <User size={20}/>
                           </div>
@@ -1019,7 +1021,7 @@ export default function VendasClient({ user }: { user: any }) {
                           <div className="font-bold text-slate-900 text-sm md:text-base flex items-center gap-2">
                              {lead.name}
                              {lead.unreadCount > 0 && (
-                               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-black text-white shadow-lg animate-in zoom-in duration-300">
+                               <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-700 text-[10px] font-black text-white shadow-lg animate-in zoom-in duration-300">
                                  {lead.unreadCount}
                                </span>
                              )}
@@ -1081,14 +1083,14 @@ export default function VendasClient({ user }: { user: any }) {
                          {(!lead.assignedTo || (lead.assignedTo.id !== user.id && user.role === 'ADMIN')) && (
                            <button 
                             onClick={() => handlePullLead(lead.id)}
-                            className="px-3 py-1.5 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 active:scale-95 transition-all shadow-sm flex items-center gap-1.5"
+                            className="px-3 py-1.5 bg-blue-700 text-white rounded-xl font-bold text-xs hover:bg-blue-800 active:scale-95 transition-all shadow-sm flex items-center gap-1.5"
                            >
                              <ArrowRightLeft size={14} /> Puxar
                            </button>
                          )}
                          <button 
                            onClick={() => { setSelectedLead(lead); setIsDetailsOpen(true); }}
-                           className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-black text-[10px] md:text-sm hover:bg-indigo-700 transition-all shadow-lg flex items-center gap-2"
+                           className="px-4 py-2 bg-blue-700 text-white rounded-xl font-black text-[10px] md:text-sm hover:bg-blue-800 transition-all shadow-lg flex items-center gap-2"
                           >
                             <MessageSquare size={16} />
                             Abrir Chat
@@ -1126,7 +1128,7 @@ export default function VendasClient({ user }: { user: any }) {
                       setIsDetailsOpen(false);
                     }
                   }} 
-                  className="p-3 -ml-2 text-indigo-600 hover:bg-slate-100 rounded-2xl transition-all shrink-0 active:scale-90"
+                  className="p-3 -ml-2 text-blue-700 hover:bg-slate-100 rounded-2xl transition-all shrink-0 active:scale-90"
                 >
                   {chatWindowState === 'minimized' ? <ChevronUp size={28} /> : <ChevronLeft size={32} />}
                 </button>
@@ -1144,7 +1146,7 @@ export default function VendasClient({ user }: { user: any }) {
                   ) : null}
                   <div 
                     style={{ display: selectedLead.profilePic ? 'none' : 'flex' }}
-                    className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-base shrink-0"
+                    className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-base shrink-0"
                   >
                     {selectedLead.name?.charAt(0) || '?'}
                   </div>
@@ -1152,8 +1154,8 @@ export default function VendasClient({ user }: { user: any }) {
                 <div className="min-w-0 flex-1 relative">
                   <h3 className="text-base font-black text-slate-900 leading-tight truncate">{selectedLead.name}</h3>
                   <div className="flex items-center gap-3">
-                    <span className={cn("text-[10px] font-bold flex items-center gap-1 transition-all", selectedLead.isTyping ? "text-indigo-600 animate-pulse scale-105" : "text-emerald-500")}>
-                      <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", selectedLead.isTyping ? "bg-indigo-600 shadow-[0_0_8px_rgba(79,70,229,0.5)]" : "bg-emerald-500")}></div>
+                    <span className={cn("text-[10px] font-bold flex items-center gap-1 transition-all", selectedLead.isTyping ? "text-blue-700 animate-pulse scale-105" : "text-emerald-500")}>
+                      <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", selectedLead.isTyping ? "bg-blue-700 shadow-[0_0_8px_rgba(79,70,229,0.5)]" : "bg-emerald-500")}></div>
                       {selectedLead.isTyping ? "Digitando..." : "WhatsApp Online"}
                     </span>
                     {aiAnalysis && (
@@ -1176,7 +1178,7 @@ export default function VendasClient({ user }: { user: any }) {
                 <button 
                   onClick={handleGenerateSummary}
                   disabled={isSummarizing}
-                  className="p-3 rounded-2xl text-indigo-600 hover:bg-indigo-50 transition-all flex items-center gap-1.5"
+                  className="p-3 rounded-2xl text-blue-700 hover:bg-blue-50 transition-all flex items-center gap-1.5"
                   title="Resumir Conversa"
                 >
                   {isSummarizing ? <Loader2 size={20} className="animate-spin" /> : <FileText size={20} />}
@@ -1197,7 +1199,7 @@ export default function VendasClient({ user }: { user: any }) {
                         setLastNonMinimizedState(chatWindowState === 'minimized' ? lastNonMinimizedState : (chatWindowState as any));
                         setChatWindowState(chatWindowState === 'minimized' ? lastNonMinimizedState : 'minimized');
                       }}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-indigo-600 transition-all"
+                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-blue-700 transition-all"
                       title={chatWindowState === 'minimized' ? "Restaurar" : "Minimizar"}
                     >
                       <Minus size={18} />
@@ -1206,7 +1208,7 @@ export default function VendasClient({ user }: { user: any }) {
                     {/* Botão Maximizar / Restaurar */}
                     <button 
                       onClick={() => setChatWindowState(chatWindowState === 'maximized' ? 'normal' : 'maximized')}
-                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-indigo-600 transition-all"
+                      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-blue-700 transition-all"
                       title={chatWindowState === 'maximized' ? "Restaurar" : "Maximizar"}
                     >
                       {chatWindowState === 'maximized' ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
@@ -1227,14 +1229,14 @@ export default function VendasClient({ user }: { user: any }) {
             {/* Modal de Resumo da IA */}
             {fullSummary && (
                 <div className="absolute inset-0 z-50 bg-slate-900/40 backdrop-blur-sm p-4 flex items-center justify-center">
-                    <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl p-6 flex flex-col gap-4 animate-in zoom-in-95 duration-200 border border-indigo-100">
+                    <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl p-6 flex flex-col gap-4 animate-in zoom-in-95 duration-200 border border-blue-100">
                         <div className="flex items-center justify-between border-b pb-3">
                             <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                                <Sparkles size={16} className="text-indigo-500" /> Resumo Inteligente da Conversa
+                                <Sparkles size={16} className="text-blue-600" /> Resumo Inteligente da Conversa
                             </h4>
                             <button onClick={() => setFullSummary(null)} className="p-2 hover:bg-slate-100 rounded-xl transition-all text-slate-400"><X size={18} /></button>
                         </div>
-                        <div className="text-xs font-medium text-slate-600 leading-relaxed max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar italic bg-indigo-50/50 p-4 rounded-2xl">
+                        <div className="text-xs font-medium text-slate-600 leading-relaxed max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar italic bg-blue-50/50 p-4 rounded-2xl">
                             {fullSummary}
                         </div>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center mt-2">Dica: Use estas informações para agilizar o atendimento.</p>
@@ -1245,14 +1247,14 @@ export default function VendasClient({ user }: { user: any }) {
              <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200 p-4 flex flex-col gap-3 shrink-0 shadow-sm z-20">
                 <div className="px-1 flex items-center justify-between">
                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
                          <LayoutGrid size={14} />
                       </div>
                       <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">Estágio da Oportunidade</span>
                    </div>
-                   <div className="flex items-center gap-1.5 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100/50">
-                     <span className="text-[8px] font-black text-indigo-600 uppercase tracking-tighter">Status Ativo</span>
-                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></div>
+                   <div className="flex items-center gap-1.5 bg-blue-50 px-3 py-1 rounded-full border border-blue-100/50">
+                     <span className="text-[8px] font-black text-blue-700 uppercase tracking-tighter">Status Ativo</span>
+                     <div className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></div>
                    </div>
                 </div>
                 <div className="overflow-x-auto whitespace-nowrap flex gap-2.5 scrollbar-hide no-scrollbar pb-1">
@@ -1269,7 +1271,7 @@ export default function VendasClient({ user }: { user: any }) {
                            "px-5 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all border shrink-0",
                            isActive 
                              ? "bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-200 -translate-y-0.5" 
-                             : "bg-white text-slate-400 border-slate-100 hover:border-indigo-300 hover:text-indigo-600 hover:bg-slate-50"
+                             : "bg-white text-slate-400 border-slate-100 hover:border-blue-300 hover:text-blue-700 hover:bg-slate-50"
                          )}
                        >
                          {label}
@@ -1285,7 +1287,7 @@ export default function VendasClient({ user }: { user: any }) {
                     <div className="space-y-1">
                       <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Mover Estágio Kanban</label>
                       <select 
-                        className="w-full text-xs font-bold px-3 py-2 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-700 font-black"
+                        className="w-full text-xs font-bold px-3 py-2 rounded-lg bg-blue-50 border border-blue-100 text-blue-800 font-black"
                         value={selectedLead.status}
                         onChange={handleStatusChange}
                       >
@@ -1329,7 +1331,7 @@ export default function VendasClient({ user }: { user: any }) {
                           value={transferUserId}
                           onChange={(e) => setTransferUserId(e.target.value)}
                         >
-                          <option value="">Selecione outro atendente...</option>
+                          <option value="">Selecione outro parceiro...</option>
                           {sellers.map((seller: any) => (
                             <option key={seller.id} value={seller.id}>{seller.name}</option>
                           ))}
@@ -1337,7 +1339,7 @@ export default function VendasClient({ user }: { user: any }) {
                         <button 
                           onClick={handleTransfer}
                           disabled={!transferUserId}
-                          className="px-4 py-2 bg-indigo-600 text-white font-bold text-xs rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-all shrink-0"
+                          className="px-4 py-2 bg-blue-700 text-white font-bold text-xs rounded-lg hover:bg-blue-800 disabled:opacity-50 transition-all shrink-0"
                         >
                           OK
                         </button>
@@ -1377,12 +1379,12 @@ export default function VendasClient({ user }: { user: any }) {
                         <div className={cn("flex items-center gap-1.5 mb-0.5 transition-transform", isMe ? "mr-4" : "ml-3 group-hover:translate-x-1")}>
                           <span className={cn(
                             "text-[10px] font-black uppercase tracking-[0.2em]",
-                            isMe ? "text-emerald-600" : (isClient ? "text-indigo-600" : "text-slate-400")
+                            isMe ? "text-emerald-600" : (isClient ? "text-blue-700" : "text-slate-400")
                           )}>
-                            {isMe ? `Atendente: ${user.name}` : (isClient ? selectedLead.name : (msg.author?.name || "Vendedor"))}
+                            {isMe ? `Parceiro: ${user.name}` : (isClient ? selectedLead.name : (msg.author?.name || "Parceiro"))}
                           </span>
                           {!isMe && isClient && (
-                            <div className="w-1 h-1 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_4px_rgba(79,70,229,0.5)]"></div>
+                            <div className="w-1 h-1 rounded-full bg-blue-600 animate-pulse shadow-[0_0_4px_rgba(79,70,229,0.5)]"></div>
                           )}
                           {isMe && (
                              <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.5)]"></div>
@@ -1393,7 +1395,7 @@ export default function VendasClient({ user }: { user: any }) {
                         <div 
                           className={cn(
                             "max-w-[95%] md:max-w-[85%] p-4 rounded-[1.5rem] shadow-sm relative group transition-all cursor-pointer select-none border backdrop-blur-sm",
-                            msg.isNote && msg.content?.startsWith("[STRATEGY]") ? "bg-indigo-50/90 border-indigo-200 text-indigo-900 rounded-tr-none shadow-indigo-100/50" :
+                            msg.isNote && msg.content?.startsWith("[STRATEGY]") ? "bg-blue-50/90 border-blue-200 text-blue-900 rounded-tr-none shadow-blue-100/50" :
                             msg.isNote ? "bg-amber-50/90 border-amber-200 text-amber-900 rounded-tr-none shadow-amber-100/50" : 
                             isMe ? "bg-gradient-to-br from-[#e2ffc7] to-[#d4f8b0] text-[#111b21] rounded-tr-none border-[#c6e5a1]" : 
                             "bg-white/80 border-slate-100 rounded-tl-none shadow-slate-200/50" // High-end white glass effect for client
@@ -1434,7 +1436,7 @@ export default function VendasClient({ user }: { user: any }) {
                                 <div className="flex items-center gap-2">
                                   <div className={cn(
                                     "w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm",
-                                    isMe ? "bg-white/40 text-black/60" : "bg-indigo-600 text-white"
+                                    isMe ? "bg-white/40 text-black/60" : "bg-blue-700 text-white"
                                   )}>
                                     <Volume2 size={20} />
                                   </div>
@@ -1443,19 +1445,19 @@ export default function VendasClient({ user }: { user: any }) {
                                      {!isMe && !msg.transcription && (
                                        <button 
                                          onClick={(e) => { e.stopPropagation(); handleTranscribe(msg.id); }}
-                                         className="flex items-center gap-1 px-2 py-1 bg-white border border-indigo-100 rounded-lg text-[9px] font-black uppercase text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm mb-1"
+                                         className="flex items-center gap-1 px-2 py-1 bg-white border border-blue-100 rounded-lg text-[9px] font-black uppercase text-blue-700 hover:bg-blue-700 hover:text-white transition-all shadow-sm mb-1"
                                        >
                                          <Sparkles size={10} /> Transcrever
                                        </button>
                                      )}
-                                     <a href={msg.mediaUrl} download className="text-[8px] font-black uppercase text-indigo-500 hover:scale-110 transition-all text-center">Salvar</a>
+                                     <a href={msg.mediaUrl} download className="text-[8px] font-black uppercase text-blue-600 hover:scale-110 transition-all text-center">Salvar</a>
                                   </div>
                                 </div>
                                 
                                 {msg.transcription && (
                                   <div className="mt-1 p-2 bg-white/50 rounded-xl border border-black/5 animate-in slide-in-from-top duration-200">
                                     <div className="flex items-center gap-1 mb-1">
-                                      <Sparkles size={10} className="text-indigo-500" />
+                                      <Sparkles size={10} className="text-blue-600" />
                                       <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Transcrição da IA</span>
                                     </div>
                                     <p className="text-[11px] text-slate-700 italic leading-snug">{msg.transcription}</p>
@@ -1465,12 +1467,12 @@ export default function VendasClient({ user }: { user: any }) {
 
                             ) : (
                               <div className="flex items-center gap-3 p-3 bg-white/60 rounded-2xl border border-black/5 shadow-sm backdrop-blur-sm min-w-[180px]">
-                                <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shadow-inner border border-indigo-100 flex-shrink-0">
+                                <div className="w-10 h-10 bg-blue-50 text-blue-700 rounded-xl flex items-center justify-center shadow-inner border border-blue-100 flex-shrink-0">
                                    <FileText size={20} />
                                 </div>
                                 <div className="truncate flex-1 min-w-0">
                                   <p className="text-[11px] font-black tracking-tighter truncate text-slate-800 leading-tight">Arquivo Recebido</p>
-                                  <a href={msg.mediaUrl} target="_blank" className="text-[9px] text-indigo-600 font-bold hover:underline flex items-center gap-1 mt-0.5">🚀 Abrir / Download</a>
+                                  <a href={msg.mediaUrl} target="_blank" className="text-[9px] text-blue-700 font-bold hover:underline flex items-center gap-1 mt-0.5">🚀 Abrir / Download</a>
                                 </div>
                               </div>
                             )}
@@ -1481,7 +1483,7 @@ export default function VendasClient({ user }: { user: any }) {
                         {msg.quotedMessageContent && (
                           <div className={cn(
                             "mb-1 pb-1 flex flex-col gap-0.5 opacity-80 border-l-2 pl-2 rounded",
-                            isMe ? "border-indigo-400 bg-white/30" : "border-slate-300 bg-black/5"
+                            isMe ? "border-blue-400 bg-white/30" : "border-slate-300 bg-black/5"
                           )}>
                              <div className="text-[8px] font-black uppercase tracking-widest flex items-center gap-1 text-slate-500">
                                <Reply size={8} /> Respondendo a
@@ -1497,10 +1499,10 @@ export default function VendasClient({ user }: { user: any }) {
                               <textarea 
                                 value={editContent} 
                                 onChange={(e) => setEditContent(e.target.value)}
-                                className="w-full p-2 text-xs border rounded bg-white font-medium outline-none focus:ring-1 focus:ring-indigo-300 h-16 resize-none"
+                                className="w-full p-2 text-xs border rounded bg-white font-medium outline-none focus:ring-1 focus:ring-blue-300 h-16 resize-none"
                               />
                               <div className="flex gap-2">
-                                 <button onClick={handleSaveEdit} className="text-[10px] font-bold bg-indigo-600 text-white px-3 py-1.5 rounded-lg shadow-sm">Salvar</button>
+                                 <button onClick={handleSaveEdit} className="text-[10px] font-bold bg-blue-700 text-white px-3 py-1.5 rounded-lg shadow-sm">Salvar</button>
                                  <button onClick={() => setEditingMessageId(null)} className="text-[10px] font-bold bg-slate-200 px-3 py-1.5 rounded-lg shadow-sm">Cancelar</button>
                               </div>
                            </div>
@@ -1533,7 +1535,7 @@ export default function VendasClient({ user }: { user: any }) {
                          {/* Botão de Responder (Livre p/ todos) */}
                          <button 
                           onClick={(e) => { e.stopPropagation(); setReplyingTo(msg); }} 
-                          className="p-2 md:p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 border border-slate-100 transition-all flex items-center justify-center shadow-indigo-100"
+                          className="p-2 md:p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-blue-700 border border-slate-100 transition-all flex items-center justify-center shadow-blue-100"
                           title="Responder"
                          >
                           <Reply size={14}/>
@@ -1544,7 +1546,7 @@ export default function VendasClient({ user }: { user: any }) {
                            <>
                              <button 
                               onClick={(e) => { e.stopPropagation(); handleStartEdit(msg); }} 
-                              className="p-2 md:p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-indigo-600 border border-slate-100 transition-all flex items-center justify-center shadow-indigo-100"
+                              className="p-2 md:p-1.5 bg-white shadow-sm rounded-lg text-slate-400 hover:text-blue-700 border border-slate-100 transition-all flex items-center justify-center shadow-blue-100"
                               title="Editar"
                              >
                               <Pencil size={14}/>
@@ -1596,14 +1598,14 @@ export default function VendasClient({ user }: { user: any }) {
                 {selectedLead.isTyping && (
                   <div className="flex flex-col gap-1 items-start max-w-[82%] self-start animate-in slide-in-from-bottom duration-300 mb-2">
                     <div className="flex items-center gap-1.5 ml-2 mb-0.5">
-                      <span className="text-[9px] font-black uppercase tracking-[0.15em] text-indigo-500">{selectedLead.name}</span>
-                      <div className="w-1 h-1 rounded-full bg-indigo-200 animate-pulse"></div>
+                      <span className="text-[9px] font-black uppercase tracking-[0.15em] text-blue-600">{selectedLead.name}</span>
+                      <div className="w-1 h-1 rounded-full bg-blue-200 animate-pulse"></div>
                     </div>
-                    <div className="bg-[#e8f0fe] p-3 px-4 rounded-2xl rounded-tl-none border border-indigo-100 flex items-center gap-1 shadow-sm">
+                    <div className="bg-[#e8f0fe] p-3 px-4 rounded-2xl rounded-tl-none border border-blue-100 flex items-center gap-1 shadow-sm">
                       <div className="flex gap-1.5 items-center h-4">
-                        <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                        <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                        <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce"></div>
+                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></div>
                       </div>
                     </div>
                   </div>
@@ -1619,7 +1621,7 @@ export default function VendasClient({ user }: { user: any }) {
               {uploadProgress > 0 && (
                 <div className="mx-3 mt-3 bg-white p-3 rounded-2xl border border-slate-200 overflow-hidden shadow-sm animate-in slide-in-from-bottom duration-200">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2">
+                    <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest flex items-center gap-2">
                       <Loader2 size={12} className="animate-spin" />
                       Enviando Arquivo...
                     </span>
@@ -1627,7 +1629,7 @@ export default function VendasClient({ user }: { user: any }) {
                   </div>
                   <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-50">
                     <div 
-                      className="h-full bg-indigo-600 transition-all duration-300 ease-out shadow-[0_0_10px_rgba(79,70,229,0.3)]" 
+                      className="h-full bg-blue-700 transition-all duration-300 ease-out shadow-[0_0_10px_rgba(79,70,229,0.3)]" 
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>
@@ -1639,7 +1641,7 @@ export default function VendasClient({ user }: { user: any }) {
                 <div className="mx-3 mt-3 bg-white p-4 rounded-[2rem] border border-slate-200 shadow-xl animate-in slide-in-from-bottom duration-300 z-50">
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between">
-                       <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em]">Prévia do Envio</span>
+                       <span className="text-[10px] font-black text-blue-700 uppercase tracking-[0.2em]">Prévia do Envio</span>
                        <button onClick={() => { setSelectedFile(null); setFilePreview(null); }} className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-all"><X size={20}/></button>
                     </div>
                     
@@ -1650,7 +1652,7 @@ export default function VendasClient({ user }: { user: any }) {
                           <div className="absolute inset-0 bg-black/5 rounded-xl pointer-events-none"></div>
                         </div>
                       ) : (
-                        <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center border border-indigo-200 shadow-inner">
+                        <div className="w-20 h-20 bg-blue-100 text-blue-700 rounded-2xl flex items-center justify-center border border-blue-200 shadow-inner">
                           <FileText size={40}/>
                         </div>
                       )}
@@ -1698,7 +1700,7 @@ export default function VendasClient({ user }: { user: any }) {
                         <button 
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="p-3 text-slate-500 hover:text-indigo-600 hover:bg-white rounded-xl transition-all shadow-sm group"
+                          className="p-3 text-slate-500 hover:text-blue-700 hover:bg-white rounded-xl transition-all shadow-sm group"
                           title="Anexar Arquivo"
                         >
                           <Paperclip size={22} className="group-hover:rotate-12 transition-transform" />
@@ -1719,7 +1721,7 @@ export default function VendasClient({ user }: { user: any }) {
                           onClick={() => { setIsStrategicMode(!isStrategicMode); setIsNoteMode(false); }}
                           className={cn(
                             "p-3 rounded-xl transition-all flex items-center gap-2",
-                            isStrategicMode ? "bg-indigo-500 text-white shadow-lg shadow-indigo-100" : "text-slate-500 hover:text-indigo-500 hover:bg-white"
+                            isStrategicMode ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "text-slate-500 hover:text-blue-600 hover:bg-white"
                           )}
                           title="Nota Estratégica (Processo)"
                         >
@@ -1739,14 +1741,14 @@ export default function VendasClient({ user }: { user: any }) {
                 {!isRecording && aiSuggestions.length > 0 && !newMessage && !selectedFile && (
                     <div className="absolute bottom-full mb-3 left-0 right-0 px-3 flex flex-wrap gap-2 animate-in slide-in-from-bottom duration-300">
                         <div className="flex items-center gap-1.5 mb-1 w-full pl-2">
-                             <Sparkles size={12} className="text-indigo-500 animate-pulse" />
-                             <span className="text-[9px] font-black uppercase text-indigo-400 tracking-widest">IA Sugere:</span>
+                             <Sparkles size={12} className="text-blue-600 animate-pulse" />
+                             <span className="text-[9px] font-black uppercase text-blue-400 tracking-widest">IA Sugere:</span>
                         </div>
                         {aiSuggestions.map((suggestion, idx) => (
                            <button 
                              key={idx} 
                              onClick={() => setNewMessage(suggestion)}
-                             className="bg-white/90 backdrop-blur-sm border border-indigo-100 px-4 py-2 rounded-2xl text-[11px] font-medium text-indigo-700 hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all shadow-sm active:scale-95"
+                             className="bg-white/90 backdrop-blur-sm border border-blue-100 px-4 py-2 rounded-2xl text-[11px] font-medium text-blue-800 hover:bg-blue-700 hover:text-white hover:border-blue-700 transition-all shadow-sm active:scale-95"
                            >
                              {suggestion}
                            </button>
@@ -1758,11 +1760,11 @@ export default function VendasClient({ user }: { user: any }) {
                   <div className="flex-1 relative w-full">
                     {/* Banner de Citação (Reply Preview) */}
                     {replyingTo && (
-                      <div className="absolute bottom-full mb-3 left-0 right-0 bg-white/95 backdrop-blur-sm border-l-4 border-l-indigo-600 rounded-xl p-3 shadow-xl animate-in slide-in-from-bottom flex justify-between items-start z-[80] group overflow-hidden border border-slate-100">
+                      <div className="absolute bottom-full mb-3 left-0 right-0 bg-white/95 backdrop-blur-sm border-l-4 border-l-blue-700 rounded-xl p-3 shadow-xl animate-in slide-in-from-bottom flex justify-between items-start z-[80] group overflow-hidden border border-slate-100">
                         <div className="flex-1 min-w-0 pr-4">
-                           <div className="text-[9px] font-black uppercase text-indigo-600 tracking-widest mb-1 flex items-center gap-1.5">
+                           <div className="text-[9px] font-black uppercase text-blue-700 tracking-widest mb-1 flex items-center gap-1.5">
                              <Reply size={10} />
-                             Respondendo a {replyingTo.author?.name || "Cliente"}
+                             Respondendo a {replyingTo.author?.name || "Convidado"}
                            </div>
                            <p className="text-[11px] text-slate-500 line-clamp-1 italic font-medium">"{replyingTo.content}"</p>
                         </div>
@@ -1773,7 +1775,7 @@ export default function VendasClient({ user }: { user: any }) {
                         >
                           <X size={14} />
                         </button>
-                        <div className="absolute right-0 top-0 bottom-0 w-1 bg-indigo-500/10"></div>
+                        <div className="absolute right-0 top-0 bottom-0 w-1 bg-blue-600/10"></div>
                       </div>
                     )}
 
@@ -1782,7 +1784,7 @@ export default function VendasClient({ user }: { user: any }) {
                       <div className="absolute bottom-full mb-2 left-0 right-0 bg-white shadow-2xl rounded-2xl p-2 flex flex-col gap-1 border border-slate-100 animate-in slide-in-from-bottom duration-200 z-[70] max-h-[280px] overflow-y-auto">
                         <div className="flex items-center justify-between p-2 border-b border-slate-50">
                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gatilhos Rápidos</span>
-                           <button type="button" onClick={() => setIsGatilhoManagerOpen(true)} className="text-[10px] font-bold text-indigo-600">Gerenciar</button>
+                           <button type="button" onClick={() => setIsGatilhoManagerOpen(true)} className="text-[10px] font-bold text-blue-700">Gerenciar</button>
                         </div>
                         {quickReplies.length === 0 && (
                           <div className="p-4 text-center">
@@ -1826,7 +1828,7 @@ export default function VendasClient({ user }: { user: any }) {
                                className="flex items-center gap-3 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] pointer-events-none z-10"
                              >
                                 <motion.div animate={{ x: [-2, 2, -2] }} transition={{ repeat: Infinity, duration: 1 }}>
-                                  <ChevronLeft size={16} className="text-indigo-500" />
+                                  <ChevronLeft size={16} className="text-blue-600" />
                                 </motion.div>
                                 Deslize para cancelar
                              </motion.div>
@@ -1928,7 +1930,7 @@ export default function VendasClient({ user }: { user: any }) {
                         disabled={!canWrite}
                         placeholder={!canWrite ? "Modo apenas leitura..." : (isNoteMode ? "Nota interna..." : "Mensagem...")}
                         className={cn(
-                          "w-full px-4 py-3 rounded-2xl text-sm font-medium border-none outline-none focus:ring-2 focus:ring-indigo-200 transition-all resize-none min-h-[44px] max-h-[160px] overflow-y-auto pt-3",
+                          "w-full px-4 py-3 rounded-2xl text-sm font-medium border-none outline-none focus:ring-2 focus:ring-blue-200 transition-all resize-none min-h-[44px] max-h-[160px] overflow-y-auto pt-3",
                           isNoteMode ? "bg-amber-50 focus:ring-amber-100" : "bg-white",
                           !canWrite && "cursor-not-allowed text-slate-400"
                         )}
@@ -1999,7 +2001,7 @@ export default function VendasClient({ user }: { user: any }) {
                           disabled={(!newMessage.trim() && !selectedFile) || isSending || !canWrite}
                           className={cn(
                             "w-11 h-11 flex items-center justify-center rounded-2xl text-white shadow-lg transition-all active:scale-95",
-                            isNoteMode ? "bg-amber-600" : "bg-indigo-600",
+                            isNoteMode ? "bg-amber-600" : "bg-blue-700",
                             !canWrite && "opacity-50"
                           )}
                         >
@@ -2027,22 +2029,22 @@ export default function VendasClient({ user }: { user: any }) {
             <form className="space-y-5" onSubmit={handleSaveLead}>
               <div className="space-y-2">
                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Nome</label>
-                 <input name="name" required placeholder="Ex: João Silva" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-indigo-100 transition-all font-bold" />
+                 <input name="name" required placeholder="Ex: João Silva" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-blue-100 transition-all font-bold text-slate-900" />
               </div>
               <div className="space-y-2">
                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Telefone (com DDD)</label>
-                 <input name="phone" required placeholder="Ex: 5527999881122" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-indigo-100 transition-all font-bold" />
+                 <input name="phone" required placeholder="Ex: 5527999881122" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-2 focus:ring-blue-100 transition-all font-bold text-slate-900" />
               </div>
               <div className="space-y-2">
                  <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Atribuir a</label>
-                 <select name="assignedToId" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none cursor-pointer font-bold">
+                 <select name="assignedToId" className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none cursor-pointer font-bold text-slate-900">
                     <option value="">(Deixar na Fila Geral)</option>
                     {sellers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                  </select>
               </div>
               <button 
                 type="submit"
-                className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all mt-4 tracking-widest"
+                className="w-full py-5 bg-blue-700 text-white rounded-2xl font-black shadow-xl shadow-blue-100 hover:bg-blue-800 active:scale-95 transition-all mt-4 tracking-widest"
               >
                  CRIAR LEAD AGORA
               </button>
@@ -2073,7 +2075,7 @@ export default function VendasClient({ user }: { user: any }) {
                 {/* Coluna de Cadastro/Edição */}
                 <div className="space-y-6">
                    <div className="flex items-center justify-between">
-                     <h4 className="text-xs font-black uppercase tracking-[0.2em] text-indigo-500">
+                     <h4 className="text-xs font-black uppercase tracking-[0.2em] text-blue-600">
                        {editingQR ? "Editando Gatilho" : "Criar Novo Gatilho"}
                      </h4>
                      {editingQR && (
@@ -2085,7 +2087,7 @@ export default function VendasClient({ user }: { user: any }) {
                        <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Título do Botão</label>
                        <input 
                          placeholder="Ex: Preços, Boas-vindas..." 
-                         className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-4 focus:ring-indigo-100 transition-all font-bold text-slate-900 text-sm"
+                         className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold text-slate-900 text-sm"
                          value={newQRTitle}
                          onChange={(e) => setNewQRTitle(e.target.value)}
                        />
@@ -2094,7 +2096,7 @@ export default function VendasClient({ user }: { user: any }) {
                        <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">Mensagem do Gatilho</label>
                        <textarea 
                          placeholder="Escreva o texto que será enviado..." 
-                         className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-4 focus:ring-indigo-100 transition-all font-medium text-slate-700 text-sm h-48 md:h-64 resize-none"
+                         className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-100 outline-none focus:ring-4 focus:ring-blue-100 transition-all font-medium text-slate-700 text-sm h-48 md:h-64 resize-none"
                          value={newQRContent}
                          onChange={(e) => setNewQRContent(e.target.value)}
                        />
@@ -2103,7 +2105,7 @@ export default function VendasClient({ user }: { user: any }) {
                        onClick={handleAddGatilho}
                        className={cn(
                         "w-full py-5 rounded-2xl font-black shadow-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2",
-                        editingQR ? "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200" : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200"
+                        editingQR ? "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200" : "bg-blue-700 hover:bg-blue-800 text-white shadow-blue-200"
                        )}
                      >
                        {editingQR ? "ATUALIZAR GATILHO" : "CRIAR GATILHO AGORA"}
@@ -2130,7 +2132,7 @@ export default function VendasClient({ user }: { user: any }) {
                             <div className="flex items-center justify-between mb-2">
                                <span className="font-bold text-sm text-slate-900">{qr.title}</span>
                                <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-all">
-                                  <button onClick={() => handleEditQR(qr)} className="text-slate-400 hover:text-indigo-600 transition-all" title="Editar"><Edit2 size={16}/></button>
+                                  <button onClick={() => handleEditQR(qr)} className="text-slate-400 hover:text-blue-700 transition-all" title="Editar"><Edit2 size={16}/></button>
                                   <button onClick={() => handleDeleteGatilho(qr.id)} className="text-slate-400 hover:text-red-600 transition-all" title="Excluir"><Trash2 size={16}/></button>
                                </div>
                             </div>

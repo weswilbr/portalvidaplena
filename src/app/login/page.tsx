@@ -62,7 +62,7 @@ export default function LoginPage() {
           </div>
           
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">Portal Vida Plena</h1>
-          <p className="text-slate-500 font-medium tracking-tight">Acesso para Vendedores e Parceiros Vida Plena</p>
+          <p className="text-slate-500 font-medium tracking-tight">Acesso para Parceiros Vida Plena</p>
         </div>
 
         <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-100 border border-slate-100 space-y-6">
@@ -82,7 +82,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="vendedor@email.com ou 11999999999"
+                  placeholder="parceiro@email.com ou 11999999999"
                   className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 transition-all outline-none"
                 />
               </div>
