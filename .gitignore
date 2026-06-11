@@ -53,3 +53,9 @@ next-env.d.ts
 /wwebjs_auth
 /public/uploads/
 .wwebjs_cache
+
+# WhatsApp session (root) + watchdog state
+/.wwebjs_auth
+.watchdog-state.json
+watchdog.log
+*.bak*
