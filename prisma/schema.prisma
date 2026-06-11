@@ -159,6 +159,7 @@ model BotConfig {
   isRoundRobin    Boolean  @default(true) // Se ativo, distribui leads automaticamente; se falso, envia para a fila geral
   aiDelaySeconds  Int      @default(40) // tempo de digestão antes da IA responder
   cadastroLink    String?  // link de cadastro/ativacao na 4Life
+  apresentacaoLink String? // link do video de apresentacao (alternativa ao upload de arquivo)
   aiModel         String?  // modelo de IA p/ conversar (escolhido no painel)
   voiceMode       String   @default("OFF") // OFF, SOMETIMES, ALWAYS
   followupEnabled Boolean  @default(true)

@@ -30,6 +30,8 @@ export default function BotConfigClient() {
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState("nova");
   const [previewing, setPreviewing] = useState(false);
+  const [linkVideo, setLinkVideo] = useState("");
+  const [savingLink, setSavingLink] = useState(false);
 
   const playPreview = () => {
     setPreviewing(true);
@@ -58,7 +60,7 @@ export default function BotConfigClient() {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const r = await fetch("/api/apresentacao/upload", { method: "POST", body: fd });
+      const r = await fetch("/api/apresentacao", { method: "POST", body: fd });
       const res = await r.json();
       if (res.success) {
         if (res.aviso) alert("✅ Vídeo salvo!\n\n⚠️ " + res.aviso);
@@ -82,11 +84,21 @@ export default function BotConfigClient() {
     } catch {}
   };
 
+  const handleSaveLink = async () => {
+    if (!config?.id) return;
+    setSavingLink(true);
+    const res = await updateBotConfig(config.id, { apresentacaoLink: linkVideo.trim() || null });
+    if (res.success) { alert(linkVideo.trim() ? "✅ Link salvo! O bot vai mandar esse link na apresentação." : "Link removido."); refreshConfig(); }
+    else alert(res.error || "Falha ao salvar o link.");
+    setSavingLink(false);
+  };
+
   const refreshConfig = async () => {
     setLoading(true);
     const data = await getBotConfig();
     setConfig(data);
     if (data?.voiceName) setSelectedVoice(data.voiceName);
+    setLinkVideo(data?.apresentacaoLink || "");
     setLoading(false);
   };
 
@@ -273,6 +285,32 @@ export default function BotConfigClient() {
                 <input type="file" accept="video/*" className="hidden" onChange={handleUploadVideo} disabled={uploadingVideo} />
               </label>
             )}
+
+            {/* 🔗 Alternativa: link do vídeo */}
+            <div className="mt-6 pt-6 border-t border-slate-100">
+              <label className="block text-sm font-black text-slate-700 mb-2">Ou cole um link do vídeo (YouTube, Drive...)</label>
+              <p className="text-xs text-slate-400 mb-3">Se preenchido, o bot envia este link em vez do arquivo. Ideal para vídeos grandes.</p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="url"
+                  value={linkVideo}
+                  onChange={(e) => setLinkVideo(e.target.value)}
+                  placeholder="https://..."
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-900 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <button
+                  onClick={handleSaveLink}
+                  disabled={savingLink}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-700 text-white rounded-xl font-bold text-sm hover:bg-blue-800 transition-all disabled:opacity-60"
+                >
+                  {savingLink ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                  Salvar link
+                </button>
+              </div>
+              {config?.apresentacaoLink && (
+                <p className="text-xs text-emerald-600 font-medium mt-2">✅ Link ativo: o bot enviará o link na apresentação.</p>
+              )}
+            </div>
           </div>
 
           <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm">

@@ -11,7 +11,7 @@ const client = new Client({
         clientId: "vida-plena-bot"
     }),
     puppeteer: {
-        executablePath: '/root/.cache/puppeteer/chrome-headless-shell/linux-146.0.7680.31/chrome-headless-shell-linux64/chrome-headless-shell',
+        executablePath: process.env.CHROME_PATH || '/usr/bin/chromium-browser',
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
     }
 });

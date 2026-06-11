@@ -13,6 +13,17 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 const execAsync = promisify(exec);
 
+// 🎯 Mapa de fases do funil (disponível em todo o arquivo)
+const FASES: Record<string, string> = {
+  NEW: 'RECEPÇÃO',
+  CONTACTED: 'RELACIONAMENTO',
+  PRESENTED: 'APRESENTAÇÃO',
+  REMARKETING: 'PRONTO P/ CADASTRO',
+  CLOSED: 'CADASTRADO',
+  FOLLOWUP: 'PÓS-VÍDEO',
+  LOST: 'PERDIDO'
+};
+
 console.log('🤖 Inicializando WhatsApp Web Bot (whatsapp-web.js)...');
 
 async function getOrCreateBotConfig() {
@@ -288,7 +299,7 @@ const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
  * 💬 ENVIO HUMANIZADO — simula digitação real de um brasileiro no zap.
  * Manda os balões um a um, com "digitando..." e pausas proporcionais ao texto.
  */
-async function sendHumanized(chat: any, messages: string[]) {
+async function sendHumanized(chat: any, messages: string[], leadId?: string) {
   for (const raw of messages) {
     const text = (raw || '').trim();
     if (!text) continue;
@@ -299,9 +310,9 @@ async function sendHumanized(chat: any, messages: string[]) {
     const typingMs = Math.min(3000, Math.max(800, text.length * 30));
     await sleep(typingMs);
     try {
-      await client.sendMessage(chat.id._serialized, text);
+           await client.sendMessage(chat.id._serialized, text);
       await (prisma as any).message.create({
-        data: { content: text, leadId: (chat as any)._leadId || undefined, isSystem: true }
+        data: { content: text, leadId: leadId || (chat as any)._leadId || undefined, isSystem: true }
       }).catch(() => {});
     } catch (e: any) {
       console.error('❌ Erro no envio humanizado:', e?.message || e);
@@ -317,8 +328,20 @@ async function sendHumanized(chat: any, messages: string[]) {
  * Basta o usuário subir os arquivos com esses nomes. Envia só o que existir.
  */
 const PROSPECCAO_DIR = path.join(process.cwd(), 'public', 'prospeccao');
-async function enviarApresentacao(chat: any, leadId: string): Promise<boolean> {
+async function enviarApresentacao(chat: any, leadId: string, cfg?: any): Promise<boolean> {
   try {
+    // 🔗 Se houver LINK de apresentação configurado, envia o link (mais leve e confiável que o arquivo)
+    const link = cfg?.apresentacaoLink?.trim();
+    if (link) {
+      try { await chat.sendStateTyping(); } catch {}
+      await sleep(2000);
+      await client.sendMessage(chat.id._serialized, `🎥 Dá um play nesse vídeo rapidinho que explica tudo certinho 👇\n${link}`);
+      console.log(`📤 Apresentação (LINK) enviada para lead ${leadId}`);
+      await (prisma as any).message.create({
+        data: { content: '🎥 [Apresentação enviada — link]', leadId, isSystem: true }
+      }).catch(() => {});
+      return true;
+    }
     if (!fs.existsSync(PROSPECCAO_DIR)) {
       console.log('⚠️ Pasta de apresentação ainda não existe (suba os arquivos em public/prospeccao).');
       return false;
@@ -331,7 +354,11 @@ async function enviarApresentacao(chat: any, leadId: string): Promise<boolean> {
     try { await chat.sendStateTyping(); } catch {}
     await sleep(2000);
     for (const nome of arquivos) {
-      const abs = path.join(PROSPECCAO_DIR, nome);
+      let abs = path.join(PROSPECCAO_DIR, nome);
+      // 🗜️ Comprime vídeo antes de enviar — VPS com RAM apertada estoura no envio de vídeo grande
+      if (/\.(mp4|mov|webm|avi|mkv|m4v)$/i.test(nome)) {
+        try { abs = await compressVideo(abs); } catch (e) { console.warn('Compressão falhou, tentando original:', e); }
+      }
       const media = MessageMedia.fromFilePath(abs);
       await client.sendMessage(chat.id._serialized, media, {
         caption: '🎥 Dá um play nesse vídeo rapidinho que aqui explica tudo certinho 👇'
@@ -344,7 +371,7 @@ async function enviarApresentacao(chat: any, leadId: string): Promise<boolean> {
     }
     return true;
   } catch (e: any) {
-    console.error('❌ Erro ao enviar apresentação:', e?.message || e);
+    console.error('❌ Erro ao enviar apresentação:', e?.message || e, '| STACK:', (e?.stack||'').slice(0,400));
     return false;
   }
 }
@@ -359,8 +386,53 @@ async function enviarApresentacao(chat: any, leadId: string): Promise<boolean> {
 const aiDebounceTimers = new Map<string, NodeJS.Timeout>();
 const aiLastMsg = new Map<string, any>();        // leadId -> última msg (pra reagir)
 const aiProcessing = new Set<string>();          // leads sendo processados agora
+const idleNudgeTimers = new Map<string, NodeJS.Timeout>(); // leadId -> timer de nudge
+const ultimoEnvioVideo = new Map<string, number>(); // leadId -> timestamp do último envio da apresentação (anti-spam de reenvio)
 
-function agendarRespostaIA(leadId: string, waFrom: string, msg: any, cfg: any, primeiraResposta: boolean = false) {
+// -----------------------------------------------------------------------------
+// 🚨 NUDGE IDLE — se o lead não responder em ~25s após a msg do bot, insiste leve
+const NUDGE_DELAY_MS = 300000; // 5 min
+async function enviarNudge(leadId: string, waFrom: string, fase: string) {
+  try {
+    // Relê a fase ATUAL do lead — pode ter mudado desde o agendamento (ex: vídeo já enviado)
+    const leadAtual = await (prisma as any).lead.findUnique({ where: { id: leadId }, select: { status: true, aiActive: true } }).catch(() => null);
+    if (leadAtual?.aiActive === false) return; // humano assumiu ou IA pausada → não cutuca
+    if (leadAtual?.status) fase = FASES[leadAtual.status] || fase;
+    const chat = await client.getChatById(waFrom).catch(() => null);
+    if (!chat) return;
+    const nudges: Record<string, string[]> = {
+      RECEPCAO: [
+        "oi? está aí? 😊",
+        "oi! me conta, tá pensando em quê?",
+        "eai! quero saber mais sobre você 🙌"
+      ],
+      RELACIONAMENTO: [
+        "me conta mais sobre essa busca",
+        "e o que te fez ficar interessado nessa oportunidade?",
+        "falou algo interessante aí, me conta mais"
+      ],
+      APRESENTACAO: [
+        "já assistiu o vídeo? me conta o que achou!",
+        "tem alguma dúvida sobre o projeto?",
+        "quer que eu explique melhor alguma parte? 🙌"
+      ],
+      "POS-VIDEO": [
+        "conseguiu ver o vídeo? me conta o que achou",
+        "ficou com alguma dúvida sobre o que viu?",
+        "e aí, o que achou da proposta?"
+      ]
+    };
+    const faseKey = (fase || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const msgs = nudges[faseKey] || nudges["RELACIONAMENTO"];
+    const escolha = msgs[Math.floor(Math.random() * msgs.length)];
+    await sendHumanized(chat, [escolha], leadId);
+    console.log(`🔔 Nudge enviado para ${leadId} (fase: ${fase}): "${escolha}"`);
+  } catch (e: any) {
+    console.error('❌ Erro no nudge:', e?.message || e);
+  }
+}
+
+function agendarRespostaIA(leadId: string, waFrom: string, msg: any, cfg: any, primeiraResposta: boolean = false, leadStatus: string = 'NEW') {
   aiLastMsg.set(leadId, msg);
 
   const anterior = aiDebounceTimers.get(leadId);
@@ -379,9 +451,15 @@ function agendarRespostaIA(leadId: string, waFrom: string, msg: any, cfg: any, p
 
   console.log(`⏳ IA vai responder o lead ${leadId} em ~${Math.round(delayMs / 1000)}s (aguardando a pessoa terminar de falar)...`);
 
+  // Captura fase NO MOMENTO da mensagem (antes da IA rodar)
+  const faseNoMomento = FASES[leadStatus] || 'RECEPÇÃO';
   const t = setTimeout(() => {
+    // Cancela nudge pendente se a pessoa responder
+    const nudgeTimer = idleNudgeTimers.get(leadId);
+    if (nudgeTimer) { clearTimeout(nudgeTimer); idleNudgeTimers.delete(leadId); }
+
     aiDebounceTimers.delete(leadId);
-    processarRespostaIA(leadId, waFrom).catch(e =>
+    processarRespostaIA(leadId, waFrom, faseNoMomento).catch(e =>
       console.error('❌ Erro no processamento da IA:', e?.message || e)
     );
   }, delayMs);
@@ -389,7 +467,7 @@ function agendarRespostaIA(leadId: string, waFrom: string, msg: any, cfg: any, p
   aiDebounceTimers.set(leadId, t);
 }
 
-async function processarRespostaIA(leadId: string, waFrom: string) {
+async function processarRespostaIA(leadId: string, waFrom: string, faseNoMomento: string = 'RECEPÇÃO') {
   if (aiProcessing.has(leadId)) return; // já tem um processamento rolando
   aiProcessing.add(leadId);
   try {
@@ -404,9 +482,9 @@ async function processarRespostaIA(leadId: string, waFrom: string) {
     // do outro lado (loop) ou spam → pausa a IA pra esse lead e para de responder.
     try {
       const recentes = await (prisma as any).message.count({
-        where: { leadId, createdAt: { gte: new Date(Date.now() - 4 * 60000) } }
+        where: { leadId, isSystem: false, whatsappId: { not: null }, createdAt: { gte: new Date(Date.now() - 4 * 60000) } }
       });
-      if (recentes >= 25) {
+      if (recentes >= 20) {
         await (prisma as any).lead.update({ where: { id: leadId }, data: { aiActive: false } }).catch(() => {});
         console.warn(`🛑 ANTI-LOOP: ${lead.name} (${lead.phone}) com ${recentes} msgs em 4min — IA pausada (provável bot/loop).`);
         return;
@@ -437,30 +515,23 @@ async function processarRespostaIA(leadId: string, waFrom: string) {
 
     // 📚 Base de conhecimento — materiais que o admin subiu no portal (slides, preços...)
     let conhecimento = "";
+    let materiaisEnviaveis: string[] = [];
     try {
       const itens = await (prisma as any).knowledgeItem.findMany({
         where: { active: true },
         orderBy: { createdAt: 'asc' },
-        select: { title: true, content: true }
+        select: { title: true, content: true, fileUrl: true }
       });
       conhecimento = itens
         .map((k: any) => `### ${k.title}\n${k.content}`)
         .join("\n\n")
-        .slice(0, 14000); // protege a janela de contexto
+        .slice(0, 40000); // janela de contexto do conhecimento (cabe ~todos os materiais atuais)
+      materiaisEnviaveis = itens.filter((k: any) => k.fileUrl).map((k: any) => k.title);
     } catch (e: any) {
       console.error('Erro ao ler base de conhecimento:', e?.message || e);
     }
 
     // 🎯 Fase do funil (sincronizada com o Kanban) — o bot reage conforme a etapa
-    const FASES: Record<string, string> = {
-      NEW: 'RECEPÇÃO',
-      CONTACTED: 'RELACIONAMENTO',
-      PRESENTED: 'APRESENTAÇÃO',
-      REMARKETING: 'PRONTO P/ CADASTRO',
-      CLOSED: 'CADASTRADO',
-      FOLLOWUP: 'ACOMPANHAMENTO',
-      LOST: 'PERDIDO'
-    };
     const fase = FASES[lead.status] || 'RECEPÇÃO';
 
     // ⏰ Momento do dia no fuso de São Paulo/Brasília (pra saudação correta)
@@ -475,7 +546,7 @@ async function processarRespostaIA(leadId: string, waFrom: string) {
       momento = `hoje é ${dataSP}, ${horaSP}h (${periodo})`;
     } catch {}
 
-    const ia = await prospectReply(lead.name || 'amigo(a)', historico, lead.aiMemory || '', cfg?.aiModel || undefined, conhecimento, fase, !!lead.apresentacaoEnviada, momento);
+    const ia = await prospectReply(lead.name || 'amigo(a)', historico, lead.aiMemory || '', cfg?.aiModel || undefined, conhecimento, fase, !!lead.apresentacaoEnviada, momento, lead.phone, materiaisEnviaveis);
 
     console.log(`🤖 IA (${ia.stage}) → ${lead.name}: ${ia.messages.length} balão(ões)${ia.react ? ' react:' + ia.react : ''}${ia.sendVideo ? ' +vídeo' : ''}${ia.hot ? ' 🔥' : ''}`);
 
@@ -500,8 +571,65 @@ async function processarRespostaIA(leadId: string, waFrom: string) {
       }
       // Se não usou voz (ou falhou), manda texto normal
       if (!enviouVoz) {
-        await sendHumanized(chat, ia.messages);
+        await sendHumanized(chat, ia.messages, leadId);
+
+        // 🚨 Agenda nudge idle se está em fase inicial — usa faseNoMomento (a fase NO MOMENTO DA MENSAGEM)
+        if (['RECEPÇÃO', 'RELACIONAMENTO', 'APRESENTAÇÃO', 'PÓS-VÍDEO'].includes(faseNoMomento)) {
+          const existente = idleNudgeTimers.get(leadId);
+          if (!existente) {
+            const timer = setTimeout(() => {
+              idleNudgeTimers.delete(leadId);
+              enviarNudge(leadId, waFrom, faseNoMomento).catch(console.error);
+            }, NUDGE_DELAY_MS);
+            idleNudgeTimers.set(leadId, timer);
+            console.log(`⏳ Nudge agendado para ${leadId} (fase: ${faseNoMomento}) em ${NUDGE_DELAY_MS / 1000}s`);
+          }
+        }
       }
+    }
+
+    // 📎 ENVIO DE MATERIAL sob demanda — só DEPOIS do vídeo (cortina) e se a IA pediu
+    if (ia.enviarMaterial && lead.apresentacaoEnviada) {
+      try {
+        let alvo = await (prisma as any).knowledgeItem.findFirst({
+          where: { active: true, fileUrl: { not: null }, title: ia.enviarMaterial }
+        });
+        if (!alvo) {
+          // match tolerante (sem emoji/acento) se o título exato não bater
+          const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '').trim();
+          const pedido = norm(ia.enviarMaterial);
+          const todos = await (prisma as any).knowledgeItem.findMany({ where: { active: true, fileUrl: { not: null } }, select: { title: true, fileUrl: true, type: true } });
+          alvo = todos.find((k: any) => { const t = norm(k.title); return t && (t.includes(pedido) || pedido.includes(t)); });
+        }
+        if (alvo?.fileUrl) {
+          const fname = alvo.fileUrl.split('/').pop() || '';
+          const abs = path.join(process.cwd(), 'public', 'uploads', fname);
+          if (fs.existsSync(abs)) {
+            try { await chat.sendStateTyping(); } catch {}
+            await sleep(1500);
+            const media = MessageMedia.fromFilePath(abs);
+            await client.sendMessage(chat.id._serialized, media, { sendMediaAsDocument: alvo.type === 'PDF' });
+            await (prisma as any).message.create({ data: { content: `📎 [Material enviado: ${alvo.title}]`, leadId, isSystem: true } }).catch(() => {});
+            console.log(`📎 Material enviado para ${lead.name}: ${alvo.title}`);
+          } else {
+            console.warn(`⚠️ Material '${alvo.title}' sem arquivo físico em ${abs}`);
+          }
+        } else {
+          console.warn(`⚠️ IA pediu material '${ia.enviarMaterial}' mas não achei correspondente.`);
+        }
+      } catch (e: any) {
+        console.error('❌ Erro ao enviar material:', e?.message || e);
+      }
+    }
+
+    // 🛑 ENCERRAMENTO EDUCADO: agressividade, denúncia ou recusa firme → despede com classe e para tudo
+    if (ia.encerrar) {
+      await (prisma as any).lead.update({
+        where: { id: leadId },
+        data: { aiActive: false, status: 'LOST', followupCount: 99 }
+      }).catch(() => {});
+      console.log(`🛑 Encerramento educado para ${lead.name} — IA pausada, sem follow-up.`);
+      return;
     }
 
     // 🧠 Atualiza a memória longa do lead
@@ -531,16 +659,37 @@ async function processarRespostaIA(leadId: string, waFrom: string) {
       console.log(`📊 Funil: ${lead.name} → RELACIONAMENTO`);
     }
 
-    // 🎬 Envia a apresentação no momento certo → move p/ "Apresentação" (PRESENTED)
-    if (ia.sendVideo && !lead.apresentacaoEnviada) {
-      const ok = await enviarApresentacao(chat, leadId);
-      if (ok) {
-        await (prisma as any).lead.update({
-          where: { id: leadId },
-          data: { apresentacaoEnviada: true, status: 'PRESENTED' }
-        }).catch(() => {});
-        console.log(`📊 Funil: ${lead.name} → APRESENTAÇÃO`);
+    // 🎬 Envia/REENVIA a apresentação. 1ª vez: marca e move o funil. Reenvio (lead pediu de novo): respeita cooldown anti-spam.
+    if (ia.sendVideo) {
+      const agora = Date.now();
+      const ultimo = ultimoEnvioVideo.get(leadId) || 0;
+      const primeiraVez = !lead.apresentacaoEnviada;
+      if (primeiraVez || (agora - ultimo) > 90000) {
+        const ok = await enviarApresentacao(chat, leadId, cfg);
+        if (ok) {
+          ultimoEnvioVideo.set(leadId, agora);
+          if (primeiraVez) {
+            await (prisma as any).lead.update({
+              where: { id: leadId },
+              data: { apresentacaoEnviada: true, status: 'PRESENTED' }
+            }).catch(() => {});
+            console.log(`📊 Funil: ${lead.name} → APRESENTAÇÃO`);
+          } else {
+            console.log(`🔁 Vídeo REENVIADO a pedido para ${lead.name}`);
+          }
+        }
+      } else {
+        console.log(`⏳ Vídeo enviado há <90s para ${lead.name} — ignorando reenvio (anti-spam)`);
       }
+    }
+
+    // 🎬 PÓS-VÍDEO: a pessoa confirmou que assistiu → a cortina caiu, move p/ Acompanhamento
+    if (ia.assistiu && lead.status === 'PRESENTED') {
+      await (prisma as any).lead.update({
+        where: { id: leadId },
+        data: { status: 'FOLLOWUP' }
+      }).catch(() => {});
+      console.log(`📊 Funil: ${lead.name} → PÓS-VÍDEO (assistiu, em negociação)`);
     }
 
     const nomeLead = ia.nomeDetectado || lead.name || 'Lead';
@@ -600,7 +749,7 @@ async function processarRespostaIA(leadId: string, waFrom: string) {
             "esse é o link pra vc fazer seu cadastro e ativar sua posição no projeto:",
             linkCadastro,
             "qualquer dúvida me chama aqui que eu (e meu time) te ajudo no que precisar 🙌"
-          ]);
+          ], leadId);
           await (prisma as any).lead.update({
             where: { id: leadId },
             data: { linkEnviado: true }
@@ -641,10 +790,6 @@ async function processarRespostaIA(leadId: string, waFrom: string) {
 }
 
 // Mapa de fases e helper de horário (compartilhados)
-const FASES_FUNIL: Record<string, string> = {
-  NEW: 'RECEPÇÃO', CONTACTED: 'RELACIONAMENTO', PRESENTED: 'APRESENTAÇÃO',
-  REMARKETING: 'PRONTO P/ CADASTRO', CLOSED: 'CADASTRADO', FOLLOWUP: 'ACOMPANHAMENTO', LOST: 'PERDIDO'
-};
 function momentoSP(): string {
   try {
     const h = parseInt(new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }).format(new Date()));
@@ -672,7 +817,7 @@ async function verificarLeadsFrios() {
     const leads = await (prisma as any).lead.findMany({
       where: {
         aiActive: { not: false },
-        status: { in: ['NEW', 'CONTACTED', 'PRESENTED'] },
+        status: { in: ['NEW', 'CONTACTED', 'PRESENTED', 'FOLLOWUP'] },
         followupCount: { lt: FOLLOWUP_DELAYS_H.length }
       },
       take: 15
@@ -696,7 +841,7 @@ async function verificarLeadsFrios() {
         if (horasDesdeFollow < delayH) continue;
 
         const historico = ultimas.reverse().map((m: any) => ((!m.isSystem && !m.authorId && m.whatsappId) ? 'LEAD' : 'EU') + ': ' + m.content).join('\n');
-        const fase = FASES_FUNIL[lead.status] || 'RELACIONAMENTO';
+        const fase = FASES[lead.status] || 'RELACIONAMENTO';
         const msgs = await followupReply(lead.name || 'amigo(a)', historico, lead.aiMemory || '', fase, momentoSP(), lead.followupCount + 1, cfg?.aiModel || undefined);
         if (!msgs || msgs.length === 0) continue;
 
@@ -705,7 +850,7 @@ async function verificarLeadsFrios() {
         if (!chat) continue;
         (chat as any)._leadId = lead.id;
 
-        await sendHumanized(chat, msgs);
+        await sendHumanized(chat, msgs, lead.id);
         await (prisma as any).lead.update({
           where: { id: lead.id },
           data: { followupCount: { increment: 1 }, lastFollowupAt: new Date() }
@@ -737,7 +882,7 @@ const client = new Client({
       '--disable-extensions'
     ],
     headless: true,
-    executablePath: "/root/.cache/puppeteer/chrome-headless-shell/linux-146.0.7680.31/chrome-headless-shell-linux64/chrome-headless-shell",
+    executablePath: process.env.CHROME_PATH || "/usr/bin/chromium-browser",
   }
 });
 
@@ -843,6 +988,7 @@ async function scanProfilePhotos() {
 
 client.on('ready', async () => {
   console.log('🚀 WhatsApp conectado com sucesso!');
+    console.log('🔍 DATABASE_URL:', process.env.DATABASE_URL);
   const cfg = await getOrCreateBotConfig();
   let numero: string | undefined;
   try { numero = (client as any).info?.wid?.user; } catch {}
@@ -905,16 +1051,7 @@ client.on('message', async (msg: any) => {
     // Busca foto de perfil com retry melhorado (WHATSAPP as vezes demora para liberar a URL na primeira msg)
     let profilePic: string | null = null;
     try {
-      // Tenta até 5 vezes com delays crescentes
-      for (let attempt = 0; attempt < 5; attempt++) {
-        profilePic = await contact.getProfilePicUrl() || null;
-        if (profilePic) {
-          console.log(`📸 Foto capturada para ${participantName} na tentativa ${attempt + 1}`);
-          break;
-        }
-        // Delay crescente: 1s, 2s, 3s, 4s, 5s
-        await new Promise(r => setTimeout(r, (attempt + 1) * 1000));
-      }
+      profilePic = await contact.getProfilePicUrl() || null;
     } catch {
       // Contato não tem foto pública ou erro de rede
     }
@@ -971,77 +1108,6 @@ client.on('message', async (msg: any) => {
       console.log(`🤝 Novo lead ${participantName} entrou no funil — IA assume a abordagem.`);
 
       // (Bloco antigo de alerta em massa desativado — mantido só como referência)
-      const _alertaMassaDesativado = async () => {
-         if (cfg?.globalNotificationsEnabled === false) {
-            console.log(`🔕 Notificações Globais desativadas no BotConfig.`);
-            return;
-         }
-         let targetUsers: any[] = [];
-
-         if (assignedToId) {
-            // Avisa o vendedor escolhido
-            const ts = sellers.find((s: any) => s.id === assignedToId);
-            if (ts) targetUsers.push(ts);
-         } else {
-            // Fila Geral (Round-Robin Desativado): Avisa TODOS os plantonistas da equipe!
-            try {
-               const allActiveStaff = await (prisma as any).user.findMany({
-                  where: {
-                     notificationsEnabled: true,
-                     notificationPhone: { not: null }
-                  },
-                  select: { id: true, name: true, notificationPhone: true, notificationsEnabled: true, lastNotificationAt: true, notificationInterval: true }
-               });
-               targetUsers = allActiveStaff;
-            } catch (e) {
-               console.error("Erro ao buscar equipe para alerta:", e);
-            }
-         }
-
-         try {
-            const dbUsers = await (prisma as any).user.findMany({
-               select: { name: true, role: true, notificationsEnabled: true, notificationPhone: true }
-            });
-            console.log(`🔎 [RAIO-X DO BANCO DE DADOS] Usuários reais na VPS:`, JSON.stringify(dbUsers));
-         } catch(e) { }
-
-         console.log(`🤖 Filtro de Alertas concluído. Plantonistas elegíveis: ${targetUsers.length}`);
-         
-         if (targetUsers.length === 0) {
-            console.log(`⚠️ Nenhum administrador ou vendedor configurou o WhatsApp para receber alertas.`);
-         }
-
-         for (const user of targetUsers) {
-            // Se for Round Robin e o usuário direto for encontrado, pegamos os dados completos dele se necessário
-            // No caso de targetUsers da Fila Geral, já temos os dados pelo select acima.
-            
-            if (user.notificationsEnabled && user.notificationPhone) {
-               // Verifica intervalo de "cooling"
-               if (!canNotifyUser(user)) {
-                  console.log(`⏳ [RESFRIAMENTO] Alerta de novo lead ignorado para ${user.name} (intervalo de ${user.notificationInterval}min)`);
-                  continue;
-               }
-
-               try {
-                  const rawPhone = user.notificationPhone.replace(/\D/g, '');
-                  const sellerJid = `${rawPhone}@c.us`;
-                  
-                  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://portalfvp.duckdns.org') + '?v=2';
-                  const alertMsg = assignedToId 
-                     ? `🔔 *Novo Lead na sua Carteira!*\n\nLead: *${participantName}*\n\n🚀 *Atenda agora:* \n${appUrl}/dashboard/atendimento`
-                     : `🔔 *Lead na Fila Geral!*\n\nLead: *${participantName}*\nNenhum vendedor fixo.\n\n🚀 *Assuma o chat:* \n${appUrl}/dashboard/atendimento`;
-                  
-                  console.log(`📡 Disparando alerta de novo lead para: ${user.name} (${user.notificationPhone})...`);
-                  await sendSafeAlert(user.notificationPhone, alertMsg, user.name);
-                  await markNotificationSent(user.id);
-                  console.log(`✅ [ALERTA ENTREGUE] Mensagem recebida por ${user.name}!`);
-               } catch (alertErr: any) {
-                  console.error(`❌ [FALHA NO ALERTA] Erro ao enviar para ${user.name}:`, alertErr.message || alertErr);
-               }
-            }
-         }
-      };
-      void _alertaMassaDesativado; // referência inerte (não dispara)
 
     } else {
       // Lead existente — atualiza foto e nome se mudaram
@@ -1050,11 +1116,7 @@ client.on('message', async (msg: any) => {
       // Se não tem foto, tenta buscar agora que mandou msg (contato quente)
       if (!lead.profilePic) {
          try {
-           for (let attempt = 0; attempt < 3; attempt++) {
-             profilePic = await contact.getProfilePicUrl() || null;
-             if (profilePic) break;
-             await new Promise(r => setTimeout(r, 1000));
-           }
+           profilePic = await contact.getProfilePicUrl() || null;
            if (profilePic) {
               const localPath = await downloadProfilePic(profilePic, lead.id);
               if (localPath) {
@@ -1172,8 +1234,8 @@ client.on('message', async (msg: any) => {
     // Transcrição processada pela IA via Gemini (se ativo) no bloco de mídia acima.
 
 
-    await (prisma as any).message.create({
-      data: {
+    try {
+      const msgData = {
         content: finalContent || (
           savedMediaType === 'audio' ? '🎙️ Áudio' :
           savedMediaType === 'image' ? '📸 Imagem' :
@@ -1184,9 +1246,14 @@ client.on('message', async (msg: any) => {
         isSystem: false,
         mediaUrl: savedMediaUrl,
         mediaType: savedMediaType,
-        whatsappId: msg.id._serialized // Guarda o RG da mensagem para exclusão futura
-      }
-    });
+        whatsappId: msg.id._serialized
+      };
+      console.log('💾 Salvando mensagem com leadId:', lead.id, 'content:', (msgData.content || '').substring(0, 30));
+      const created = await (prisma as any).message.create({ data: msgData });
+      console.log('✅ Mensagem salva no DB - id:', created?.id, 'leadId:', created?.leadId);
+    } catch(e: any) {
+      console.error('❌ ERRO ao salvar mensagem:', e.message || e);
+    }
 
     // Incrementa contador de não lidas no Lead
     await (prisma as any).lead.update({
@@ -1202,7 +1269,7 @@ client.on('message', async (msg: any) => {
     const aiLigada = cfg?.aiEnabled !== false;
     const iaNoControle = (lead as any).aiActive !== false;
     if (aiLigada && iaNoControle) {
-      agendarRespostaIA(lead.id, msg.from, msg, cfg, leadNovo);
+      agendarRespostaIA(lead.id, msg.from, msg, cfg, leadNovo, lead.status);
     }
 
   } catch (err: any) {
