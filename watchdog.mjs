@@ -71,9 +71,24 @@ async function statusWhatsAppVidaPlena() {
   finally { await pool.end().catch(() => {}); }
 }
 
+// Idade (min) do arquivo mais recente da sessão do WhatsApp. Sessão conectada
+// tem escrita constante do Chromium; parada há muito tempo = cliente zumbi
+// (processo "online" no pm2 e status CONNECTED congelado no banco).
+const SESSAO_DIR = "/root/portalvidaplena/wwebjs_auth/session-zabot";
+const SESSAO_MAX_MIN = 30;
+async function idadeSessaoMin() {
+  try {
+    const { stdout } = await execAsync(`find '${SESSAO_DIR}' -type f -printf '%T@\\n' 2>/dev/null | sort -rn | head -1`);
+    const ts = parseFloat(stdout.trim());
+    if (!ts) return null;
+    return Math.round(Date.now() / 60000 - ts / 60);
+  } catch { return null; }
+}
+
 async function main() {
   const pm2map = await statusPm2();
   const waVP = await statusWhatsAppVidaPlena();
+  const idadeSessao = await idadeSessaoMin();
 
   // Avalia cada bot
   const linhas = [];
@@ -84,6 +99,9 @@ async function main() {
     let detalhe = "";
     if (b.whatsapp) { // Vida Plena: precisa também estar CONNECTED no WhatsApp
       if (ok && waVP !== "CONNECTED") { ok = false; detalhe = waVP === "QR_READY" ? "precisa ler QR" : "WhatsApp " + (waVP || "?"); }
+      if (ok && idadeSessao !== null && idadeSessao > SESSAO_MAX_MIN) {
+        ok = false; detalhe = `possível zumbi — sessão WhatsApp sem atividade há ${idadeSessao}min`;
+      }
     }
     if (!ok && !detalhe) detalhe = st === undefined ? "não encontrado" : "parado";
     const icone = ok ? "✅" : "❌";

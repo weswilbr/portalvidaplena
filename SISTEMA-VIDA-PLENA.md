@@ -10,7 +10,7 @@ O sistema é uma aplicação híbrida composta por um portal de gestão (CRM) e 
 
 - **Framework**: [Next.js 16](https://nextjs.org/) (App Router).
 - **Linguagem**: TypeScript (Strict Mode).
-- **Banco de Dados**: PostgreSQL hospedado no Supabase.
+- **Banco de Dados**: PostgreSQL local na VPS (localhost:5432/vidaplena).
 - **ORM**: [Prisma](https://www.prisma.io/).
 - **Estilização**: TailwindCSS (v4).
 - **Componentes**: Radix UI + Shadcn/UI + Lucide Icons.

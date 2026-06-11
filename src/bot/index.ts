@@ -911,7 +911,38 @@ setInterval(async () => {
   }
 }, 5000);
 
+// 🩺 Health check anti-zumbi: se o Chromium morrer sem o wwebjs disparar
+// 'disconnected' (ex.: morto pelo systemd), getState() falha ou volta vazio.
+// Após 3 falhas seguidas, encerra o processo para o PM2 ressuscitar.
+// Só roda depois do 'ready' e fica suspenso durante o fluxo de QR.
+let healthCheckAtivo = false;
+let healthFalhas = 0;
+setInterval(async () => {
+  if (!healthCheckAtivo) return;
+  try {
+    const estado = await client.getState();
+    if (estado === 'CONNECTED') { healthFalhas = 0; return; }
+    healthFalhas++;
+    console.error(`🩺 Health check: estado "${estado}" (falha ${healthFalhas}/3)`);
+  } catch (e: any) {
+    healthFalhas++;
+    console.error(`🩺 Health check: erro "${e?.message || e}" (falha ${healthFalhas}/3)`);
+  }
+  if (healthFalhas >= 3) {
+    console.error('💀 Cliente WhatsApp zumbi detectado — encerrando para o PM2 reiniciar.');
+    try {
+      const cfg = await getOrCreateBotConfig();
+      await (prisma as any).botConfig.update({
+        where: { id: cfg.id },
+        data: { status: 'DISCONNECTED' }
+      });
+    } catch {}
+    process.exit(1);
+  }
+}, 60000);
+
 client.on('qr', async (qr: string) => {
+  healthCheckAtivo = false;
   console.log('✅ Novo QR Code gerado — escaneie pelo WhatsApp.');
   qrcodeTerminal.generate(qr, { small: true });
   try {
@@ -988,7 +1019,8 @@ async function scanProfilePhotos() {
 
 client.on('ready', async () => {
   console.log('🚀 WhatsApp conectado com sucesso!');
-    console.log('🔍 DATABASE_URL:', process.env.DATABASE_URL);
+  healthCheckAtivo = true;
+  healthFalhas = 0;
   const cfg = await getOrCreateBotConfig();
   let numero: string | undefined;
   try { numero = (client as any).info?.wid?.user; } catch {}
