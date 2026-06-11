@@ -8,7 +8,7 @@ Este documento é a referência definitiva para o funcionamento do **Portal Vida
 
 O sistema é uma aplicação híbrida composta por um portal de gestão (CRM) e um motor de automação de mensagens (Bot).
 
-- **Framework**: [Next.js 14+](https://nextjs.org/) (App Router).
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router).
 - **Linguagem**: TypeScript (Strict Mode).
 - **Banco de Dados**: PostgreSQL hospedado no Supabase.
 - **ORM**: [Prisma](https://www.prisma.io/).
@@ -71,13 +71,13 @@ O portal utiliza um sistema de **Super Overrides de CSS** localizado em `src/app
 
 ```bash
 # Sincronização e Build (Caminho: ~/portalvidaplena)
-cd ~/portalvidaplena && git fetch origin && git reset --hard origin/main && npm run build && pm2 restart all
+cd ~/portalvidaplena && git fetch origin && git reset --hard origin/main && npm run build && pm2 restart portalfvp-web portalfvp-bot
 
 # Logs do Bot
-pm2 logs zabot
+pm2 logs portalfvp-bot
 
 # Logs do Site
-pm2 logs portal
+pm2 logs portalfvp-web
 ```
 
 ### Variáveis de Ambiente (`.env`):
